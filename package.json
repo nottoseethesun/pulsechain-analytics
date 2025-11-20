@@ -1,0 +1,15 @@
+{
+  "name": "pulsechain-token-transfer",
+  "version": "1.0.0",
+  "description": "A Node.js script to fetch token transfer amount on PulseChain using ethers.js",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "node index.js"
+  },
+  "dependencies": {
+    "ethers": "^6.13.2"
+  },
+  "author": "",
+  "license": "ISC"
+}
