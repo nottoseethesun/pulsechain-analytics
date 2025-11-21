@@ -21,7 +21,6 @@
  * @param {string} tokenAddress ERC-20 token address.
  * @param {string} walletAddress Wallet address to check.
  * @return {number} Transferred amount or 0 on error.
- * @customfunction
  */
 function getTokenTransferred(txId, tokenAddress, walletAddress) {
   try {
@@ -41,7 +40,6 @@ function getTokenTransferred(txId, tokenAddress, walletAddress) {
  * @param {string} tokenAddress ERC-20 token address.
  * @param {string} walletAddress Wallet address to check.
  * @return {number} Transferred amount or 0 on error.
- * @customfunction
  */
 function getTokenTransferredNoCache(txId, tokenAddress, walletAddress) {
   try {
@@ -55,7 +53,6 @@ function getTokenTransferredNoCache(txId, tokenAddress, walletAddress) {
 /**
  * Test function to verify getTokenTransferred with example values.
  * Logs the result to the console.
- * @customfunction
  */
 function testGetTokenTransferredNoCache() {
   const txId = '0xab9c6162b16c9e26149720420cb73c7d445d31b150cf448f3e91da13125b1bd8';
@@ -68,7 +65,6 @@ function testGetTokenTransferredNoCache() {
 /**
  * Test function to verify getTokenTransferred with example values.
  * Logs the result to the console.
- * @customfunction
  */
 function testGetTokenTransferred() {
   const txId = '0xab9c6162b16c9e26149720420cb73c7d445d31b150cf448f3e91da13125b1bd8';
