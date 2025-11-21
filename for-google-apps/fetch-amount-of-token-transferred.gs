@@ -136,9 +136,9 @@ function getBalance(tokenAddress, walletAddress, blockTag, rpcUrl) {
   const json = JSON.parse(response.getContentText());
   if (json.error || !json.result) {
     console.log('Failed to fetch balance at ' + blockTag + ': ' + (json.error ? json.error.message : 'No result'));
-    return new Object(BigInt(0));
+    return new Object(BigInt(0)); // The "new Object" code is a workaround: See the file header doc for more info.
   }
-  return new Object(BigInt(json.result));
+  return new Object(BigInt(json.result));  // The "new Object" code is a workaround: See the file header doc for more info.
 }
 
 function getTokenTransferred(txId, tokenAddress, walletAddress) {
@@ -158,7 +158,7 @@ function getTokenTransferred(txId, tokenAddress, walletAddress) {
   }
   
   const blockNumber = receipt.blockNumber;
-  const blockNum = new Object(BigInt(blockNumber));
+  const blockNum = new Object(BigInt(blockNumber)); // The "new Object" code is a workaround: See the file header doc for more info.
   const prevBlockTag = '0x' + (blockNum - new Object(BigInt(1))).toString(16);
   
   const decimals = getTokenDecimals(tokenAddress, rpcUrl);

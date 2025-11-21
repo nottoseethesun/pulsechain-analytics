@@ -8,15 +8,23 @@ In some cases, versions are provided for Google Apps Script, so that for example
 
 ## Prerequisites
 
+### Google Apps Script Files - Prereq's
+
+Since there is, incredibly, no version information available for Google Apps Script, one can only use the latest version, and troubleshoot any issues by comparing to the Google Apps Script Release Notes: <https://developers.google.com/apps-script/release-notes>
+
+### NodeJS Modules - Prereq's
+
 NodeJS 24.9.x - Earlier versions may work.
 
 ## Installation
 
-### Google Apps Script Files
+There are two possible types of JavaScript platform used here: Google Apps Script and NodeJS.
+
+### Google Apps Script Files - Install
 
 If you are using a file(s) in the directory, `./for-google-apps`, then just copy-paste the file contents using the Google Apps Script Editor there (from your Google document, such as a Google Sheet, select the top-level menu "Extensions" and then select the option, "Apps Script").  Next, name the file (no need for a ".gs" extension) and paste in the code.
 
-### NodeJS Modules
+### NodeJS Modules - Install
 
 Otherwise just do, from the command line: `npm -i`
 
