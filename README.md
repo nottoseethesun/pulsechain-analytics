@@ -51,6 +51,10 @@ Otherwise just do, from the command line: `npm -i`
 
 Refer to the module or file header documentation.  If none, look for a function with a name that starts with "test" and that will be self-explanatory as to usage.
 
+## Development Notes for the Google Apps Script
+
+The Google Apps Script library is named, "FetchTokenAmountTransferredSA" (the "SA" at the end comes from the fact that this is a Stand-alone Google Apps script, meaning, it's not attached to any document such as a Google Sheet).  Optionally, find the actual Google Apps Script library file that users will be importing, here: <https://script.google.com/home/projects/1HFXEAhRh3-fSqNLzi9i-oMDLwr2aV4zp8-NNxv6moDfRDVGDgHn7BtqG> and edit it here: <https://script.google.com/home/projects/1HFXEAhRh3-fSqNLzi9i-oMDLwr2aV4zp8-NNxv6moDfRDVGDgHn7BtqG/edit> .
+
 ## Contributing
 
 Fork me on GitHub. :)  Contributions are welcome but note that any contributions are subject to the license as defined in the LICENSE file here.
