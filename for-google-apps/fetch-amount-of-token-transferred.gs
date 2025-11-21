@@ -70,6 +70,13 @@ const config = {
   "rpcUrl": "https://rpc-pulsechain.g4mm4.io"
 };
 
+/**
+ * Fetches the decimals of the ERC20 token using eth_call.
+ * @param {string} tokenAddress Token contract address.
+ * @param {string} rpcUrl RPC endpoint URL.
+ * @return {number} The token's decimal places, or 0 on error.
+ * @customfunction
+ */
 function getTokenDecimals(tokenAddress, rpcUrl) {
   const decimalsSelector = '0x313ce567'; // keccak256('decimals()')[:4]
   const request = {
@@ -95,6 +102,13 @@ function getTokenDecimals(tokenAddress, rpcUrl) {
   return parseInt(json.result, 16);
 }
 
+/**
+ * Fetches the transaction receipt using eth_getTransactionReceipt.
+ * @param {string} txId Transaction ID.
+ * @param {string} rpcUrl RPC endpoint URL.
+ * @return {Object|null} The transaction receipt, or null on error.
+ * @customfunction
+ */
 function getTransactionReceipt(txId, rpcUrl) {
   const request = {
     jsonrpc: '2.0',
@@ -116,6 +130,15 @@ function getTransactionReceipt(txId, rpcUrl) {
   return json.result;
 }
 
+/**
+ * Fetches the raw token balance of the wallet at the given block tag using eth_call.
+ * @param {string} tokenAddress Token contract address.
+ * @param {string} walletAddress Wallet address.
+ * @param {string} blockTag Block number or tag (hex string).
+ * @param {string} rpcUrl RPC endpoint URL.
+ * @return {Object} Wrapped BigInt representing the raw balance, or BigInt(0) on error.
+ * @customfunction
+ */
 function getBalance(tokenAddress, walletAddress, blockTag, rpcUrl) {
   const balanceSelector = '0x70a08231' + ('000000000000000000000000' + walletAddress.slice(2));
   const request = {
@@ -141,6 +164,14 @@ function getBalance(tokenAddress, walletAddress, blockTag, rpcUrl) {
   return new Object(BigInt(json.result));  // The "new Object" code is a workaround: See the file header doc for more info.
 }
 
+/**
+ * Fetches the net token amount transferred to the wallet in the given transaction via balance delta.
+ * @param {string} txId The transaction ID (hash) from the PulseChain blockchain (e.g., from column L).
+ * @param {string} tokenAddress The contract address of the ERC20 token.
+ * @param {string} walletAddress The target wallet address to check transfers to.
+ * @return {number} The net transferred amount with 7 decimal places, or 0 if none or error.
+ * @customfunction
+ */
 function getTokenTransferred(txId, tokenAddress, walletAddress) {
   txId = txId.trim();
   tokenAddress = tokenAddress.trim();
@@ -183,7 +214,11 @@ function getTokenTransferred(txId, tokenAddress, walletAddress) {
   return parseFloat(amountStr);
 }
 
-// Test case
+/**
+ * Test function to verify getTokenTransferred with example values.
+ * Logs the result to the console.
+ * @customfunction
+ */
 function testGetTokenTransferred() {
   const txId = '0xab9c6162b16c9e26149720420cb73c7d445d31b150cf448f3e91da13125b1bd8';
   const tokenAddress = '0x8a7FDcA264e87b6da72D000f22186B4403081A2a';
