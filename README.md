@@ -22,7 +22,18 @@ There are two possible types of JavaScript platform used here: Google Apps Scrip
 
 ### Google Apps Script Files - Install
 
-If you are using a file(s) in the directory, `./for-google-apps`, then just copy-paste the file contents using the Google Apps Script Editor there (from your Google document, such as a Google Sheet, select the top-level menu "Extensions" and then select the option, "Apps Script").  Next, name the file (no need for a ".gs" extension) and paste in the code.
+If you are using a file(s) in the directory, `./for-google-apps`, then import the Deployment of this file into your Google Sheet using the following Google Apps Script Library deployment information:
+
+Version 1 on Nov 21, 2025, 12:45 PM
+Deployment ID
+AKfycbx4hX4Lf2VIdK6RY36q97Q7mPVuYEeGoTbR6yw_WZp3jgOMzKwnzfvKx5oFBKVa8oz0
+Library
+URL
+<https://script.google.com/macros/library/d/1tbxrHHIhVahR_BMYmoBU1DUenD7oX-NPvKyDO_ivCcIo7yIW2Y4Oei4f/1>
+
+#### Google Apps Script Files - Alternative Install
+
+Of course, alternatively you can always just copy-paste the file contents using the Google Apps Script Editor (from your Google document, such as a Google Sheet, select the top-level menu "Extensions" and then select the option, "Apps Script").  Next, name the file (no need for a ".gs" extension) and paste in the code.
 
 ### NodeJS Modules - Install
 
