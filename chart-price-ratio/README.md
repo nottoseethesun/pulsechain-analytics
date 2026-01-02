@@ -6,9 +6,10 @@ Uses **GeckoTerminal** (free, no API key) for deep historical data and intellige
 
 IMPORTANT: Use at your own risk as defined in the included file, `../LICENSE`.
 
-For details, see the file header doc in `pulse-token-ratio.js`.
 
 ## Features
+
+These are the basics.  For details, see the file header doc in `pulse-token-ratio.js`.
 
 - **Smart pool selection** – automatically chooses the pool with the deepest history when the highest-liquidity pool is new/shallow.
 - **Human-readable output** – shows token names/symbols and contract addresses clearly.

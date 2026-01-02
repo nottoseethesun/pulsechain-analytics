@@ -16,11 +16,12 @@
  *    • All y-tick labels are right-padded for perfect visual alignment.
  *    • X-scale with perfectly aligned sparse date/hour labels.
  *  - Optional CSV export.
+ *  - Optional --useDexToolsOnly flag (and config option) to force current-price mode for testing.
  * 
  * Fallback: If GeckoTerminal fails, uses current USD prices via DexTools v2 API.
  * 
  * Installation:
- *   1. Ensure nodejs v18+ is installed.
+ *   1. Ensure Node.js v18+ is installed.
  *   2. Run: npm install
  *   3. (Optional) Edit config.json
  * 
@@ -38,6 +39,7 @@
  *     --interval=<value>      (overrides interval: hourly/daily/weekly)
  *     --max-candles=<number>  (overrides maxCandles, e.g., 500)
  *     --weekly-days=<number>  (overrides weeklyResampleDays, e.g., 14 for bi-weekly)
+ *     --useDexToolsOnly       (forces DexTools current price mode, bypassing GeckoTerminal)
  * 
  * Requirements:
  *   Node.js v18+ (native fetch, ESM support)
@@ -53,6 +55,9 @@
  * 
  *   # With CSV export
  *   node pulse-token-ratio.js <tokenA> <tokenB> weekly --csv
+ * 
+ *   # Test DexTools fallback directly
+ *   node pulse-token-ratio.js <tokenA> <tokenB> --useDexToolsOnly --api-key=your_key
  * 
  *   # Override config values via flags
  *   node pulse-token-ratio.js <tokenA> <tokenB> --network=eth --api-key=ABC123 --csv-filename=custom.csv --csv
@@ -99,7 +104,8 @@ const {
   csvFilename: defaultCsvFilename = 'token_ratio.csv',
   interval: configInterval = 'weekly',
   maxCandles: defaultMaxCandles = 1000,
-  weeklyResampleDays: defaultWeeklyResampleDays = 7
+  weeklyResampleDays: defaultWeeklyResampleDays = 7,
+  useDexToolsOnly: configUseDexToolsOnly = false
 } = config;
 
 const { 
@@ -124,7 +130,7 @@ args.forEach(arg => {
 });
 
 if (positionalArgs.length < 2) {
-  console.error('Usage: node pulse-token-ratio.js <tokenA> <tokenB> [hourly|daily|weekly] [--csv] ...');
+  console.error('Usage: node pulse-token-ratio.js <tokenA> <tokenB> [hourly|daily|weekly] [--csv] [--useDexToolsOnly] ...');
   process.exit(1);
 }
 
@@ -142,6 +148,9 @@ if (!['hourly', 'daily', 'weekly'].includes(interval)) {
 }
 
 const saveCsv = !!flags.csv;
+
+// Force DexTools-only mode
+const useDexToolsOnly = flags.useDexToolsOnly === true || configUseDexToolsOnly === true;
 
 const network = flags.network || defaultNetwork;
 const chain = flags.chain || defaultChain;
@@ -254,7 +263,6 @@ function generateNiceTicks(min, max, tickCount = 10) {
   const range = max - min;
   const roughStep = range / (tickCount - 1);
 
-  // Handle very small ranges by using a minimum step based on precision
   const minStep = range * 1e-10;
   const stepMagnitude = Math.pow(10, Math.floor(Math.log10(Math.max(roughStep, minStep))));
 
@@ -298,52 +306,74 @@ async function main() {
 
   console.log(`\nComputing ratio: ${tokenA.slice(0, 8)}... / ${tokenB.slice(0, 8)}... (${interval})\n`);
 
-  const [tokenAInfo, tokenBInfo] = await Promise.all([
-    getTokenInfo(tokenA),
-    getTokenInfo(tokenB)
-  ]);
+  let tokenAName = 'Token A';
+  let tokenBName = 'Token B';
 
-  const tokenAName = tokenAInfo.name !== 'Unknown Token' ? `${tokenAInfo.name} (${tokenAInfo.symbol})` : tokenAInfo.symbol;
-  const tokenBName = tokenBInfo.name !== 'Unknown Token' ? `${tokenBInfo.name} (${tokenBInfo.symbol})` : tokenBInfo.symbol;
+  if (!useDexToolsOnly) {
+    const [tokenAInfo, tokenBInfo] = await Promise.all([
+      getTokenInfo(tokenA).catch(() => ({ name: 'Unknown Token', symbol: '???' })),
+      getTokenInfo(tokenB).catch(() => ({ name: 'Unknown Token', symbol: '???' }))
+    ]);
 
-  let poolA, poolB;
-  try {
-    poolA = await getBestPoolWithHistory(tokenA, network, maxCandles);
-    poolB = await getBestPoolWithHistory(tokenB, network, maxCandles);
-  } catch (e) {
-    console.warn(`GeckoTerminal pool discovery failed: ${e.message}`);
-    throw e;
+    tokenAName = tokenAInfo.name !== 'Unknown Token' ? `${tokenAInfo.name} (${tokenAInfo.symbol})` : tokenAInfo.symbol;
+    tokenBName = tokenBInfo.name !== 'Unknown Token' ? `${tokenBInfo.name} (${tokenBInfo.symbol})` : tokenBInfo.symbol;
   }
 
-  let dataA, dataB, source = 'GeckoTerminal (PLS-based historical)';
+  let dataA, dataB, source;
 
-  try {
-    if (interval === 'weekly') {
-      console.log('Fetching daily data for weekly resampling...');
-      const dailyA = await getClosesGecko(poolA.address, 'day', maxCandles);
-      const dailyB = await getClosesGecko(poolB.address, 'day', maxCandles);
-      dataA = resampleToWeekly(dailyA);
-      dataB = resampleToWeekly(dailyB);
-    } else {
-      const tf = interval === 'hourly' ? 'hour' : 'day';
-      console.log(`Fetching ${interval} data...`);
-      dataA = await getClosesGecko(poolA.address, tf, maxCandles);
-      dataB = await getClosesGecko(poolB.address, tf, maxCandles);
-    }
-  } catch (e) {
-    console.warn(`GeckoTerminal historical data failed: ${e.message}`);
-    if (DEXTOOLS_API_KEY && DEXTOOLS_API_KEY !== 'YOUR_API_KEY_HERE') {
-      console.log('Falling back to current USD prices via DexTools (single point only)...');
-      source = 'DexTools (current USD-based ratio)';
-      const priceA = await getCurrentUsdPriceDexTools(tokenA);
-      const priceB = await getCurrentUsdPriceDexTools(tokenB);
-      const now = Date.now();
-      dataA = [{ timestamp: now, close: priceA }];
-      dataB = [{ timestamp: now, close: priceB }];
-    } else {
-      console.error('Cannot fall back to current prices: No DexTools API key provided.');
-      console.error('Add your key to config.json or use --api-key flag to enable fallback.');
+  if (useDexToolsOnly) {
+    console.log('DexTools-only mode enabled (forced via flag or config).');
+    if (!DEXTOOLS_API_KEY || DEXTOOLS_API_KEY === 'YOUR_API_KEY_HERE') {
+      console.error('Cannot use DexTools-only mode: No valid API key provided.');
+      console.error('Add your key to config.json or use --api-key flag.');
       return;
+    }
+    source = 'DexTools (current USD-based ratio)';
+    const priceA = await getCurrentUsdPriceDexTools(tokenA);
+    const priceB = await getCurrentUsdPriceDexTools(tokenB);
+    const now = Date.now();
+    dataA = [{ timestamp: now, close: priceA }];
+    dataB = [{ timestamp: now, close: priceB }];
+  } else {
+    let poolA, poolB;
+    try {
+      poolA = await getBestPoolWithHistory(tokenA, network, maxCandles);
+      poolB = await getBestPoolWithHistory(tokenB, network, maxCandles);
+    } catch (e) {
+      console.warn(`GeckoTerminal pool discovery failed: ${e.message}`);
+      throw e;
+    }
+
+    source = 'GeckoTerminal (PLS-based historical)';
+
+    try {
+      if (interval === 'weekly') {
+        console.log('Fetching daily data for weekly resampling...');
+        const dailyA = await getClosesGecko(poolA.address, 'day', maxCandles);
+        const dailyB = await getClosesGecko(poolB.address, 'day', maxCandles);
+        dataA = resampleToWeekly(dailyA);
+        dataB = resampleToWeekly(dailyB);
+      } else {
+        const tf = interval === 'hourly' ? 'hour' : 'day';
+        console.log(`Fetching ${interval} data...`);
+        dataA = await getClosesGecko(poolA.address, tf, maxCandles);
+        dataB = await getClosesGecko(poolB.address, tf, maxCandles);
+      }
+    } catch (e) {
+      console.warn(`GeckoTerminal historical data failed: ${e.message}`);
+      if (DEXTOOLS_API_KEY && DEXTOOLS_API_KEY !== 'YOUR_API_KEY_HERE') {
+        console.log('Falling back to current USD prices via DexTools (single point only)...');
+        source = 'DexTools (current USD-based ratio)';
+        const priceA = await getCurrentUsdPriceDexTools(tokenA);
+        const priceB = await getCurrentUsdPriceDexTools(tokenB);
+        const now = Date.now();
+        dataA = [{ timestamp: now, close: priceA }];
+        dataB = [{ timestamp: now, close: priceB }];
+      } else {
+        console.error('Cannot fall back to current prices: No DexTools API key provided.');
+        console.error('Add your key to config.json or use --api-key flag to enable fallback.');
+        return;
+      }
     }
   }
 
@@ -369,7 +399,10 @@ async function main() {
     return;
   }
 
-  console.log(`\n${tokenAName} / ${tokenBName} ratio (${interval}, ${ratios.length} points) - Source: ${source}`);
+  const pointsText = ratios.length === 1 ? 'current only' : `${ratios.length} points`;
+  const intervalText = useDexToolsOnly ? 'current' : interval;
+
+  console.log(`\n${tokenAName} / ${tokenBName} ratio (${intervalText}, ${pointsText}) - Source: ${source}`);
   console.log(`C.A.: ${tokenA} / ${tokenB}\n`);
 
   if (ratios.length > 1) {
@@ -377,7 +410,6 @@ async function main() {
     const maxRatio = Math.max(...ratios);
     const range = maxRatio - minRatio;
 
-    // Raw formatter for calculating label length
     const formatYRaw = (value) => {
       let precision = 6;
       if (range < 0.01) precision = 8;
@@ -393,12 +425,10 @@ async function main() {
       return formatted || '0';
     };
 
-    // Find max label length for padding
     const testTicks = generateNiceTicks(minRatio, maxRatio, 10);
     const rawLabels = testTicks.map(formatYRaw);
     const maxLabelLength = Math.max(...rawLabels.map(l => l.length), 1);
 
-    // Final formatter with right-padding
     const formatY = (value) => {
       const raw = formatYRaw(value);
       return raw.padEnd(maxLabelLength, ' ');
@@ -414,7 +444,7 @@ async function main() {
     const chartLines = asciichart.plot(ratios, chartConfig).split('\n');
     chartLines.forEach(line => console.log(line));
 
-    const yTickWidth = maxLabelLength + 2; // +2 for " ┤"
+    const yTickWidth = maxLabelLength + 2;
     const maxLabels = 10;
     const minLabels = 4;
     const labelCount = Math.min(maxLabels, Math.max(minLabels, Math.ceil(ratios.length / 30)));
@@ -449,7 +479,9 @@ async function main() {
     console.log(' '.repeat(yTickWidth) + xAxis);
   } else {
     console.log('(Single data point - no historical chart available)');
-    console.log('Note: This often occurs with new or low-volume pools. Try a shorter interval.\n');
+    if (!useDexToolsOnly) {
+      console.log('Note: This often occurs with new or low-volume pools. Try a shorter interval.\n');
+    }
   }
 
   console.log('\nRecent ratios (last 10):');
