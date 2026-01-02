@@ -14,7 +14,7 @@
  *    • Uses sufficient precision to avoid repeated tick labels.
  *    • Switches to scientific notation for values < 0.0001.
  *    • All y-tick labels are right-padded for perfect visual alignment.
- *    • X-scale with perfectly aligned sparse date/hour labels.
+ *    • X-scale with perfectly aligned sparse date/hour labels — chronological (oldest left → newest right).
  *  - Optional CSV export.
  *  - Optional --useDexToolsOnly flag (and config option) to force current-price mode for testing.
  * 
@@ -70,7 +70,7 @@
  *  - For DexTools fallback, configure a valid apiKey in config.json or via --api-key flag.
  *  - Intervals finer than 'hourly' are not supported by GeckoTerminal and will cause graceful failure.
  *  - Y-scale automatically computes unique tick values using a nice number algorithm.
- *  - X-scale shows sparse timestamps perfectly aligned with chart columns.
+ *  - X-scale shows sparse timestamps perfectly aligned with chart columns — chronological order (oldest left → newest right).
  *  - CSV includes columns: date, price_tokenA, price_tokenB, ratio.
  *  - Edit config.json for persistent changes; use flags for one-off overrides.
  */
@@ -406,8 +406,12 @@ async function main() {
   console.log(`C.A.: ${tokenA} / ${tokenB}\n`);
 
   if (ratios.length > 1) {
-    const minRatio = Math.min(...ratios);
-    const maxRatio = Math.max(...ratios);
+    // Reverse data for chronological order (oldest left → newest right)
+    const chronologicalRatios = ratios.slice().reverse();
+    const chronologicalTimestamps = timestamps.slice().reverse();
+
+    const minRatio = Math.min(...chronologicalRatios);
+    const maxRatio = Math.max(...chronologicalRatios);
     const range = maxRatio - minRatio;
 
     const formatYRaw = (value) => {
@@ -441,20 +445,20 @@ async function main() {
       format: formatY,
     };
 
-    const chartLines = asciichart.plot(ratios, chartConfig).split('\n');
+    const chartLines = asciichart.plot(chronologicalRatios, chartConfig).split('\n');
     chartLines.forEach(line => console.log(line));
 
     const yTickWidth = maxLabelLength + 2;
     const maxLabels = 10;
     const minLabels = 4;
-    const labelCount = Math.min(maxLabels, Math.max(minLabels, Math.ceil(ratios.length / 30)));
-    const step = Math.floor((ratios.length - 1) / (labelCount - 1));
+    const labelCount = Math.min(maxLabels, Math.max(minLabels, Math.ceil(chronologicalRatios.length / 30)));
+    const step = Math.floor((chronologicalRatios.length - 1) / (labelCount - 1));
 
     const labels = [];
     for (let i = 0; i < labelCount - 1; i++) {
-      labels.push({ idx: i * step, ts: timestamps[i * step] });
+      labels.push({ idx: i * step, ts: chronologicalTimestamps[i * step] });
     }
-    labels.push({ idx: ratios.length - 1, ts: timestamps[timestamps.length - 1] });
+    labels.push({ idx: chronologicalRatios.length - 1, ts: chronologicalTimestamps[chronologicalTimestamps.length - 1] });
 
     const formatLabel = (ts) => {
       const d = new Date(ts);
