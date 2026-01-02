@@ -1,0 +1,14 @@
+{
+  "network": "pulsechain",
+  "chain": "pulse",
+  "dextools": {
+    "apiKey": "Hmy2LRTNg12Zx5X69I45D5xJY4WOCAli1xOYcC1Y",
+    "subscription": "standard",
+    "host": "https://public-api.dextools.io",
+    "version": "v2"
+  },
+  "csvFilename": "token_ratio.csv",
+  "interval": "weekly",
+  "maxCandles": 1000,
+  "weeklyResampleDays": 7
+}

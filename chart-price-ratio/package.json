@@ -1,0 +1,32 @@
+{
+  "name": "pulse-token-ratio",
+  "version": "1.0.0",
+  "description": "A Node.js tool to display the price ratio of any two PulseChain tokens in a single ASCII chart, using GeckoTerminal with intelligent pool selection and DexTools fallback.",
+  "main": "pulse-token-ratio.js",
+  "type": "module",
+  "bin": {
+    "pulse-ratio": "./pulse-token-ratio.js"
+  },
+  "scripts": {
+    "start": "node pulse-token-ratio.js",
+    "ratio": "node pulse-token-ratio.js"
+  },
+  "keywords": [
+    "pulsechain",
+    "geckoterminal",
+    "dextools",
+    "token",
+    "price",
+    "ratio",
+    "chart",
+    "crypto"
+  ],
+  "author": "Your Name <your.email@example.com>",
+  "license": "MIT",
+  "dependencies": {
+    "asciichart": "^1.5.25"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
