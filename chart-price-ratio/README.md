@@ -34,6 +34,7 @@ npm install
 
 Edit `config.json` to set defaults:
 
+```json
 {
   "network": "pulsechain",
   "chain": "pulse",
@@ -48,8 +49,9 @@ Edit `config.json` to set defaults:
   "maxCandles": 1000,
   "weeklyResampleDays": 7
 }
+```
 
-**Tip: Add your DexTools API key to enable current-price fallback if GeckoTerminal data is unavailable.**
+*Tip: Add your DexTools API key to enable current-price fallback if GeckoTerminal data is unavailable.*
 
 ## Usage
 
@@ -59,9 +61,9 @@ Edit `config.json` to set defaults:
 
 ### Example with $808 and $pTGC
 
-node pulse-token-ratio.js 0x50f1ca62e6fb8adf438ca1f50067ab83670094a6 0x94534eeee131840b1c0f61847c572228bdfdde93
+`node pulse-token-ratio.js 0x50f1ca62e6fb8adf438ca1f50067ab83670094a6 0x94534eeee131840b1c0f61847c572228bdfdde93`
 
-### Specify interval
+### Specify Interval
 
 ```bash
 node pulse-token-ratio.js <tokenA> <tokenB> --interval=daily
@@ -81,6 +83,7 @@ node pulse-token-ratio.js <tokenA> <tokenB> --interval=hourly
 Here's $808 / $pTGC on PulseChain!
 
 ![PulseChain Token Ratio Chart Output](pulse-token-ratio-output.png)
+
 *Daily ratio chart for $808 / $pTGC showing perfect alignment, unique y-ticks, and smooth line rendering*
 
 ## Contributing
