@@ -24,7 +24,7 @@
  * If the file is missing or invalid, it falls back to the hardcoded default RPC URL.
  * 
  * Usage:
- * node script.js [options]
+ * node index.js [options]
  * 
  * Options:
  *   -a, --address <address>          PulseChain wallet address (required)
@@ -40,9 +40,9 @@
  * - The program uses binary search to find the closest block for a given date, which is efficient but assumes monotonic increasing timestamps.
  * 
  * Example usage:
- *   node script.js --address 0xYourAddress --date 2023-05-10 --tokens Pulse_Native_Gas_Token,0xContractAddress
+ *   node index.js --address 0xYourAddress --date 2023-05-10 --tokens Pulse_Native_Gas_Token,0xContractAddress
  *   or
- *   node script.js --address 0xYourAddress --block 100000 --tokens Pulse_Native_Gas_Token --rpc https://your-archive-rpc.com
+ *   node index.js --address 0xYourAddress --block 100000 --tokens Pulse_Native_Gas_Token --rpc https://your-archive-rpc.com
  * 
  * Error Handling:
  * - Invalid options or missing required options will cause the program to exit with an error message.
