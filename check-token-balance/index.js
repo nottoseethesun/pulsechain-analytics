@@ -5,7 +5,8 @@
  * This Node.js command-line program queries the balances of specified tokens for a given PulseChain wallet address
  * at a specific block number or UTC date (midnight). It supports the native PLS token and ERC-20 tokens.
  * Balances are formatted in human-readable decimal format with commas for readability.
- * A supplementary plain balance output is provided without commas or separators except for decimal points (trailing .0 removed for whole numbers).
+ * A supplementary plain balance output is provided without commas or separators except for decimal points
+ * (trailing .0 removed for whole numbers).
  * 
  * Dependencies:
  * - NodeJS version ~ 21
@@ -35,7 +36,9 @@
  * 
  * Notes:
  * - Either --block or --date must be provided.
- * - For historical balances (past blocks), the RPC must support archive mode (historical state queries). The default public RPC may not support old blocks. In that case, sign up for a free account at Moralis (https://moralis.com/), create a PulseChain node, and pass the node URL using --rpc <your_moralis_node_url> or update config.json.
+ * - For historical balances (past blocks), the RPC must support archive mode (historical state queries). The default public RPC may not support old
+ * blocks.  In that case, sign up for a free account at Moralis (https://moralis.com/), create a PulseChain node, and pass the node URL using
+ * --rpc <your_moralis_node_url> or update config.json.
  * - Balances are formatted with commas in the integer part and include the decimal part if non-zero (e.g., "430,537,004,257" or "1,234.567").
  * - The program uses binary search to find the closest block for a given date, which is efficient but assumes monotonic increasing timestamps.
  * 
