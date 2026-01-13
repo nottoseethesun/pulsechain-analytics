@@ -45,7 +45,7 @@
  * Example usage:
  *   node index.js --address 0xYourAddress --date 2023-05-10 --tokens Pulse_Native_Gas_Token,0xContractAddress
  *   or
- *   node index.js --address 0xYourAddress --block 100000 --tokens Pulse_Native_Gas_Token --rpc https://your-archive-rpc.com
+ *   node index.js --address 0xYourAddress --block 100000 --tokens Pulse_Native_Gas_Token --rpc https://rpc-pulsechain.g4mm4.io
  * 
  * Error Handling:
  * - Invalid options or missing required options will cause the program to exit with an error message.
