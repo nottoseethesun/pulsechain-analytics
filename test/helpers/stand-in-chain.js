@@ -8,8 +8,15 @@
  * decimals. The transaction sends the wallet `received` more, which both its
  * receipt (as the token's Transfer event) and the wallet's balance at the
  * block show, so a script reading either one finds the same amount. A test
- * builds the chain for the amount it needs with `standInChain`, then hands
+ * builds the chain for the case it needs with `standInChain`, then hands
  * each json-rpc request the script sends to the chain's `answer`.
+ *
+ * Two options make the cases that go wrong. `otherInBlock` is a second
+ * transfer to the wallet, from another transaction in the same block: the
+ * wallet's balance at the block shows it, and this transaction's receipt
+ * does not. `fail` names one read the endpoint answers with a json-rpc
+ * error, as a busy endpoint does: `'receipt'`, `'decimals'`, or `'before'`,
+ * the wallet's balance before the block.
  */
 
 export const TOKEN = '0x8a7FDcA264e87b6da72D000f22186B4403081A2a';
@@ -34,13 +41,17 @@ const addressWord = (address) => '0x' + address.slice(2).toLowerCase().padStart(
  * `received` whole tokens. Its `answer` replies to one json-rpc request as an
  * endpoint would: the chain id (PulseChain's, 369), the latest block, the
  * transaction's receipt, the token's decimals, and the wallet's balance
- * before the block (at 0xff) or from the block on. Any other method gets a
- * json-rpc error naming it.
+ * before the block (at 0xff) or from the block on. The read named by `fail`
+ * gets a json-rpc error instead, and any method the chain lacks gets one
+ * naming it.
  *
  * @param {bigint} received - Whole tokens the transaction sends the wallet
+ * @param {Object} [options] - The cases that go wrong
+ * @param {bigint} [options.otherInBlock=0n] - Whole tokens another transaction in the same block sends the wallet
+ * @param {?string} [options.fail=null] - The read that fails: 'receipt', 'decimals' or 'before'
  * @returns {{answer: function(Object): Object}} The chain
  */
-export function standInChain(received) {
+export function standInChain(received, { otherInBlock = 0n, fail = null } = {}) {
   const amount = received * ONE_TOKEN;
   const logs = [];
   if (amount !== 0n) {
@@ -72,21 +83,27 @@ export function standInChain(received) {
     status: '0x1',
     type: '0x2'
   };
-  const balanceAt = (blockTag) => (blockTag === quantity(BLOCK - 1) ? BALANCE_BEFORE : BALANCE_BEFORE + amount);
+  const blockBefore = quantity(BLOCK - 1);
+  const balanceAt = (blockTag) =>
+    blockTag === blockBefore ? BALANCE_BEFORE : BALANCE_BEFORE + amount + otherInBlock * ONE_TOKEN;
 
   return {
     answer(request) {
       const reply = (result) => ({ jsonrpc: '2.0', id: request.id, result });
+      const busy = { jsonrpc: '2.0', id: request.id, error: { code: -32005, message: 'The stand-in chain is busy' } };
       switch (request.method) {
         case 'eth_chainId':
           return reply('0x171');
         case 'eth_blockNumber':
           return reply(quantity(BLOCK + 1));
         case 'eth_getTransactionReceipt':
-          return reply(receipt);
-        case 'eth_call':
-          if (request.params[0].data === DECIMALS_SELECTOR) return reply(word(18));
-          return reply(word(balanceAt(request.params[1])));
+          return fail === 'receipt' ? busy : reply(receipt);
+        case 'eth_call': {
+          if (request.params[0].data === DECIMALS_SELECTOR) return fail === 'decimals' ? busy : reply(word(18));
+          const blockTag = request.params[1];
+          if (fail === 'before' && blockTag === blockBefore) return busy;
+          return reply(word(balanceAt(blockTag)));
+        }
         default:
           return {
             jsonrpc: '2.0',
