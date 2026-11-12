@@ -9,7 +9,9 @@
  * receipt (as the token's Transfer event) and the wallet's balance at the
  * block show, so a script reading either one finds the same amount. A test
  * builds the chain for the case it needs with `standInChain`, then hands
- * each json-rpc request the script sends to the chain's `answer`.
+ * each json-rpc request the script sends to the chain's `answer`, directly
+ * or through `standInChainFetch`, a fetch for the Node version of the
+ * Sheets script.
  *
  * Two options make the cases that go wrong. `otherInBlock` is a second
  * transfer to the wallet, from another transaction in the same block: the
@@ -113,4 +115,23 @@ export function standInChain(received, { otherInBlock = 0n, fail = null } = {}) 
       }
     }
   };
+}
+
+/**
+ * Builds a fetch, shaped as Node's own, that hands each json-rpc request's
+ * body to the chain and answers with the chain's reply, for the Node
+ * version of the Sheets script, whose requests go out through a fetch.
+ *
+ * @param {{answer: function(Object): Object}} chain - The stand-in chain
+ * @returns {function(string, Object): Promise<Response>} The fetch, with the requests it answered, `{url, method, body}`, in its `requests` array
+ */
+export function standInChainFetch(chain) {
+  const requests = [];
+  const fetch = async (url, init = {}) => {
+    requests.push({ url, method: init.method, body: init.body });
+    const reply = chain.answer(JSON.parse(init.body));
+    return new Response(JSON.stringify(reply), { status: 200, headers: { 'content-type': 'application/json' } });
+  };
+  fetch.requests = requests;
+  return fetch;
 }
