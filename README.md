@@ -50,6 +50,13 @@ Otherwise just do, from the command line: `npm -i`
 
 Refer to the module or file header documentation.  If none, look for a function with a name that starts with "test" and that will be self-explanatory as to usage.
 
+### Node Versions of the Google Apps Scripts
+
+A Google Apps Script here can have a Node version beside it, of the same
+name ending in `.js`, which runs the same `.gs` file under Node, unchanged,
+so the two give the same answers. `for-google-apps/check-token-balance/`
+has one; its README says how to use it.
+
 ## Contributing
 
 Fork me on GitHub. :)  Contributions are welcome but note that any contributions are subject to the license as defined in the LICENSE file here.

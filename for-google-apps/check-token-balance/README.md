@@ -25,6 +25,35 @@ Deployment ID: AKfycbyBWersgxf4_JBg40CT-h9iAwfcfC3Rj4T_3aoVtfTj1EpjLQtqH6Ac3xG7C
 Library URL:  https://script.google.com/macros/library/d/1HFXEAhRh3-fSqNLzi9i-oMDLwr2aV4zp8-NNxv6moDfRDVGDgHn7BtqG/5
 ```
 
+## The Node Version
+
+`fetch-amount-of-token-transferred.js`, beside the script, runs
+`fetch-amount-of-token-transferred.gs` itself, unchanged, under Node, so it
+answers as `getTokenTransferred` does in a sheet, from a Node program or the
+command line. It needs no wrapper: a Node program imports it directly.
+
+From the repo's top folder, after `npm ci` (Node 22 or later):
+
+```bash
+node for-google-apps/check-token-balance/fetch-amount-of-token-transferred.js <transaction> <token> <wallet>
+```
+
+It prints the amount. `--help` lists the options. The PulseChain rpc
+endpoint can go in `config.json` here, which git ignores;
+`config-example.json` shows the shape. From Node:
+
+```js
+import { openTokenTransferFetcher } from './for-google-apps/check-token-balance/fetch-amount-of-token-transferred.js';
+
+const fetcher = await openTokenTransferFetcher();
+const amount = await fetcher.getTokenTransferred(txId, tokenAddress, walletAddress);
+await fetcher.close();
+```
+
+It runs the script with the runner from
+[crypto-price-fetchers](https://github.com/nottoseethesun/crypto-price-fetchers),
+which `npm ci` installs. The file header says what differs from the sheet.
+
 ## A Note on Caching
 
 This, the Google Apps Script version of this utility, has a caching option (`getTokenTransferredUseCache`), 
