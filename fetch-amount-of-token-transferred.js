@@ -39,7 +39,7 @@ import { ethers } from 'ethers';
  * @param {string} walletAddress - The wallet address to check for balance changes (e.g., '0xbCB167f16A1aA3ca3F483CC922967e9aCdEC405D').
  * @returns {Promise<number>} The positive balance delta formatted as a float (to 7 decimal places), or 0 if no positive change, transaction not found, or error.
  */
-async function getTokenTransferred(txId, tokenAddress, walletAddress) {
+export async function getTokenTransferred(txId, tokenAddress, walletAddress) {
   const provider = new ethers.JsonRpcProvider('https://rpc-pulsechain.g4mm4.io');
 
   try {
