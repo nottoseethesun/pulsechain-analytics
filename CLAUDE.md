@@ -49,9 +49,11 @@ runs unchanged under Node, and the twin's Node version. `test/helpers/`
 holds the stand-ins:
 
 - `stand-in-chain.js` is a PulseChain rpc endpoint held in memory, with
-  options for the cases that go wrong: a failed read, or another transfer in
-  the same block. `standInChainFetch` hands it the requests of the Node
-  version.
+  options for the other cases: a failed read, a transaction it doesn't know,
+  more Transfer events in the receipt, or another transfer in the same block.
+  `standInChainFetch` hands it the requests of the Node version.
+- `transfer-cases.js` lists the cases both copies of `getTokenTransferred`
+  are tested on, so the two give the same answers.
 - `ethers-stand-in.js` routes ethers' http requests to a stand-in chain.
 - `sheets-script.js` runs a Sheets script in the test's thread with the
   runner's services, its `UrlFetchApp` answering from a stand-in chain.
@@ -61,10 +63,7 @@ holds the stand-ins:
 
 ## Known bugs
 
-`test/known-bugs.test.js` holds one test per known bug, declared with
-`knownBug`, so it passes while the bug is present. A bug's fix makes its test
-fail; declare that test with `it` instead, in the same change.
-
-| Item | Bug |
-| --- | --- |
-| 9 | `getTokenTransferred`, in both copies, works out the amount from the wallet's balance around the block, so a failed read gives a wrong amount or 0, and another transfer in the same block is counted in. The Node version of the Sheets script runs the script, so it has the bug too |
+None is known. When one is found, it gets a test in
+`test/known-bugs.test.js`, declared with `knownBug`, so the test passes while
+the bug is present. The bug's fix makes its test fail; declare that test with
+`it` instead, in the same change, among the tests of the code it is about.

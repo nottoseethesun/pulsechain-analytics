@@ -13,17 +13,24 @@
  * or through `standInChainFetch`, a fetch for the Node version of the
  * Sheets script.
  *
- * Two options make the cases that go wrong. `otherInBlock` is a second
- * transfer to the wallet, from another transaction in the same block: the
- * wallet's balance at the block shows it, and this transaction's receipt
- * does not. `fail` names one read the endpoint answers with a json-rpc
- * error, as a busy endpoint does: `'receipt'`, `'decimals'`, or `'before'`,
- * the wallet's balance before the block.
+ * Three options make the other cases. `otherInBlock` is a second transfer
+ * to the wallet, from another transaction in the same block: the wallet's
+ * balance at the block shows it, and this transaction's receipt does not.
+ * `extraTransfers` are more Transfer events in this transaction's receipt:
+ * of the token to the wallet, which its balance shows too, or of another
+ * token, to another address, or an NFT's Transfer from the token's address,
+ * which the wallet's balance of the token does not show. `fail` names one
+ * read the endpoint answers with a json-rpc error, as a busy endpoint does:
+ * `'receipt'`, `'decimals'`, or `'before'`, the wallet's balance before the
+ * block; or `'no-receipt'`, which answers the receipt with null, as an
+ * endpoint does for a transaction it does not know.
  */
 
 export const TOKEN = '0x8a7FDcA264e87b6da72D000f22186B4403081A2a';
 export const WALLET = '0xbCB167f16A1aA3ca3F483CC922967e9aCdEC405D';
 export const TRANSACTION = '0x' + 'ab'.repeat(32);
+export const OTHER_TOKEN = '0x' + '22'.repeat(20);
+export const OTHER_WALLET = '0x' + '33'.repeat(20);
 
 const SENDER = '0x' + '11'.repeat(20);
 const BLOCK = 0x100;
@@ -39,6 +46,45 @@ const word = (n) => '0x' + BigInt(n).toString(16).padStart(64, '0');
 const addressWord = (address) => '0x' + address.slice(2).toLowerCase().padStart(64, '0');
 
 /**
+ * Builds one Transfer event of the transaction's receipt.
+ *
+ * @param {Object} transfer - The transfer
+ * @param {string} [transfer.token=TOKEN] - The contract that emits it
+ * @param {string} [transfer.to=WALLET] - Who receives
+ * @param {bigint} transfer.amount - Whole tokens sent; for an NFT, the token id
+ * @param {boolean} [transfer.nft=false] - Whether it is an NFT's Transfer, with the token id indexed and no data
+ * @param {number} index - Its place among the receipt's logs
+ * @returns {Object} The log, as an endpoint gives it
+ */
+function transferLog({ token = TOKEN, to = WALLET, amount, nft = false }, index) {
+  const topics = [TRANSFER_TOPIC, addressWord(SENDER), addressWord(to)];
+  if (nft) topics.push(word(amount));
+  return {
+    address: token,
+    topics,
+    data: nft ? '0x' : word(amount * ONE_TOKEN),
+    blockNumber: quantity(BLOCK),
+    blockHash: BLOCK_HASH,
+    transactionHash: TRANSACTION,
+    transactionIndex: '0x0',
+    logIndex: quantity(index),
+    removed: false
+  };
+}
+
+/**
+ * Whole tokens of `TOKEN` that transfers send `WALLET`.
+ *
+ * @param {Array<Object>} transfers - The transfers, as `transferLog` takes them
+ * @returns {bigint} Whole tokens
+ */
+function sentToWallet(transfers) {
+  return transfers
+    .filter(({ token = TOKEN, to = WALLET, nft = false }) => token === TOKEN && to === WALLET && !nft)
+    .reduce((total, { amount }) => total + amount, 0n);
+}
+
+/**
  * Builds the stand-in chain for a transaction that sends the wallet
  * `received` whole tokens. Its `answer` replies to one json-rpc request as an
  * endpoint would: the chain id (PulseChain's, 369), the latest block, the
@@ -48,27 +94,16 @@ const addressWord = (address) => '0x' + address.slice(2).toLowerCase().padStart(
  * naming it.
  *
  * @param {bigint} received - Whole tokens the transaction sends the wallet
- * @param {Object} [options] - The cases that go wrong
+ * @param {Object} [options] - The other cases
  * @param {bigint} [options.otherInBlock=0n] - Whole tokens another transaction in the same block sends the wallet
- * @param {?string} [options.fail=null] - The read that fails: 'receipt', 'decimals' or 'before'
+ * @param {Array<Object>} [options.extraTransfers=[]] - More Transfer events in the receipt, as `transferLog` takes them
+ * @param {?string} [options.fail=null] - The read that fails: 'receipt', 'decimals', 'before' or 'no-receipt'
  * @returns {{answer: function(Object): Object}} The chain
  */
-export function standInChain(received, { otherInBlock = 0n, fail = null } = {}) {
-  const amount = received * ONE_TOKEN;
-  const logs = [];
-  if (amount !== 0n) {
-    logs.push({
-      address: TOKEN,
-      topics: [TRANSFER_TOPIC, addressWord(SENDER), addressWord(WALLET)],
-      data: word(amount),
-      blockNumber: quantity(BLOCK),
-      blockHash: BLOCK_HASH,
-      transactionHash: TRANSACTION,
-      transactionIndex: '0x0',
-      logIndex: '0x0',
-      removed: false
-    });
-  }
+export function standInChain(received, { otherInBlock = 0n, extraTransfers = [], fail = null } = {}) {
+  const transfers = received === 0n ? extraTransfers : [{ amount: received }, ...extraTransfers];
+  const logs = transfers.map((transfer, index) => transferLog(transfer, index));
+  const amount = sentToWallet(transfers) * ONE_TOKEN;
   const receipt = {
     transactionHash: TRANSACTION,
     transactionIndex: '0x0',
@@ -99,6 +134,7 @@ export function standInChain(received, { otherInBlock = 0n, fail = null } = {}) 
         case 'eth_blockNumber':
           return reply(quantity(BLOCK + 1));
         case 'eth_getTransactionReceipt':
+          if (fail === 'no-receipt') return reply(null);
           return fail === 'receipt' ? busy : reply(receipt);
         case 'eth_call': {
           if (request.params[0].data === DECIMALS_SELECTOR) return fail === 'decimals' ? busy : reply(word(18));
