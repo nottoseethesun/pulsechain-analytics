@@ -38,19 +38,24 @@
  * code of its own.
  */
 
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath } from "node:url";
 import {
   InvalidArgumentError,
   isEntryPoint,
   openScriptFunctions,
-  runScriptCommandLine
-} from 'crypto-price-fetchers/apps-script-runner';
+  runScriptCommandLine,
+} from "crypto-price-fetchers/apps-script-runner";
 
 /** The Sheets script this runs. */
-export const SHEETS_SCRIPT = new URL('./fetch-amount-of-token-transferred.gs', import.meta.url);
+export const SHEETS_SCRIPT = new URL(
+  "./fetch-amount-of-token-transferred.gs",
+  import.meta.url,
+);
 
 /** The config file read when none is named. */
-export const DEFAULT_CONFIG_FILE = fileURLToPath(new URL('./config.json', import.meta.url));
+export const DEFAULT_CONFIG_FILE = fileURLToPath(
+  new URL("./config.json", import.meta.url),
+);
 
 /** A transaction hash: 0x and 64 hex digits. */
 const TRANSACTION_HASH = /^0x[0-9a-fA-F]{64}$/;
@@ -69,9 +74,9 @@ const ADDRESS = /^0x[0-9a-fA-F]{40}$/;
  * @returns {Promise<{getTokenTransferred: function(string, string, string): Promise<number>, close: function(): Promise<void>}>} The function, with the Sheets arguments
  */
 export function openTokenTransferFetcher(options = {}) {
-  return openScriptFunctions(SHEETS_SCRIPT, ['getTokenTransferred'], {
+  return openScriptFunctions(SHEETS_SCRIPT, ["getTokenTransferred"], {
     ...options,
-    defaultConfigFile: DEFAULT_CONFIG_FILE
+    defaultConfigFile: DEFAULT_CONFIG_FILE,
   });
 }
 
@@ -83,7 +88,10 @@ export function openTokenTransferFetcher(options = {}) {
  * @throws {InvalidArgumentError} When it is not a transaction hash
  */
 function transactionHash(value) {
-  if (!TRANSACTION_HASH.test(value.trim())) throw new InvalidArgumentError('It is not a transaction hash: 0x and 64 hex digits.');
+  if (!TRANSACTION_HASH.test(value.trim()))
+    throw new InvalidArgumentError(
+      "It is not a transaction hash: 0x and 64 hex digits.",
+    );
   return value;
 }
 
@@ -95,7 +103,10 @@ function transactionHash(value) {
  * @throws {InvalidArgumentError} When it is not an address
  */
 function address(value) {
-  if (!ADDRESS.test(value.trim())) throw new InvalidArgumentError('It is not an address: 0x and 40 hex digits.');
+  if (!ADDRESS.test(value.trim()))
+    throw new InvalidArgumentError(
+      "It is not an address: 0x and 40 hex digits.",
+    );
   return value;
 }
 
@@ -108,16 +119,16 @@ function address(value) {
  */
 function describeCommandLine(program, runCall) {
   program
-    .name('fetch-amount-of-token-transferred')
+    .name("fetch-amount-of-token-transferred")
     .description(
-      'How much of a token one PulseChain transaction sent a wallet, ' +
-        'worked out by fetch-amount-of-token-transferred.gs run under Node.'
+      "How much of a token one PulseChain transaction sent a wallet, " +
+        "worked out by fetch-amount-of-token-transferred.gs run under Node.",
     )
-    .argument('<transaction>', "the transaction's hash", transactionHash)
-    .argument('<token>', "the token's contract address", address)
-    .argument('<wallet>', "the wallet's address", address)
+    .argument("<transaction>", "the transaction's hash", transactionHash)
+    .argument("<token>", "the token's contract address", address)
+    .argument("<wallet>", "the wallet's address", address)
     .action((transaction, token, wallet, _options, command) =>
-      runCall('getTokenTransferred', [transaction, token, wallet], command)
+      runCall("getTokenTransferred", [transaction, token, wallet], command),
     );
 }
 
@@ -130,8 +141,13 @@ function describeCommandLine(program, runCall) {
  */
 export function runCommandLine(argv, deps = {}) {
   return runScriptCommandLine(
-    { argv, scriptPath: SHEETS_SCRIPT, defaultConfigFile: DEFAULT_CONFIG_FILE, describe: describeCommandLine },
-    deps
+    {
+      argv,
+      scriptPath: SHEETS_SCRIPT,
+      defaultConfigFile: DEFAULT_CONFIG_FILE,
+      describe: describeCommandLine,
+    },
+    deps,
   );
 }
 

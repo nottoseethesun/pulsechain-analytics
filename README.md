@@ -14,7 +14,7 @@ Since there is, incredibly, no version information available for Google Apps Scr
 
 ### NodeJS Modules - Prereq's
 
-NodeJS 24.9.x - Earlier versions may work.
+NodeJS 22 or later.
 
 ## Installation
 
@@ -44,7 +44,45 @@ Next, from your Google document, such as a Google Sheet, select the top-level me
 
 ### NodeJS Modules - Install
 
-Otherwise just do, from the command line: `npm -i`
+Otherwise just do, from the repo's top folder:
+
+```bash
+npm install
+```
+
+It installs everything the top folder's tools need, crypto-price-fetchers
+among them, from GitHub. `chart-price-ratio/` and `check-token-balance/`
+each have a package of their own: run `npm install` in the folder of the
+tool you use too.
+
+### Api keys
+
+The ratio chart, `chart-price-ratio/`, can fall back to DexTools, which
+takes an api key. The key is kept in `api-keys.json` in the repo's top
+folder, which git ignores, encrypted with a password you choose, as LP
+Ranger keeps its keys. To save it, from the repo's top folder:
+
+```bash
+npm run api-keys
+```
+
+It lists each key the top `config.json` names, saved or not, never showing
+its characters, and asks for each one not saved: the key, then the
+password, twice the first time, showing nothing of what is typed. Each key
+is saved only once its service takes it.
+
+To keep the password for a terminal, so the tools open their keys without
+asking:
+
+```bash
+source ./unlock-api-keys.sh
+```
+
+It asks for the password once, checks that it opens the keys, and keeps it
+in `API_KEYS_PASSWORD` until the terminal closes. Without it, a tool asks
+for the password when it first needs a key. The password is kept nowhere
+on disk, and the keys only in memory, for one run. A key is never a setting
+in a file, nor a command-line argument.
 
 ### Usage
 
@@ -56,6 +94,26 @@ A Google Apps Script here can have a Node version beside it, of the same
 name ending in `.js`, which runs the same `.gs` file under Node, unchanged,
 so the two give the same answers. `for-google-apps/check-token-balance/`
 has one; its README says how to use it.
+
+## Test
+
+From the repo's top folder, the one gate that must pass before a commit,
+LP Ranger's: the lint, the tests, and the security audits.
+
+```bash
+npm ci
+npm ci --prefix chart-price-ratio
+npm ci --prefix check-token-balance
+npm run check
+```
+
+## Documentation
+
+- [`docs/architecture.md`](docs/architecture.md): how the tools work.
+- [`docs/engineering.md`](docs/engineering.md): the files, the gates, the
+  tests and CI.
+- [`docs/npm-project-commands.md`](docs/npm-project-commands.md): every npm
+  command.
 
 ## Contributing
 

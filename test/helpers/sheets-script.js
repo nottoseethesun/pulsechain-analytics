@@ -14,14 +14,17 @@
  * dropped.
  */
 
-import fs from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { createAppsScriptServices, loadAppsScript } from 'crypto-price-fetchers/apps-script-runner';
+import fs from "node:fs";
+import { fileURLToPath } from "node:url";
+import {
+  createAppsScriptServices,
+  loadAppsScript,
+} from "crypto-price-fetchers/apps-script-runner";
 
 /** The Sheets script that reads how much of a token a transaction sent a wallet. */
 export const TRANSFER_SHEETS_SCRIPT = new URL(
-  '../../for-google-apps/check-token-balance/fetch-amount-of-token-transferred.gs',
-  import.meta.url
+  "../../for-google-apps/check-token-balance/fetch-amount-of-token-transferred.gs",
+  import.meta.url,
 );
 
 /**
@@ -36,8 +39,16 @@ export function loadSheetsScript(scriptUrl, chain) {
     fetchSync: (request) => ({
       status: 200,
       headers: {},
-      text: JSON.stringify(chain.answer(JSON.parse(request.body)))
-    })
+      text: JSON.stringify(chain.answer(JSON.parse(request.body))),
+    }),
   });
-  return loadAppsScript(fs.readFileSync(scriptUrl, 'utf8'), fileURLToPath(scriptUrl), services);
+  return loadAppsScript(
+    [
+      {
+        source: fs.readFileSync(scriptUrl, "utf8"),
+        filename: fileURLToPath(scriptUrl),
+      },
+    ],
+    services,
+  );
 }

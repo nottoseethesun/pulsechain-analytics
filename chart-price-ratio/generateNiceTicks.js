@@ -1,19 +1,22 @@
 /**
- * Generate nice tick values for y-axis (unique, human-readable numbers)
+ * The y-axis' values for the ratio chart: round numbers, each one a label
+ * no other repeats.
+ * @module chart-price-ratio/generateNiceTicks
+ */
+
+/**
+ * Generate nice tick values for y-axis (unique, human-readable numbers).
+ * The ratio chart (`pulse-token-ratio.js`) labels its y-axis with them.
  * @param {number} min
  * @param {number} max
  * @param {number} tickCount Approx number of ticks desired (default 10)
  * @returns {Array<number>} Array of tick values
  */
-function generateNiceTicks(min, max, tickCount = 10) {
+export function generateNiceTicks(min, max, tickCount = 10) {
   if (min === max) return [min];
 
   const range = max - min;
   const roughStep = range / (tickCount - 1);
-
-  // Handle very small ranges by using a minimum step based on precision
-  const minStep = range * 1e-10; // Prevent infinite loop or zero step
-  const stepMagnitude = Math.pow(10, Math.floor(Math.log10(Math.max(roughStep, minStep))));
 
   let step = Math.pow(10, Math.floor(Math.log10(roughStep)));
   if (roughStep / step > 5) step *= 5;
@@ -42,7 +45,7 @@ function generateNiceTicks(min, max, tickCount = 10) {
   }
 
   // Deduplicate and sort just in case
-  const uniqueTicks = [...new Set(ticks.map(v => Number(v.toFixed(15))))]; // Avoid floating point duplicates
+  const uniqueTicks = [...new Set(ticks.map((v) => Number(v.toFixed(15))))]; // Avoid floating point duplicates
   uniqueTicks.sort((a, b) => a - b);
 
   return uniqueTicks;

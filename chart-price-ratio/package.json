@@ -24,9 +24,10 @@
   "author": "Your Name <your.email@example.com>",
   "license": "MIT",
   "dependencies": {
-    "asciichart": "^1.5.25"
+    "asciichart": "^1.5.25",
+    "crypto-price-fetchers": "github:nottoseethesun/crypto-price-fetchers#9c594890a0e63b3866f19f7e313a7bb7462914f5"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=22"
   }
 }

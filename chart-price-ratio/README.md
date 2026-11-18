@@ -6,10 +6,9 @@ Uses **GeckoTerminal** (free, no API key) for deep historical data and intellige
 
 IMPORTANT: Use at your own risk as defined in the included file, `../LICENSE`.
 
-
 ## Features
 
-These are the basics.  For details, see the file header doc in `pulse-token-ratio.js`.
+These are the basics. For details, see the file header doc in `pulse-token-ratio.js`.
 
 - **Smart pool selection** – automatically chooses the pool with the deepest history when the highest-liquidity pool is new/shallow.
 - **Human-readable output** – shows token names/symbols and contract addresses clearly.
@@ -21,15 +20,18 @@ These are the basics.  For details, see the file header doc in `pulse-token-rati
 
 ## Pre-requisites
 
-NodeJs (package name `nodejs`) version 18 or above.
+NodeJs (package name `nodejs`) version 22 or above.
 
 ## Installation
 
 ```bash
 git clone https://github.com/nottoseethesun/pulsechain-analytics.git
-cd chart-price-ratio
+cd pulsechain-analytics/chart-price-ratio
 npm install
 ```
+
+`npm install` installs what the chart needs, crypto-price-fetchers' key
+store among it.
 
 ## Configuration
 
@@ -40,7 +42,6 @@ Edit `config.json` to set defaults:
   "network": "pulsechain",
   "chain": "pulse",
   "dextools": {
-    "apiKey": "YOUR_API_KEY_HERE",
     "subscription": "standard",
     "host": "<https://public-api.dextools.io>",
     "version": "v2"
@@ -52,7 +53,22 @@ Edit `config.json` to set defaults:
 }
 ```
 
-*Tip: Add your DexTools API key to enable current-price fallback if GeckoTerminal data is unavailable.*
+### DexTools API key
+
+A DexTools API key enables the current-price fallback when GeckoTerminal
+data is unavailable. It is no setting and no command-line argument: save it
+encrypted, with a password you choose, in the repo's top folder:
+
+```bash
+cd ..
+npm install
+npm run api-keys
+```
+
+The chart opens it the first time it asks DexTools, with the password that
+`source ./unlock-api-keys.sh`, in the repo's top folder, keeps for the
+terminal, or one it asks for. A run that never asks DexTools asks for no
+password. See the repo's [README](../README.md#api-keys).
 
 ## Usage
 
@@ -75,17 +91,13 @@ node pulse-token-ratio.js <tokenA> <tokenB> --interval=hourly
 
 `node pulse-token-ratio.js <tokenA> <tokenB> --interval=weekly --csv`
 
-### One-time DexTools key override
-
-`node pulse-token-ratio.js <tokenA> <tokenB> --api-key=your_key_here`
-
 ## Output Example
 
 Here's $808 / $pTGC on PulseChain!
 
 ![PulseChain Token Ratio Chart Output](pulse-token-ratio-output.png)
 
-*Daily ratio chart for $808 / $pTGC showing perfect alignment, unique y-ticks, and smooth line rendering*
+_Daily ratio chart for $808 / $pTGC showing perfect alignment, unique y-ticks, and smooth line rendering_
 
 ## Contributing
 

@@ -1,3 +1,8 @@
+# The api keys, each encrypted with a password (crypto-price-fetchers'
+# api-key-store), and the temp file the key file is written through
+api-keys.json
+api-keys.json.tmp
+
 # The config file of the Node version of the Sheets script, beside its
 # committed config-example.json
 /for-google-apps/check-token-balance/config.json

@@ -26,24 +26,26 @@
  * endpoint does for a transaction it does not know.
  */
 
-export const TOKEN = '0x8a7FDcA264e87b6da72D000f22186B4403081A2a';
-export const WALLET = '0xbCB167f16A1aA3ca3F483CC922967e9aCdEC405D';
-export const TRANSACTION = '0x' + 'ab'.repeat(32);
-export const OTHER_TOKEN = '0x' + '22'.repeat(20);
-export const OTHER_WALLET = '0x' + '33'.repeat(20);
+export const TOKEN = "0x8a7FDcA264e87b6da72D000f22186B4403081A2a";
+export const WALLET = "0xbCB167f16A1aA3ca3F483CC922967e9aCdEC405D";
+export const TRANSACTION = "0x" + "ab".repeat(32);
+export const OTHER_TOKEN = "0x" + "22".repeat(20);
+export const OTHER_WALLET = "0x" + "33".repeat(20);
 
-const SENDER = '0x' + '11'.repeat(20);
+const SENDER = "0x" + "11".repeat(20);
 const BLOCK = 0x100;
-const BLOCK_HASH = '0x' + 'cd'.repeat(32);
+const BLOCK_HASH = "0x" + "cd".repeat(32);
 const ONE_TOKEN = 10n ** 18n;
 const BALANCE_BEFORE = 1000000n * ONE_TOKEN;
-const DECIMALS_SELECTOR = '0x313ce567';
+const DECIMALS_SELECTOR = "0x313ce567";
 // keccak256 of "Transfer(address,address,uint256)": the ERC-20 Transfer event's first topic.
-const TRANSFER_TOPIC = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
+const TRANSFER_TOPIC =
+  "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
 
-const quantity = (n) => '0x' + n.toString(16);
-const word = (n) => '0x' + BigInt(n).toString(16).padStart(64, '0');
-const addressWord = (address) => '0x' + address.slice(2).toLowerCase().padStart(64, '0');
+const quantity = (n) => "0x" + n.toString(16);
+const word = (n) => "0x" + BigInt(n).toString(16).padStart(64, "0");
+const addressWord = (address) =>
+  "0x" + address.slice(2).toLowerCase().padStart(64, "0");
 
 /**
  * Builds one Transfer event of the transaction's receipt.
@@ -56,19 +58,22 @@ const addressWord = (address) => '0x' + address.slice(2).toLowerCase().padStart(
  * @param {number} index - Its place among the receipt's logs
  * @returns {Object} The log, as an endpoint gives it
  */
-function transferLog({ token = TOKEN, to = WALLET, amount, nft = false }, index) {
+function transferLog(
+  { token = TOKEN, to = WALLET, amount, nft = false },
+  index,
+) {
   const topics = [TRANSFER_TOPIC, addressWord(SENDER), addressWord(to)];
   if (nft) topics.push(word(amount));
   return {
     address: token,
     topics,
-    data: nft ? '0x' : word(amount * ONE_TOKEN),
+    data: nft ? "0x" : word(amount * ONE_TOKEN),
     blockNumber: quantity(BLOCK),
     blockHash: BLOCK_HASH,
     transactionHash: TRANSACTION,
-    transactionIndex: '0x0',
+    transactionIndex: "0x0",
     logIndex: quantity(index),
-    removed: false
+    removed: false,
   };
 }
 
@@ -80,7 +85,10 @@ function transferLog({ token = TOKEN, to = WALLET, amount, nft = false }, index)
  */
 function sentToWallet(transfers) {
   return transfers
-    .filter(({ token = TOKEN, to = WALLET, nft = false }) => token === TOKEN && to === WALLET && !nft)
+    .filter(
+      ({ token = TOKEN, to = WALLET, nft = false }) =>
+        token === TOKEN && to === WALLET && !nft,
+    )
     .reduce((total, { amount }) => total + amount, 0n);
 }
 
@@ -100,56 +108,72 @@ function sentToWallet(transfers) {
  * @param {?string} [options.fail=null] - The read that fails: 'receipt', 'decimals', 'before' or 'no-receipt'
  * @returns {{answer: function(Object): Object}} The chain
  */
-export function standInChain(received, { otherInBlock = 0n, extraTransfers = [], fail = null } = {}) {
-  const transfers = received === 0n ? extraTransfers : [{ amount: received }, ...extraTransfers];
+export function standInChain(
+  received,
+  { otherInBlock = 0n, extraTransfers = [], fail = null } = {},
+) {
+  const transfers =
+    received === 0n
+      ? extraTransfers
+      : [{ amount: received }, ...extraTransfers];
   const logs = transfers.map((transfer, index) => transferLog(transfer, index));
   const amount = sentToWallet(transfers) * ONE_TOKEN;
   const receipt = {
     transactionHash: TRANSACTION,
-    transactionIndex: '0x0',
+    transactionIndex: "0x0",
     blockHash: BLOCK_HASH,
     blockNumber: quantity(BLOCK),
     from: SENDER,
     to: TOKEN,
-    cumulativeGasUsed: '0x5208',
-    gasUsed: '0x5208',
-    effectiveGasPrice: '0x1',
+    cumulativeGasUsed: "0x5208",
+    gasUsed: "0x5208",
+    effectiveGasPrice: "0x1",
     contractAddress: null,
     logs,
-    logsBloom: '0x' + '00'.repeat(256),
-    status: '0x1',
-    type: '0x2'
+    logsBloom: "0x" + "00".repeat(256),
+    status: "0x1",
+    type: "0x2",
   };
   const blockBefore = quantity(BLOCK - 1);
   const balanceAt = (blockTag) =>
-    blockTag === blockBefore ? BALANCE_BEFORE : BALANCE_BEFORE + amount + otherInBlock * ONE_TOKEN;
+    blockTag === blockBefore
+      ? BALANCE_BEFORE
+      : BALANCE_BEFORE + amount + otherInBlock * ONE_TOKEN;
 
   return {
     answer(request) {
-      const reply = (result) => ({ jsonrpc: '2.0', id: request.id, result });
-      const busy = { jsonrpc: '2.0', id: request.id, error: { code: -32005, message: 'The stand-in chain is busy' } };
+      const reply = (result) => ({ jsonrpc: "2.0", id: request.id, result });
+      const busy = {
+        jsonrpc: "2.0",
+        id: request.id,
+        error: { code: -32005, message: "The stand-in chain is busy" },
+      };
       switch (request.method) {
-        case 'eth_chainId':
-          return reply('0x171');
-        case 'eth_blockNumber':
+        case "eth_chainId":
+          return reply("0x171");
+        case "eth_blockNumber":
           return reply(quantity(BLOCK + 1));
-        case 'eth_getTransactionReceipt':
-          if (fail === 'no-receipt') return reply(null);
-          return fail === 'receipt' ? busy : reply(receipt);
-        case 'eth_call': {
-          if (request.params[0].data === DECIMALS_SELECTOR) return fail === 'decimals' ? busy : reply(word(18));
+        case "eth_getTransactionReceipt":
+          if (fail === "no-receipt") return reply(null);
+          return fail === "receipt" ? busy : reply(receipt);
+        case "eth_call": {
+          if (request.params[0].data === DECIMALS_SELECTOR)
+            return fail === "decimals" ? busy : reply(word(18));
           const blockTag = request.params[1];
-          if (fail === 'before' && blockTag === blockBefore) return busy;
+          if (fail === "before" && blockTag === blockBefore) return busy;
           return reply(word(balanceAt(blockTag)));
         }
         default:
           return {
-            jsonrpc: '2.0',
+            jsonrpc: "2.0",
             id: request.id,
-            error: { code: -32601, message: `The stand-in chain has no ${request.method}` }
+            error: {
+              code: -32601,
+              message: `The stand-in chain has no ${request.method}`,
+            },
           };
       }
-    }
+    },
   };
 }
 
@@ -166,7 +190,10 @@ export function standInChainFetch(chain) {
   const fetch = async (url, init = {}) => {
     requests.push({ url, method: init.method, body: init.body });
     const reply = chain.answer(JSON.parse(init.body));
-    return new Response(JSON.stringify(reply), { status: 200, headers: { 'content-type': 'application/json' } });
+    return new Response(JSON.stringify(reply), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    });
   };
   fetch.requests = requests;
   return fetch;
