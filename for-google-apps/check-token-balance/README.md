@@ -56,7 +56,7 @@ which `npm ci` installs. The file header says what differs from the sheet.
 
 ## A Note on Caching
 
-This, the Google Apps Script version of this utility, has a caching option (`getTokenTransferredUseCache`), 
+This, the Google Apps Script version of this utility, has a caching option (`getTokenTransferredUseCache`),
 unlike the pure NodeJS version. This is because in the normal usage of Google Sheets, often times large
 Google Sheet spreadsheets can run code functions called in cells very many times when it is not
 necessary to have fresh data.  That in turn can trigger an undesired block from the API provider due to

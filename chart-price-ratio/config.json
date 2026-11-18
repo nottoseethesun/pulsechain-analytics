@@ -2,7 +2,6 @@
   "network": "pulsechain",
   "chain": "pulse",
   "dextools": {
-    "apiKey": "YOUR_API_KEY_HERE",
     "subscription": "standard",
     "host": "https://public-api.dextools.io",
     "version": "v2"

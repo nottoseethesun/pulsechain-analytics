@@ -69,11 +69,12 @@
  */
 
 const config = {
-  "rpcUrl": "https://rpc-pulsechain.g4mm4.io"
+  rpcUrl: "https://rpc-pulsechain.g4mm4.io",
 };
 
 // keccak256 of "Transfer(address,address,uint256)": the topic an ERC20 Transfer event leads with.
-const TRANSFER_TOPIC = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
+const TRANSFER_TOPIC =
+  "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
 
 // The decimal places of the amount returned.
 const DECIMAL_PLACES_RETURNED = 7;
@@ -88,19 +89,30 @@ const DECIMAL_PLACES_RETURNED = 7;
  */
 function rpcRequest(method, params, rpcUrl, what) {
   const response = UrlFetchApp.fetch(rpcUrl, {
-    method: 'post',
-    contentType: 'application/json',
-    payload: JSON.stringify({ jsonrpc: '2.0', method: method, params: params, id: 1 }),
-    muteHttpExceptions: true
+    method: "post",
+    contentType: "application/json",
+    payload: JSON.stringify({
+      jsonrpc: "2.0",
+      method: method,
+      params: params,
+      id: 1,
+    }),
+    muteHttpExceptions: true,
   });
   let json;
   try {
     json = JSON.parse(response.getContentText());
   } catch (err) {
-    throw new Error('Cannot read ' + what + ': the endpoint answered with HTTP code ' + response.getResponseCode());
+    throw new Error(
+      "Cannot read " +
+        what +
+        ": the endpoint answered with HTTP code " +
+        response.getResponseCode(),
+      { cause: err },
+    );
   }
   if (json.error) {
-    throw new Error('Cannot read ' + what + ': ' + json.error.message);
+    throw new Error("Cannot read " + what + ": " + json.error.message);
   }
   return json.result;
 }
@@ -112,11 +124,16 @@ function rpcRequest(method, params, rpcUrl, what) {
  * @return {number} The token's decimal places.
  */
 function getTokenDecimals(tokenAddress, rpcUrl) {
-  const decimalsSelector = '0x313ce567'; // keccak256('decimals()')[:4]
-  const what = 'the decimals of ' + tokenAddress;
-  const result = rpcRequest('eth_call', [{ to: tokenAddress, data: decimalsSelector }, 'latest'], rpcUrl, what);
-  if (typeof result !== 'string' || result === '0x') {
-    throw new Error('Cannot read ' + what + ': the token gave none');
+  const decimalsSelector = "0x313ce567"; // keccak256('decimals()')[:4]
+  const what = "the decimals of " + tokenAddress;
+  const result = rpcRequest(
+    "eth_call",
+    [{ to: tokenAddress, data: decimalsSelector }, "latest"],
+    rpcUrl,
+    what,
+  );
+  if (typeof result !== "string" || result === "0x") {
+    throw new Error("Cannot read " + what + ": the token gave none");
   }
   return parseInt(result, 16);
 }
@@ -128,9 +145,16 @@ function getTokenDecimals(tokenAddress, rpcUrl) {
  * @return {Object} The transaction receipt.
  */
 function getTransactionReceipt(txId, rpcUrl) {
-  const receipt = rpcRequest('eth_getTransactionReceipt', [txId], rpcUrl, 'the receipt of ' + txId);
+  const receipt = rpcRequest(
+    "eth_getTransactionReceipt",
+    [txId],
+    rpcUrl,
+    "the receipt of " + txId,
+  );
   if (receipt === null || receipt === undefined) {
-    throw new Error('Transaction ' + txId + ' not found; it may still be pending');
+    throw new Error(
+      "Transaction " + txId + " not found; it may still be pending",
+    );
   }
   return receipt;
 }
@@ -143,7 +167,7 @@ function getTransactionReceipt(txId, rpcUrl) {
  * @return {Object} Wrapped BigInt of the raw amount, in the token's smallest unit.
  */
 function sumTransfersTo(receipt, tokenAddress, walletAddress) {
-  const walletTopic = '0x' + walletAddress.slice(2).padStart(64, '0');
+  const walletTopic = "0x" + walletAddress.slice(2).padStart(64, "0");
   let total = new Object(BigInt(0)); // The "new Object" code is a workaround: See the file header doc for more info.
   receipt.logs.forEach(function (log) {
     const topics = log.topics;
@@ -166,11 +190,12 @@ function sumTransfersTo(receipt, tokenAddress, walletAddress) {
  * @return {number} The amount.
  */
 function formatAmount(rawAmount, decimals) {
-  const digits = rawAmount.toString().padStart(decimals + 1, '0');
+  const digits = rawAmount.toString().padStart(decimals + 1, "0");
   const integerPart = digits.slice(0, digits.length - decimals);
-  const fractionPart = (digits.slice(digits.length - decimals) + '0'.repeat(DECIMAL_PLACES_RETURNED))
-    .slice(0, DECIMAL_PLACES_RETURNED);
-  return parseFloat(integerPart + '.' + fractionPart);
+  const fractionPart = (
+    digits.slice(digits.length - decimals) + "0".repeat(DECIMAL_PLACES_RETURNED)
+  ).slice(0, DECIMAL_PLACES_RETURNED);
+  return parseFloat(integerPart + "." + fractionPart);
 }
 
 /**
@@ -189,7 +214,7 @@ function getTokenTransferred(txId, tokenAddress, walletAddress) {
 
   const receipt = getTransactionReceipt(transaction, rpcUrl);
   const total = sumTransfersTo(receipt, token, wallet);
-  console.info('Raw amount transferred: ' + total.toString());
+  console.info("Raw amount transferred: " + total.toString());
   if (total.valueOf() === BigInt(0)) {
     return 0;
   }
@@ -201,9 +226,10 @@ function getTokenTransferred(txId, tokenAddress, walletAddress) {
  * Logs the result to the console.
  */
 function testGetTokenTransferred() {
-  const txId = '0xab9c6162b16c9e26149720420cb73c7d445d31b150cf448f3e91da13125b1bd8';
-  const tokenAddress = '0x8a7FDcA264e87b6da72D000f22186B4403081A2a';
-  const walletAddress = '0xbCB167f16A1aA3ca3F483CC922967e9aCdEC405D';
+  const txId =
+    "0xab9c6162b16c9e26149720420cb73c7d445d31b150cf448f3e91da13125b1bd8";
+  const tokenAddress = "0x8a7FDcA264e87b6da72D000f22186B4403081A2a";
+  const walletAddress = "0xbCB167f16A1aA3ca3F483CC922967e9aCdEC405D";
   const result = getTokenTransferred(txId, tokenAddress, walletAddress);
-  console.log('Test result for example transaction: ' + result);
+  console.log("Test result for example transaction: " + result);
 }

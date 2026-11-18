@@ -13,7 +13,7 @@
  * 1. Install dependencies: run `npm ci` in the repo's top folder.
  * 2. To use the function in your own code: import `getTokenTransferred` from this file and call
  *    `getTokenTransferred(txId, tokenAddress, walletAddress)` in an async context, awaiting the result.
- * 3. The `test()` function at the bottom runs the included example transaction and logs the result.
+ * 3. The tests in `test/` check it against a stand-in chain: `npm test`.
  *
  * Note: This program connects to a public Pulsechain RPC endpoint ('https://rpc-pulsechain.g4mm4.io'). Ensure the endpoint is reliable;
  *       you may replace it with another RPC provider if needed (e.g., for rate limiting or privacy).
@@ -28,10 +28,10 @@
  * - Assumes the token is ERC-20 compliant with the `decimals()` function and the Transfer event.
  */
 
-import { ethers } from 'ethers';
+import { ethers } from "ethers";
 
 /** The topic an ERC-20 Transfer event leads with: keccak256 of its signature. */
-const TRANSFER_TOPIC = ethers.id('Transfer(address,address,uint256)');
+const TRANSFER_TOPIC = ethers.id("Transfer(address,address,uint256)");
 
 /** The decimal places of the amount returned. */
 const DECIMAL_PLACES_RETURNED = 7;
@@ -71,7 +71,10 @@ async function read(what, reading) {
   try {
     return await reading;
   } catch (error) {
-    throw new Error(`Cannot read ${what}: ${error.shortMessage ?? error.message}`, { cause: error });
+    throw new Error(
+      `Cannot read ${what}: ${error.shortMessage ?? error.message}`,
+      { cause: error },
+    );
   }
 }
 
@@ -82,8 +85,10 @@ async function read(what, reading) {
  * @returns {number} The amount
  */
 function cutOffDecimals(wholeTokens) {
-  const [integerPart, fractionPart = ''] = wholeTokens.split('.');
-  return parseFloat(`${integerPart}.${fractionPart.padEnd(DECIMAL_PLACES_RETURNED, '0').slice(0, DECIMAL_PLACES_RETURNED)}`);
+  const [integerPart, fractionPart = ""] = wholeTokens.split(".");
+  return parseFloat(
+    `${integerPart}.${fractionPart.padEnd(DECIMAL_PLACES_RETURNED, "0").slice(0, DECIMAL_PLACES_RETURNED)}`,
+  );
 }
 
 /**
@@ -96,8 +101,13 @@ function cutOffDecimals(wholeTokens) {
  * @throws {Error} When a read fails or the transaction is not found.
  */
 export async function getTokenTransferred(txId, tokenAddress, walletAddress) {
-  const provider = new ethers.JsonRpcProvider('https://rpc-pulsechain.g4mm4.io');
-  const receipt = await read(`the receipt of ${txId}`, provider.getTransactionReceipt(txId));
+  const provider = new ethers.JsonRpcProvider(
+    "https://rpc-pulsechain.g4mm4.io",
+  );
+  const receipt = await read(
+    `the receipt of ${txId}`,
+    provider.getTransactionReceipt(txId),
+  );
   if (receipt === null) {
     throw new Error(`Transaction ${txId} not found; it may still be pending`);
   }
@@ -105,24 +115,14 @@ export async function getTokenTransferred(txId, tokenAddress, walletAddress) {
   if (total === 0n) {
     return 0;
   }
-  const token = new ethers.Contract(tokenAddress, ['function decimals() view returns (uint8)'], provider);
-  const decimals = await read(`the decimals of ${tokenAddress}`, token.decimals());
+  const token = new ethers.Contract(
+    tokenAddress,
+    ["function decimals() view returns (uint8)"],
+    provider,
+  );
+  const decimals = await read(
+    `the decimals of ${tokenAddress}`,
+    token.decimals(),
+  );
   return cutOffDecimals(ethers.formatUnits(total, decimals));
 }
-
-/**
- * A test function to demonstrate usage of getTokenTransferred with hardcoded example values.
- * Logs the result to the console.
- *
- * @returns {Promise<void>} Resolves after logging the test result.
- */
-// Test case
-async function test() {
-  const txId = '0xab9c6162b16c9e26149720420cb73c7d445d31b150cf448f3e91da13125b1bd8';
-  const tokenAddress = '0x8a7FDcA264e87b6da72D000f22186B4403081A2a';
-  const walletAddress = '0xbCB167f16A1aA3ca3F483CC922967e9aCdEC405D';
-  const result = await getTokenTransferred(txId, tokenAddress, walletAddress);
-  console.log('Test result for example transaction:', result);
-}
-
-// test(); // Uncomment to test this module.

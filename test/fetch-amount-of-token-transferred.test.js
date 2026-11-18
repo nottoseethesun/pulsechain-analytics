@@ -11,29 +11,50 @@
  * are the ones the Sheets script is held to too (`helpers/transfer-cases.js`).
  */
 
-import { describe, it, after } from 'node:test';
-import assert from 'node:assert/strict';
-import { getTokenTransferred } from '../fetch-amount-of-token-transferred.js';
-import { TOKEN, WALLET, TRANSACTION, standInChain } from './helpers/stand-in-chain.js';
-import { TRANSFER_CASES } from './helpers/transfer-cases.js';
-import { useStandInChain, useEthersOwnHttp } from './helpers/ethers-stand-in.js';
+import { describe, it, after } from "node:test";
+import assert from "node:assert/strict";
+import { getTokenTransferred } from "../fetch-amount-of-token-transferred.js";
+import {
+  TOKEN,
+  WALLET,
+  TRANSACTION,
+  standInChain,
+} from "./helpers/stand-in-chain.js";
+import { TRANSFER_CASES } from "./helpers/transfer-cases.js";
+import {
+  useStandInChain,
+  useEthersOwnHttp,
+} from "./helpers/ethers-stand-in.js";
 
-describe('getTokenTransferred, the Node script', () => {
+describe("getTokenTransferred, the Node script", () => {
   after(useEthersOwnHttp);
 
   for (const { name, chain, amount, error } of TRANSFER_CASES) {
     it(name, async () => {
       useStandInChain(chain());
       if (error === undefined) {
-        assert.equal(await getTokenTransferred(TRANSACTION, TOKEN, WALLET), amount);
+        assert.equal(
+          await getTokenTransferred(TRANSACTION, TOKEN, WALLET),
+          amount,
+        );
       } else {
-        await assert.rejects(getTokenTransferred(TRANSACTION, TOKEN, WALLET), error);
+        await assert.rejects(
+          getTokenTransferred(TRANSACTION, TOKEN, WALLET),
+          error,
+        );
       }
     });
   }
 
-  it('takes the addresses in any case', async () => {
+  it("takes the addresses in any case", async () => {
     useStandInChain(standInChain(250n));
-    assert.equal(await getTokenTransferred(TRANSACTION, TOKEN.toLowerCase(), WALLET.toUpperCase().replace('0X', '0x')), 250);
+    assert.equal(
+      await getTokenTransferred(
+        TRANSACTION,
+        TOKEN.toLowerCase(),
+        WALLET.toUpperCase().replace("0X", "0x"),
+      ),
+      250,
+    );
   });
 });

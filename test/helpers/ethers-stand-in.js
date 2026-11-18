@@ -10,7 +10,7 @@
  * own http function back; a test file calls it once its tests end.
  */
 
-import { ethers } from 'ethers';
+import { ethers } from "ethers";
 
 /**
  * Sends every http request ethers makes to a stand-in chain.
@@ -19,13 +19,15 @@ import { ethers } from 'ethers';
  */
 export function useStandInChain(chain) {
   ethers.FetchRequest.registerGetUrl(async (request) => {
-    const body = JSON.parse(Buffer.from(request.body).toString('utf8'));
-    const reply = Array.isArray(body) ? body.map((one) => chain.answer(one)) : chain.answer(body);
+    const body = JSON.parse(Buffer.from(request.body).toString("utf8"));
+    const reply = Array.isArray(body)
+      ? body.map((one) => chain.answer(one))
+      : chain.answer(body);
     return {
       statusCode: 200,
-      statusMessage: 'OK',
-      headers: { 'content-type': 'application/json' },
-      body: Buffer.from(JSON.stringify(reply))
+      statusMessage: "OK",
+      headers: { "content-type": "application/json" },
+      body: Buffer.from(JSON.stringify(reply)),
     };
   });
 }

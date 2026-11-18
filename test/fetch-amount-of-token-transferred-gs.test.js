@@ -12,26 +12,47 @@
  * error in the cell.
  */
 
-import { describe, it } from 'node:test';
-import assert from 'node:assert/strict';
-import { TOKEN, WALLET, TRANSACTION, standInChain } from './helpers/stand-in-chain.js';
-import { TRANSFER_CASES } from './helpers/transfer-cases.js';
-import { loadSheetsScript, TRANSFER_SHEETS_SCRIPT } from './helpers/sheets-script.js';
+import { describe, it } from "node:test";
+import assert from "node:assert/strict";
+import {
+  TOKEN,
+  WALLET,
+  TRANSACTION,
+  standInChain,
+} from "./helpers/stand-in-chain.js";
+import { TRANSFER_CASES } from "./helpers/transfer-cases.js";
+import {
+  loadSheetsScript,
+  TRANSFER_SHEETS_SCRIPT,
+} from "./helpers/sheets-script.js";
 
-describe('getTokenTransferred, the Sheets script', () => {
+describe("getTokenTransferred, the Sheets script", () => {
   for (const { name, chain, amount, error } of TRANSFER_CASES) {
     it(name, () => {
       const script = loadSheetsScript(TRANSFER_SHEETS_SCRIPT, chain());
       if (error === undefined) {
-        assert.equal(script.getTokenTransferred(TRANSACTION, TOKEN, WALLET), amount);
+        assert.equal(
+          script.getTokenTransferred(TRANSACTION, TOKEN, WALLET),
+          amount,
+        );
       } else {
-        assert.throws(() => script.getTokenTransferred(TRANSACTION, TOKEN, WALLET), error);
+        assert.throws(
+          () => script.getTokenTransferred(TRANSACTION, TOKEN, WALLET),
+          error,
+        );
       }
     });
   }
 
-  it('takes the addresses in any case, with spaces around them', () => {
+  it("takes the addresses in any case, with spaces around them", () => {
     const script = loadSheetsScript(TRANSFER_SHEETS_SCRIPT, standInChain(250n));
-    assert.equal(script.getTokenTransferred(` ${TRANSACTION} `, TOKEN.toLowerCase(), ` ${WALLET.toUpperCase().replace('0X', '0x')}`), 250);
+    assert.equal(
+      script.getTokenTransferred(
+        ` ${TRANSACTION} `,
+        TOKEN.toLowerCase(),
+        ` ${WALLET.toUpperCase().replace("0X", "0x")}`,
+      ),
+      250,
+    );
   });
 });

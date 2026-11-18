@@ -1,0 +1,12 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "entry": [
+    "chart-price-ratio/pulse-token-ratio.js",
+    "check-token-balance/index.js",
+    "fetch-amount-of-token-transferred.js",
+    "for-google-apps/check-token-balance/fetch-amount-of-token-transferred.js",
+    "eslint-security.config.js",
+    "test/**/*.test.js"
+  ],
+  "project": ["**/*.js"]
+}
