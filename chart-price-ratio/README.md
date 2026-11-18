@@ -72,6 +72,13 @@ password. See the repo's [README](../README.md#api-keys).
 
 ## Usage
 
+`node pulse-token-ratio.js --help` lists every option, each with its
+default from `config.json`, and the exit codes: 0 when the ratios were
+printed, 1 when they were not.
+
+The chart needs at least 90 points. With fewer, it says so and stops before
+printing anything; a shorter interval gives more points.
+
 ### Basic: weekly ratio (default)
 
 `node pulse-token-ratio.js <tokenA> <tokenB>`

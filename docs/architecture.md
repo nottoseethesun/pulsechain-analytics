@@ -89,6 +89,20 @@ prices, even when no pool holds both:
    picks the y-axis' values), the last ten ratios and the current one, and
    writes a CSV when asked.
 
+The chart needs at least 90 points: its x-axis spaces four to ten dates
+under its columns, each ten characters wide, or sixteen with the hour, and
+fewer points leave them no room. A run with more than one point and fewer
+than 90 stops before it prints anything, saying so, and naming the
+interval that gives more points; one point, a current price, prints no
+chart.
+
+`pulse-token-ratio.js` reads `config.json` and runs the command line, which
+`ratio-command.js` declares with commander, with the settings' defaults
+from `config.json`; `ratio-series.js` fetches the prices and works out the
+ratios; `ratio-output.js` prints them. The run ends with exit code 0 when
+it printed the ratios, and 1 when it did not: a mistake in the arguments,
+too few points, no prices, or a request that failed.
+
 The DexTools key is opened from the repo's key store the first time the
 chart asks DexTools, so a run that never falls back asks for no password.
 

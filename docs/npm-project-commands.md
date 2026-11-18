@@ -87,7 +87,7 @@ their own: run `npm install` in the folder before using the tool there.
 
 | Folder | Command | Description | Example |
 | ------ | ------- | ----------- | ------- |
-| `chart-price-ratio/` | `start`, `ratio` | Run the ratio chart. Its flags are in `pulse-token-ratio.js`'s header. | `npm start -- <tokenA> <tokenB> daily` |
+| `chart-price-ratio/` | `start`, `ratio` | Run the ratio chart. `npm start -- --help` lists its options, each with its default from `config.json`, and its exit codes. | `npm start -- <tokenA> <tokenB> daily` |
 
 The balance checker has no npm command: `node index.js --help`, in its
 folder, lists its options.

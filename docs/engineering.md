@@ -96,9 +96,8 @@ the computer, and never read the owner's key file or password.
 | `fetch-amount-of-token-transferred-gs.test.js` | The Sheets script, run unchanged under Node. |
 | `fetch-amount-of-token-transferred-node-version.test.js` | The Sheets script's Node version, its command line included. |
 | `format-balance.test.js` | How the balance checker writes a balance. |
-| `pulse-token-ratio.test.js` | The ratio chart, run as its owner runs it, against a stand-in GeckoTerminal and DexTools, with the DexTools key from a key file of the test's own. |
+| `pulse-token-ratio.test.js` | The ratio chart, run as its owner runs it, against a stand-in GeckoTerminal and DexTools, with the DexTools key from a key file of the test's own: its prices, its fallback, its command line, its exit codes, and the fewest points it charts. |
 | `api-keys.test.js` | The keys `config.json` lists, the key manager, the copy of `unlock-api-keys.sh`, and the ratio chart's pin of crypto-price-fetchers. |
-| `known-bugs.test.js` | The known bugs. See [Known Bugs](#known-bugs). |
 
 `test/helpers/` holds the stand-ins:
 
@@ -166,12 +165,7 @@ deleted. The steps from a branch to `main` are LP Ranger's eight, in its
 
 ## Known Bugs
 
-A bug found gets a test in `test/known-bugs.test.js`, declared with
-`knownBug` (`test/helpers/known-bug.js`), so the test passes while the bug
-is present. The bug's fix makes its test fail; the same change declares the
-test with `it`, among the tests of the code it is about.
-
-| Bug | Where |
-| --- | ----- |
-| The ratio chart stops with "Fatal error: Invalid count value" when its points are closer together than its date labels are wide, which is under about 90 points, before it prints the ratios or writes the CSV. | `chart-price-ratio/pulse-token-ratio.js`, `xAxisLine` |
-| The ratio chart ends with exit code 0 when it fails. | `chart-price-ratio/pulse-token-ratio.js`, the call of `main` |
+None is known. A bug found gets a test in `test/known-bugs.test.js`,
+declared with `knownBug` (`test/helpers/known-bug.js`), so the test passes
+while the bug is present. The bug's fix makes its test fail; the same change
+declares the test with `it`, among the tests of the code it is about.

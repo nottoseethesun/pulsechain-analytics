@@ -131,11 +131,11 @@ describe("pulse-token-ratio.js", () => {
     assertKeyNotShown(run);
   });
 
-  it("says how to save a DexTools key when GeckoTerminal has no candles and none is saved", () => {
+  it("says how to save a DexTools key, and ends with exit code 1, when GeckoTerminal has no candles and none is saved", () => {
     const run = runChart([TOKEN_A, TOKEN_B, "hourly"], {
       answers: [...geckoAnswers(CLOSES_A, CLOSES_B), ...hourlyRefused()],
     });
-    assert.equal(run.status, 0, run.stderr);
+    assert.equal(run.status, 1, run.stderr);
     assert.match(
       run.stderr,
       /Cannot fall back to current prices: No DexTools API key is saved\.\nTo save one, in the repo's top folder: npm run api-keys\n/,
@@ -158,11 +158,11 @@ describe("pulse-token-ratio.js", () => {
     assertKeyNotShown(run);
   });
 
-  it("in DexTools-only mode with no key saved, says how to save one, asking nothing", () => {
+  it("in DexTools-only mode with no key saved, says how to save one, asking nothing, and ends with exit code 1", () => {
     const run = runChart([TOKEN_A, TOKEN_B, "--useDexToolsOnly"], {
       answers: [],
     });
-    assert.equal(run.status, 0, run.stderr);
+    assert.equal(run.status, 1, run.stderr);
     assert.match(
       run.stderr,
       /Cannot use DexTools-only mode: No DexTools API key is saved\.\nTo save one, in the repo's top folder: npm run api-keys\n/,
@@ -170,9 +170,123 @@ describe("pulse-token-ratio.js", () => {
     assert.deepEqual(run.requests, []);
   });
 
-  it("refuses an address that is not a contract's", () => {
+  it("ends with exit code 1 when a request fails", () => {
+    // GeckoTerminal knows no pool of either token.
+    const run = runChart([TOKEN_A, TOKEN_B, "daily"], { answers: [] });
+    assert.equal(run.status, 1);
+    assert.match(run.stderr, /Fatal error: .*no stand-in answer/);
+  });
+});
+
+describe("pulse-token-ratio.js, with too few points to chart", () => {
+  /**
+   * A number of days' closes for each token's pool.
+   *
+   * @param {number} days - The days
+   * @returns {{answers: Array<Object>}} GeckoTerminal's answers
+   */
+  function daysOfCandles(days) {
+    return {
+      answers: geckoAnswers(CLOSES_A.slice(0, days), CLOSES_B.slice(0, days)),
+    };
+  }
+
+  it("stops before printing, with exit code 1, when the chart would have fewer than 90 points", () => {
+    const run = runChart([TOKEN_A, TOKEN_B, "daily"], daysOfCandles(89));
+    assert.equal(run.status, 1);
+    assert.match(
+      run.stderr,
+      /Only 89 points could be worked out, too few to chart: the chart needs at least 90\. The hourly interval gives more\.\n/,
+    );
+    assert.doesNotMatch(run.stdout, /ratio \(|Current ratio/);
+    assert.doesNotMatch(run.stderr, /Fatal error/);
+  });
+
+  it("charts 90 points", () => {
+    const run = runChart([TOKEN_A, TOKEN_B, "daily"], daysOfCandles(90));
+    assert.equal(run.status, 0, run.stderr);
+    assert.match(run.stdout, /ratio \(daily, 90 points\)/);
+    assert.match(run.stdout, /Current ratio: /);
+  });
+
+  it("says a shorter interval gives more points, when the weekly chart has too few", () => {
+    // A hundred days are fifteen weeks.
+    const run = runChart([TOKEN_A, TOKEN_B, "weekly"], daysOfCandles(100));
+    assert.equal(run.status, 1);
+    assert.match(
+      run.stderr,
+      /Only 15 points could be worked out, too few to chart: the chart needs at least 90\. A shorter interval, daily or hourly, gives more\.\n/,
+    );
+  });
+});
+
+describe("pulse-token-ratio.js, its command line", () => {
+  it("answers --help on stdout, with exit code 0, asking nothing", () => {
+    const run = runChart(["--help"], { answers: [] });
+    assert.equal(run.status, 0, run.stderr);
+    assert.match(
+      run.stdout,
+      /^Usage: pulse-token-ratio \[options\] <tokenA> <tokenB> \[interval\]\n/,
+    );
+    assert.match(run.stdout, /Exit codes:\n {2}0 {2}the ratios were printed\n/);
+    assert.equal(run.stderr, "");
+    assert.deepEqual(run.requests, []);
+  });
+
+  it("takes the interval as --interval, in place of the third argument", () => {
+    const run = runChart([TOKEN_A, TOKEN_B, "--interval=daily"], {
+      answers: geckoAnswers(CLOSES_A, CLOSES_B),
+    });
+    assert.equal(run.status, 0, run.stderr);
+    assert.match(run.stdout, /ratio \(daily, 100 points\)/);
+  });
+
+  it("takes the days in each weekly point from --weekly-days", () => {
+    // A hundred days are eight points of fourteen days, the last one short.
+    const run = runChart([TOKEN_A, TOKEN_B, "weekly", "--weekly-days=14"], {
+      answers: geckoAnswers(CLOSES_A, CLOSES_B),
+    });
+    assert.equal(run.status, 1);
+    assert.match(run.stderr, /Only 8 points could be worked out/);
+  });
+
+  it("refuses an address that is not a contract's, naming the argument, asking nothing", () => {
     const run = runChart(["0x1234", TOKEN_B], { answers: [] });
     assert.equal(run.status, 1);
-    assert.match(run.stderr, /Invalid contract address format\./);
+    assert.match(
+      run.stderr,
+      /invalid for argument 'tokenA'\. Not a contract address, which is 0x and 40 hex digits\./,
+    );
+    assert.deepEqual(run.requests, []);
+  });
+
+  it("refuses an interval GeckoTerminal does not serve", () => {
+    const run = runChart([TOKEN_A, TOKEN_B, "minute"], { answers: [] });
+    assert.equal(run.status, 1);
+    assert.match(
+      run.stderr,
+      /invalid for argument 'interval'\. Allowed choices are hourly, daily, weekly\./,
+    );
+  });
+
+  it("refuses a number of candles that is not a whole number above 0", () => {
+    const run = runChart([TOKEN_A, TOKEN_B, "--max-candles=0"], {
+      answers: [],
+    });
+    assert.equal(run.status, 1);
+    assert.match(
+      run.stderr,
+      /'--max-candles <number>'.*Not a whole number above 0\./,
+    );
+  });
+
+  it("refuses an option it does not know, naming it without what follows its =", () => {
+    const run = runChart([TOKEN_A, TOKEN_B, `--api-key=${DEXTOOLS_KEY}`], {
+      answers: [],
+    });
+    assert.equal(run.status, 1);
+    assert.equal(run.stderr, "error: unknown option '--api-key'\n");
+    assert.deepEqual(run.requests, []);
+    assertKeyNotShown(run);
   });
 });

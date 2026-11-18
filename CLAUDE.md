@@ -91,7 +91,8 @@ npm run check
 
 They cover `fetch-amount-of-token-transferred.js`, its Sheets twin, which
 runs unchanged under Node, the twin's Node version, how the balance checker
-writes a balance, the ratio chart, and the api keys. `test/helpers/` holds
+writes a balance, the ratio chart, its command line (commander, in
+`chart-price-ratio/ratio-command.js`) included, and the api keys. `test/helpers/` holds
 the stand-ins:
 
 - `stand-in-chain.js` is a PulseChain rpc endpoint held in memory, with
@@ -110,10 +111,7 @@ the stand-ins:
 
 ## Known bugs
 
-A bug found gets a test in `test/known-bugs.test.js`, declared with
-`knownBug`, so the test passes while the bug is present. The bug's fix makes
-its test fail; declare that test with `it` instead, in the same change,
-among the tests of the code it is about. `docs/engineering.md` lists the
-bugs known, which are the ratio chart's: it stops before printing its
-ratios when its points are closer together than its date labels are wide,
-and it ends with exit code 0 when it fails.
+None is known. When one is found, it gets a test in
+`test/known-bugs.test.js`, declared with `knownBug`, so the test passes while
+the bug is present. The bug's fix makes its test fail; declare that test with
+`it` instead, in the same change, among the tests of the code it is about.
