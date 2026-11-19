@@ -35,6 +35,9 @@ npm test -- --test-name-pattern="pulse-token-ratio"
 
 ## Api Keys
 
+The api keys the programs send are kept encrypted in `api-keys.json`. One
+command manages them.
+
 | Command | Flags | Description | Example |
 | ------- | ----- | ----------- | ------- |
 | `api-keys` | `set <service>`, `check-password`, `--help` | The key manager, crypto-price-fetchers'. Lists each key the top `config.json` names, saved or not, never showing a key's characters, and asks for each one not saved: the key, then the password. Each key is saved, encrypted, once its service takes it. `set <service>` replaces one key. `check-password` says, by its exit code, whether the password in `API_KEYS_PASSWORD` opens every key saved; `unlock-api-keys.sh` runs it. | `npm run api-keys` · `npm run api-keys -- set dextools` |
@@ -45,6 +48,9 @@ for a terminal: see [the README](../README.md#api-keys).
 ---
 
 ## Developer Tools
+
+These commands check or fix the form of the code: `lint` runs the checks,
+and `format` and `lint:fix` make the fixes the tools can make.
 
 | Command | Flags | Description | Example |
 | ------- | ----- | ----------- | ------- |
@@ -57,8 +63,8 @@ for a terminal: see [the README](../README.md#api-keys).
 
 ## Test
 
-The gates. `check` runs all of them and is what must pass before a commit
-and a push.
+These commands run the gates: the tests and the audits. `check` runs all of
+them, after the lint, and must pass before a commit and a push.
 
 | Command | Flags | Description | Example |
 | ------- | ----- | ----------- | ------- |
@@ -73,6 +79,8 @@ and a push.
 ---
 
 ## Commands That Are Usually Not Run Alone
+
+npm runs this command itself, after another one.
 
 | Command | Flags | Description | Example |
 | ------- | ----- | ----------- | ------- |
