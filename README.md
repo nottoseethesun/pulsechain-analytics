@@ -1,34 +1,47 @@
-# Overview
+# PulseChain Analytics
 
 [![Lint (JS+Apps Script+MD)](https://img.shields.io/github/actions/workflow/status/nottoseethesun/pulsechain-analytics/ci.yml?branch=main&label=lint)](https://github.com/nottoseethesun/pulsechain-analytics/actions/workflows/ci.yml)
 [![Tests (Node 22/24)](https://img.shields.io/github/actions/workflow/status/nottoseethesun/pulsechain-analytics/ci.yml?branch=main&label=tests)](https://github.com/nottoseethesun/pulsechain-analytics/actions/workflows/ci.yml)
 [![Security Audit](https://img.shields.io/github/actions/workflow/status/nottoseethesun/pulsechain-analytics/security-audit.yml?branch=main&label=security)](https://github.com/nottoseethesun/pulsechain-analytics/actions/workflows/security-audit.yml)
 
+## Overview
+
 USE AT YOUR OWN RISK: SEE LICENSE FILE, INCLUDED.
 
-This is a set of utilities for checking various items on the PulseChain blockchain, such as for example the total amount of a specified token that was transferred to a wallet address during a PulseChain transaction.
+Tools that answer questions about PulseChain: how much of a token one
+transaction sent a wallet, what a wallet held at a past block or date, and
+how two tokens' prices compare over time.
 
-In some cases, versions are provided for Google Apps Script, so that for example one can call the code from a Google Sheet in order to fill in a cell(s) in the spreadsheet.  Google Apps Script has quite a few quirks and bugs so the code for these versions will often look different and contain more code since the standard NodeJs libraries are not easily accessible.
+Some tools also come as Google Apps Script, so that a Google Sheet's cell
+can call them. Apps Script cannot import npm packages such as ethers. So an
+Apps Script version does by hand, with `UrlFetchApp` and json-rpc, what a
+Node version does with a package, and its code is longer and looks
+different.
 
 ## Prerequisites
 
-### Google Apps Script Files - Prereq's
+### Google Apps Script
 
-Since there is, incredibly, no version information available for Google Apps Script, one can only use the latest version, and troubleshoot any issues by comparing to the Google Apps Script Release Notes: <https://developers.google.com/apps-script/release-notes>
+Apps Script has no versions to choose from: every script runs on the
+current one. When a script stops working, Google's release notes may say
+what changed: <https://developers.google.com/apps-script/release-notes>
 
-### NodeJS Modules - Prereq's
+### Node
 
-NodeJS 22 or later.
+Node 22 or later.
 
 ## Installation
 
-There are two possible types of JavaScript platform used here: Google Apps Script and NodeJS.
+The tools run on two platforms, Google Apps Script and Node, and each
+installs its own way.
 
-### Google Apps Script Files - Install
+### Google Apps Script
 
-If you are using a file(s) in the directory, `./for-google-apps`, and the README indicates that it should be imported as a Library in Google Apps, then import the Deployment of each file you need into your Google Sheet using the Library URL path segment identifier (we'll call it "the path-id") that is seen in the Library URL just before the ending "/n", where "n" is a number.  Refer to the local README for the utility you are using to get this value.
-
-Here's an example of full deployment info for a Google Apps Script, just to illustrate:
+A Sheets script in `for-google-apps/` is added to a sheet as a library: the
+sheet's project then runs the owner's deployed copy of the script. Adding
+it takes the script's ID, the part of its library URL before the final
+`/n`, where `n` is the version number. The README beside each script gives
+the ID, and the full deployment info, such as:
 
 ```terminal
 Version 5 on Nov 21, 2025, 4:07 PM
@@ -36,19 +49,38 @@ Deployment ID: AKfycbyBWersgxf4_JBg40CT-h9iAwfcfC3Rj4T_3aoVtfTj1EpjLQtqH6Ac3xG7C
 Library URL:  https://script.google.com/macros/library/d/1HFXEAhRh3-fSqNLzi9i-oMDLwr2aV4zp8-NNxv6moDfRDVGDgHn7BtqG/5
 ```
 
-Put the path-id on your clipboard, copying it from the README local to the utility you are using.  Next, navigate to the Google Apps Script management screen from the top-level of your Google doc, such as your Google Sheet: Select the top-level menu "Extensions" and then select the option, "Apps Script".  On the left, click "Libraries".  In the first text input form field of the dialog that pops up, paste in the path-id.  Next, click "Look Up".  Select the latest version (the highest number).  Finally, click "Add" and you're done importing the file.
+To add the library:
 
-Next, because of bugs in the Google Apps Script importing of Google Apps Script libraries, you will need to use the library/libraries that you just imported from a wrapper script, typically named `wrapper.gs`.  (To clarify, this is distinguished from being able to call them directly from e.g. a Google Sheet spreadsheet cell, which unfortunately does not seem possible).  To do this, paste the contents the file for your utility named, `wrapper.gs`, into the Google Apps Script code editor, as described below under the section heading, "Google Apps Script Files - Alternative Install".  Then call the wrapper functions you desire, from your Google Sheet.  Note that you can add your own wrappers as well.
+1. Copy the script's ID from the README beside the script.
+2. In the sheet, choose **Extensions → Apps Script**.
+3. On the left, click **Libraries**, and paste the ID into the dialog's
+   first field.
+4. Click **Look Up**, choose the latest version (the highest number), and
+   click **Add**.
 
-#### Google Apps Script Files - Alternative Install
+A cell cannot call a library's functions directly, only those of the
+sheet's own Apps Script project. So the project also needs a wrapper: a
+function of its own for each library function, which calls the library.
+Paste the tool's `wrapper.gs` into the sheet's project, as
+[Pasting a Script In](#pasting-a-script-in) describes, and call the
+wrapper's functions from cells. You can add wrappers of your own.
 
-Of course, alternatively you can always just copy-paste the file contents using the Google Apps Script Editor.  First, get the code on your clipboard by copying the required file on Github: Navigate to the file and use the "Copy" button on the right to copy the raw file.  
+#### Pasting a Script In
 
-Next, from your Google document, such as a Google Sheet, select the top-level menu "Extensions" and then select the option, "Apps Script".  Press cntrl-/cmd-a (cmd for Mac) so that all pre-existing code will be pasted over, and then press cntrl-/cmd-v to paste.  Save the file by pressing cntrl-/cmd-s (cmd for Mac).  Next, name the file (no need for a ".gs" extension).
+Instead of adding a library, a script can be pasted into the sheet's own
+project. The sheet then runs that copy, which does not change when the
+repo does.
 
-### NodeJS Modules - Install
+1. On GitHub, open the file, and copy it with the **Copy raw file** button.
+2. In the sheet, choose **Extensions → Apps Script**.
+3. Select all the code in the editor (Ctrl+A, or Cmd+A on a Mac), and paste
+   over it (Ctrl+V, or Cmd+V).
+4. Save (Ctrl+S, or Cmd+S), and name the file. Apps Script adds `.gs` to
+   the name itself.
 
-Otherwise just do, from the repo's top folder:
+### Node
+
+The Node tools need the repo's packages. From the repo's top folder:
 
 ```bash
 npm install
@@ -88,11 +120,13 @@ for the password when it first needs a key. The password is kept nowhere
 on disk, and the keys only in memory, for one run. A key is never a setting
 in a file, nor a command-line argument.
 
-### Usage
+## Usage
 
-Refer to the module or file header documentation.  If none, look for a function with a name that starts with "test" and that will be self-explanatory as to usage.
+Each tool's file header says how to use it. A Sheets script also has
+functions whose names start with "test". Each calls the script's functions
+with sample arguments, which show how to call them.
 
-### Node Versions of the Google Apps Scripts
+## Node Versions of the Sheets Scripts
 
 A Google Apps Script here can have a Node version beside it, of the same
 name ending in `.js`, which runs the same `.gs` file under Node, unchanged,
@@ -101,8 +135,9 @@ has one; its README says how to use it.
 
 ## Test
 
-From the repo's top folder, the one gate that must pass before a commit,
-LP Ranger's: the lint, the tests, and the security audits.
+The repo's tests run on a computer, in one gate that must pass before a
+commit, LP Ranger's: the lint, the tests and the security audits. From the
+repo's top folder:
 
 ```bash
 npm ci
@@ -112,6 +147,8 @@ npm run check
 ```
 
 ## Documentation
+
+The `docs/` folder holds three references:
 
 - [`docs/architecture.md`](docs/architecture.md): how the tools work.
 - [`docs/engineering.md`](docs/engineering.md): the files, the gates, the

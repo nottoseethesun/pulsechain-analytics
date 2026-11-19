@@ -1,22 +1,35 @@
 # PulseChain Token Ratio Chart
 
-A powerful Node.js tool to visualize the price ratio of **any two PulseChain tokens** (Token A / Token B) in a beautiful, aligned ASCII chart — even when no direct liquidity pool exists between them.
+A Node tool that charts the ratio of two PulseChain tokens' prices (token A
+/ token B) in the terminal, even when no pool trades one for the other. It
+prices each token in PLS, from a pool of its own, so the ratio of the two
+prices needs no pool between them.
 
-Uses **GeckoTerminal** (free, no API key) for deep historical data and intelligent pool selection. Falls back to **DexTools** current prices if needed.
+The prices come from **GeckoTerminal**, which needs no api key. When
+GeckoTerminal has no candles, the chart falls back to each token's current
+price from **DexTools**: one point.
 
 IMPORTANT: Use at your own risk as defined in the included file, `../LICENSE`.
 
 ## Features
 
-These are the basics. For details, see the file header doc in `pulse-token-ratio.js`.
+What the chart does, in brief. The file header of `pulse-token-ratio.js`
+gives the details.
 
-- **Smart pool selection** – automatically chooses the pool with the deepest history when the highest-liquidity pool is new/shallow.
-- **Human-readable output** – shows token names/symbols and contract addresses clearly.
-- **Proper scaling** – y-axis uses actual data min/max with unique, clean tick values.
-- **Aligned x-axis** – sparse date (or date+hour) labels perfectly lined up under the chart.
-- **Supports hourly, daily, weekly** intervals.
-- **CSV export** option for further analysis.
-- **Graceful DexTools fallback** – warns if no API key is set, but works fully without one.
+- **Pool choice:** for each token, it takes the most liquid of its five
+  most liquid pools. A new pool can be the most liquid, with little
+  history, so if that pool's history is less than half the longest among
+  the five, it takes the pool with the longest history instead, provided
+  that pool has at least a tenth of the top pool's liquidity.
+- **Names:** it shows each token's name, symbol and contract address.
+- **Y-axis:** it spans the lowest ratio to the highest, with no two labels
+  the same.
+- **X-axis:** dates, or dates with the hour, each under the column it
+  labels.
+- **Intervals:** hourly, daily, or weekly.
+- **CSV:** it writes the ratios to a CSV file when asked.
+- **DexTools fallback:** it needs a saved DexTools key. Without one, the
+  chart says so, and charts from GeckoTerminal alone.
 
 ## Pre-requisites
 
@@ -76,7 +89,8 @@ password. See the repo's [README](../README.md#api-keys).
 default from `config.json`, and the exit codes: 0 when the ratios were
 printed, 1 when they were not.
 
-The chart needs at least 90 points. With fewer, it says so and stops before
+The chart needs at least 90 points, since its x-axis needs that many
+columns to space its dates. With fewer, it says so and stops before
 printing anything; a shorter interval gives more points.
 
 ### Basic: weekly ratio (default)
@@ -100,11 +114,9 @@ node pulse-token-ratio.js <tokenA> <tokenB> --interval=hourly
 
 ## Output Example
 
-Here's $808 / $pTGC on PulseChain!
+The daily ratio of $808 to $pTGC on PulseChain:
 
-![PulseChain Token Ratio Chart Output](pulse-token-ratio-output.png)
-
-_Daily ratio chart for $808 / $pTGC showing perfect alignment, unique y-ticks, and smooth line rendering_
+![The ratio chart's output: the daily ratio of $808 to $pTGC, as a line chart in the terminal](pulse-token-ratio-output.png)
 
 ## Contributing
 

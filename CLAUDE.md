@@ -63,6 +63,11 @@ covers the files, the gates, the tests and CI, and
 `docs/npm-project-commands.md` lists every npm command, as LP Ranger's
 `docs/` does. A change keeps them true.
 
+Every doc passes the owner's documentation audit: it tells no story of an
+old bug, leads every topic and sub-topic with the context it needs,
+explains with facts rather than adjectives, and leaves out no step in the
+logic of an explanation.
+
 ## Gates and CI
 
 `npm run check` is the one gate, LP Ranger's: the lint (ESLint with LP
@@ -92,8 +97,10 @@ npm run check
 They cover `fetch-amount-of-token-transferred.js`, its Sheets twin, which
 runs unchanged under Node, the twin's Node version, how the balance checker
 writes a balance, the ratio chart, its command line (commander, in
-`chart-price-ratio/ratio-command.js`) included, and the api keys. `test/helpers/` holds
-the stand-ins:
+`chart-price-ratio/ratio-command.js`) included, and the api keys. The
+Sheets script also has test functions that the owner runs by hand in Apps
+Script; `docs/engineering.md` sets the two kinds apart. `test/helpers/`
+holds the stand-ins:
 
 - `stand-in-chain.js` is a PulseChain rpc endpoint held in memory, with
   options for the other cases: a failed read, a transaction it doesn't know,

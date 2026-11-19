@@ -1,7 +1,7 @@
 # pulsechain-analytics — System Architecture
 
-pulsechain-analytics answers questions about PulseChain that the usual
-tools do not: how much of a token one transaction sent a wallet, what a
+pulsechain-analytics answers three questions about PulseChain: how much
+of a token one transaction sent a wallet, what a
 wallet held at a past block or date, and how two tokens' prices compare
 over time. Some answers come as Google Sheets functions, in Apps Script,
 and all of them as Node programs.
@@ -29,6 +29,9 @@ Two companion references sit alongside this one:
 
 ## The Tools
 
+Four tools answer the three questions. Two of them work out the same
+amount, one with ethers and one as a Sheets script.
+
 | Tool | Where | What it answers |
 | ---- | ----- | --------------- |
 | The amount a transaction sent, on ethers | `fetch-amount-of-token-transferred.js` | How much of a token one transaction sent a wallet. |
@@ -40,20 +43,23 @@ Two companion references sit alongside this one:
 
 ## The Amount a Transaction Sent
 
-Both copies read the transaction's own receipt and add up the token's
-Transfer events to the wallet in it. A receipt holds that transaction's
-events alone, so another transaction in the same block never counts, and
-no archive node is needed, since no past balance is read. A read that
-fails throws, so a failure is never taken for an amount.
+Two tools work out how much of a token one transaction sent a wallet:
+`fetch-amount-of-token-transferred.js`, with ethers, and the Sheets script
+`fetch-amount-of-token-transferred.gs`, in Apps Script, with `UrlFetchApp`
+and json-rpc. Both read the transaction's own receipt and add up the
+token's Transfer events to the wallet in it. A receipt holds that
+transaction's events alone, so another transaction in the same block never
+counts. And no archive node is needed, since no past balance is read. A
+read that fails throws, so a failure is never taken for an amount.
 
-`fetch-amount-of-token-transferred.js` does it with ethers.
-`fetch-amount-of-token-transferred.gs` does it in Apps Script, with
-`UrlFetchApp` and json-rpc, and caches its answers so a sheet full of cells
-stays within the endpoint's rate limits. The owner deploys it as a library;
-a sheet reaches a library's functions through a wrapper, `wrapper.gs`,
-pasted into the sheet's own project. The deployed library has a function
-the repo's copy lacks, `getTokenTransferredUseCache`, which the wrapper
-calls.
+The owner deploys the Sheets script as a library. A cell cannot call a
+library's functions directly, only those of the sheet's own project, so a
+sheet reaches them through a wrapper, `wrapper.gs`, pasted into the sheet's
+project. The deployed library also has a function the repo's copy lacks,
+`getTokenTransferredUseCache`, which caches each answer, so a sheet full of
+cells stays within the endpoint's rate limits. The wrapper's
+`getTokenTransferred` calls it; its `getTokenTransferredNoCache` calls the
+function without the cache.
 
 `for-google-apps/check-token-balance/fetch-amount-of-token-transferred.js`
 is the script's Node version: it runs the `.gs` unchanged, through
@@ -66,9 +72,10 @@ hold the two copies to the same answers (`test/helpers/transfer-cases.js`).
 
 `check-token-balance/index.js` reads a wallet's balance of each token named,
 PLS or ERC-20, at a block, or at the block closest to the start of a UTC
-date, which it finds by a binary search over the blocks' times. It writes each balance with
-commas between the thousands, and plain (`format-balance.js`). A past block
-needs an archive node.
+date, which it finds by a binary search over the blocks' times. It writes
+each balance twice: with commas between the thousands, and again as plain
+digits (`format-balance.js`). A balance at a past block needs an archive
+node, since other nodes keep only the chain's recent state.
 
 ---
 
@@ -77,9 +84,12 @@ needs an archive node.
 `chart-price-ratio/pulse-token-ratio.js` charts the ratio of two tokens'
 prices, even when no pool holds both:
 
-1. For each token, `pool-selector.js` finds its pools on GeckoTerminal
-   (`gecko-terminal.js`) and picks the one with the most liquidity, unless
-   a pool with at least a tenth of that liquidity has a much deeper history.
+1. For each token, `pool-selector.js` looks at its five most liquid pools
+   on GeckoTerminal (`gecko-terminal.js`), and takes the most liquid. A new
+   pool can be the most liquid, with little history to chart. So if that
+   pool's history is less than half the longest among the five, it takes
+   the pool with the longest history instead, provided that pool has at
+   least a tenth of the top pool's liquidity.
 2. It fetches each pool's candles at the interval asked, hourly, daily, or
    daily resampled to weeks, priced in PLS, so the ratio of the two is the
    ratio of the tokens.
@@ -148,5 +158,5 @@ A change there reaches this repo when the pin moves.
 - **ethers** for the chain, where a program reads it in Node.
 - **Apps Script's own services** in the Sheets script, which can import no
   package.
-- **asciichart** for the ratio chart; **commander** for the balance
-  checker's command line.
+- **asciichart** for the ratio chart; **commander** for the command lines
+  of the balance checker and the ratio chart.

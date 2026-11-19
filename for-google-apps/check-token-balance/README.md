@@ -1,23 +1,30 @@
-# Overview
+# Amount a Transaction Sent, in Google Sheets
 
-See the README at `../../check-token-balance/README.md`.
+## Overview
+
+`fetch-amount-of-token-transferred.gs` gives, in a sheet's cell, how much
+of a token one PulseChain transaction sent a wallet:
+`getTokenTransferred(transaction, token, wallet)`. It reads the
+transaction's receipt and adds up the token's transfers to the wallet in
+it. `wrapper.gs` is what a sheet pastes into its own project to call it.
 
 ## Pre-requisites
 
-See the Google Apps Script-specific Pre-requisites info at `../../README.md`.
+See the Google Apps Script prerequisites in the repo's
+[README](../../README.md#prerequisites).
 
 ## Installation
 
-First, review the general Google Apps Script-specific Installation info at `../../README.md`,
-and next, reference the Import info below as you follow the instructions to import the file.
-
-You will use this i.d. to import the script (copy it to put it on your clipboard for use when importing):
+The script is added to a sheet as a library, as the Installation section
+of the repo's [README](../../README.md#installation) describes. Apps Script
+asks for the library's script ID, which is:
 
 ```terminal
 1HFXEAhRh3-fSqNLzi9i-oMDLwr2aV4zp8-NNxv6moDfRDVGDgHn7BtqG
 ```
 
-In case needed, here is full Deployment info (the trailing number may increase with new versions):
+The full deployment info, in case it is needed (the number at the end of
+the library URL grows with each new version):
 
 ```terminal
 Version 5 on Nov 21, 2025, 4:07 PM
@@ -56,11 +63,19 @@ which `npm ci` installs. The file header says what differs from the sheet.
 
 ## A Note on Caching
 
-This, the Google Apps Script version of this utility, has a caching option (`getTokenTransferredUseCache`),
-unlike the pure NodeJS version. This is because in the normal usage of Google Sheets, often times large
-Google Sheet spreadsheets can run code functions called in cells very many times when it is not
-necessary to have fresh data.  That in turn can trigger an undesired block from the API provider due to
-rate limits.
+A sheet recalculates its cells often, and a large sheet can call the same
+function many times with the same arguments. Each call that reaches the
+rpc endpoint counts against its rate limit, and too many calls get the
+sheet blocked. So the deployed library also has a caching function,
+`getTokenTransferredUseCache`, which answers a repeated call from its
+cache. A transaction's amount does not change once the transaction is on
+the chain, so a cached answer stays right. The wrapper's
+`getTokenTransferred` calls the caching function, and its
+`getTokenTransferredNoCache` calls the function without the cache.
+
+The caching function is in the deployed library only, not in the repo's
+copy of the script. The repo's copy, its Node version and the ethers tool
+at the repo's top folder keep no cache.
 
 ## Contributing
 

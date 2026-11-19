@@ -18,6 +18,7 @@ The repo follows LP Ranger's coding standards: its `CLAUDE.md` and
 - [The Gate: `npm run check`](#the-gate-npm-run-check)
 - [Lint](#lint)
 - [Tests](#tests)
+  - [How the Sheets Script Is Tested](#how-the-sheets-script-is-tested)
 - [Security Audits](#security-audits)
 - [Dead Code Detection](#dead-code-detection)
 - [CI and Branch Protection](#ci-and-branch-protection)
@@ -27,7 +28,8 @@ The repo follows LP Ranger's coding standards: its `CLAUDE.md` and
 
 ## Quick Start
 
-Node 22 or later. From the repo's top folder:
+A working copy needs Node 22 or later, the packages of the repo and of its
+two tools, and the DexTools key. From the repo's top folder:
 
 ```bash
 npm ci
@@ -43,6 +45,9 @@ npm run check        # the gate
 ---
 
 ## Files on Disk
+
+The programs and their tests read and write these files. Git keeps only
+the ones that hold no key and none of the owner's own settings.
 
 | File | In git | What it holds |
 | ---- | ------ | ------------- |
@@ -66,20 +71,28 @@ Node 24.
 
 ## Lint
 
-`npm run lint` runs:
+The lint checks each file's form before any test runs: the rules the code
+follows, its formatting, the workflows, and files nothing uses.
+`npm run lint` runs five tools:
 
 | Tool | Configured in | What it holds the repo to |
 | ---- | ------------- | ------------------------- |
-| ESLint | `eslint.config.js` | LP Ranger's rules, with no warning allowed: cyclomatic complexity ≤ 17, ≤ 500 lines of code a file (blank lines and comments not counted), lines ≤ 80 characters but strings, urls and comments, `===`, no unused name, no `var`, `const` where nothing is reassigned, no `Math.random`, no comment that tells Prettier to skip code, and every import resolved. The Sheets scripts are linted as the plain scripts Apps Script loads, with its services as globals; `wrapper.gs` declares the library it calls in a `/* global */` comment. |
+| ESLint | `eslint.config.js` | LP Ranger's rules, with no warning allowed: cyclomatic complexity ≤ 17, ≤ 500 lines of code a file (blank lines and comments not counted), lines ≤ 80 characters but strings, urls and comments, `===`, no unused name, no `var`, `const` where nothing is reassigned, no `Math.random`, no comment that tells Prettier to skip code, and every import resolved. It reads the Sheets scripts too, as the paragraph below the table says. |
 | markdownlint | `.markdownlint-cli2.jsonc` | LP Ranger's settings, over every Markdown file. |
 | Prettier | `.prettierrc`, `.prettierignore` | Its formatting, in check mode, over every JavaScript, Sheets script, JSON and YAML file. |
 | actionlint | — | The GitHub workflows. |
 | knip | `knip.json` | No file nothing reaches. See [Dead Code Detection](#dead-code-detection). |
 
+The Sheets scripts are plain scripts, not modules: Apps Script loads them
+without imports, with its services as globals. ESLint reads them the same
+way. `wrapper.gs` calls the deployed library by the name Apps Script gives
+it, which no import declares, so a `/* global */` comment declares it.
+
 The lint covers the tools in `chart-price-ratio/` and `check-token-balance/`,
 whose imports resolve once their own packages are installed. The husky
-pre-commit hook (`.husky/pre-commit`) runs `npm run lint`, which `prepare`
-installs; `npm run format` or `npm run lint:fix` fixes formatting. No rule
+pre-commit hook (`.husky/pre-commit`), which `prepare` installs at
+`npm install`, runs `npm run lint`; `npm run format` or `npm run lint:fix`
+fixes formatting. No rule
 is ever switched off in a file, no file is left out of the lint, and a file
 over 500 lines is split, not excused.
 
@@ -87,8 +100,10 @@ over 500 lines is split, not excused.
 
 ## Tests
 
-The tests are in `test/`, on Node's test runner. They ask nothing outside
-the computer, and never read the owner's key file or password.
+The tests are in `test/`, on Node's test runner. They run the tools
+against stand-ins for PulseChain, GeckoTerminal and DexTools, so they ask
+nothing outside the computer. They never read the owner's key file or
+password.
 
 | Test | What it covers |
 | ---- | -------------- |
@@ -121,9 +136,42 @@ the computer, and never read the owner's key file or password.
 check something goes into the tests, so it is kept and run again rather
 than written again.
 
+### How the Sheets Script Is Tested
+
+`for-google-apps/check-token-balance/` holds a Sheets script,
+`fetch-amount-of-token-transferred.gs`, and `wrapper.gs`, which a sheet
+uses to call it. A Sheets script runs on Google's servers, which no test
+can reach. Two separate sets of tests check it.
+
+**The Node tests** run the real `.gs` file, unchanged, against the stand-in
+chain, in two ways:
+
+- `fetch-amount-of-token-transferred-gs.test.js` runs it in the test's own
+  thread (`test/helpers/sheets-script.js`). Its `UrlFetchApp.fetch` answers
+  at once from the stand-in chain, so nothing waits.
+- `fetch-amount-of-token-transferred-node-version.test.js` runs it through
+  its Node version, in crypto-price-fetchers' runner. In Apps Script,
+  `UrlFetchApp.fetch` holds the script until the response arrives, while
+  Node's `fetch` returns a promise. So the runner runs the script in a
+  worker thread, which waits on each request while the main thread does it
+  ([why](https://github.com/nottoseethesun/crypto-price-fetchers/blob/main/docs/engineering.md#the-node-tests)).
+
+`transfer-cases.js` holds the cases that both the ethers tool and the
+Sheets script are tested on, so the two give the same answers.
+
+**The Apps Script tests** are functions the owner runs by hand, from the
+Apps Script editor, against the real rpc endpoint: `testGetTokenTransferred`
+in the script, and `testGetTokenTransferred` and
+`testGetTokenTransferredNoCache` in `wrapper.gs`. The wrapper's tests call
+the deployed library, its caching function included. That function is not
+in the repo, so no Node test runs it.
+
 ---
 
 ## Security Audits
+
+Three audits look for security problems: in the packages the repo and its
+tools install, in the code, and in the text of every file.
 
 | Command | What it runs | What it catches |
 | ------- | ------------ | --------------- |
@@ -138,17 +186,20 @@ The security lint follows LP Ranger's: no warning allowed, with
 
 ## Dead Code Detection
 
-`npm run knip:files` fails on any file nothing reaches, as in LP Ranger.
-`knip.json` names the entry points knip cannot find for itself: the tools
-run by their paths, the security config and the tests. Unused exports are
-not gated.
+A file nothing in the repo uses is dead code. knip finds such a file: it
+follows the imports from each entry point, a file that a program or a test
+starts from, and reports any file it never reaches. `npm run knip:files`
+fails on one, as in LP Ranger. The tools are started by their paths rather
+than imported, so `knip.json` names them as entry points, with the
+security config and the tests. Unused exports are not gated.
 
 ---
 
 ## CI and Branch Protection
 
-Two workflows run on every push to `main`, every pull request to `main`, and
-by hand:
+CI runs the gate again on GitHub, so a change reaches `main` only after it
+passes there too. Two workflows run on every push to `main`, every pull
+request to `main`, and by hand:
 
 | Workflow | Job | Runs |
 | -------- | --- | ---- |
