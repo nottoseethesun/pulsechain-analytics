@@ -20,6 +20,7 @@ import {
   dexToolsPriceUrl,
   geckoAnswers,
   hourlyRefused,
+  quoteSideAnswers,
   runChart,
   TOKEN_A,
   TOKEN_B,
@@ -29,9 +30,10 @@ import {
 const DEXTOOLS_KEY = "stand-in-dextools-key";
 const PASSWORD = "stand-in password";
 
-/** A hundred days' closes for each token's pool. */
+/** A hundred days' closes for each token's pool, and for WPLS. */
 const CLOSES_A = Array.from({ length: 100 }, (_, day) => 2 + day * 0.01);
 const CLOSES_B = Array.from({ length: 100 }, (_, day) => 1 + day * 0.001);
+const WPLS_CLOSES = Array.from({ length: 100 }, () => 0.00003);
 
 /** DexTools' answers: its check takes the key, and each token's price. */
 const DEXTOOLS_ANSWERS = [
@@ -75,7 +77,7 @@ describe("pulse-token-ratio.js", () => {
     assert.equal(run.status, 0, run.stderr);
     assert.match(
       run.stdout,
-      /Alpha \(ALP\) \/ Beta \(BET\) ratio \(daily, 100 points\) - Source: GeckoTerminal \(PLS-based historical\)/,
+      /Alpha \(ALP\) \/ Beta \(BET\) ratio \(daily, 100 points\) - Source: GeckoTerminal \(USD-based historical\)/,
     );
     const current = (CLOSES_A[99] / CLOSES_B[99]).toFixed(12);
     assert.ok(run.stdout.includes(`Current ratio: ${current}\n`), run.stdout);
@@ -83,6 +85,15 @@ describe("pulse-token-ratio.js", () => {
     assert.match(run.stderr, /in the repo's top folder: npm run api-keys/);
     assert.doesNotMatch(`${run.stdout}${run.stderr}`, /Password/);
     assert.ok(run.requests.every(({ url }) => !url.includes("dextools")));
+  });
+
+  it("charts a token's own price when it is its pool's quote token", () => {
+    const run = runChart([TOKEN_A, TOKEN_B, "daily"], {
+      answers: quoteSideAnswers(CLOSES_A, CLOSES_B, WPLS_CLOSES),
+    });
+    assert.equal(run.status, 0, run.stderr);
+    const current = (CLOSES_A[99] / CLOSES_B[99]).toFixed(12);
+    assert.ok(run.stdout.includes(`Current ratio: ${current}\n`), run.stdout);
   });
 
   it("writes the ratios to a CSV when asked", () => {

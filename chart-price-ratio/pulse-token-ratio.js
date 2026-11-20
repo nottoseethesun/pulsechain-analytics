@@ -5,9 +5,12 @@
  * (Token A / Token B) in a single ASCII chart, even when no direct liquidity pool exists between them.
  *
  * How it works:
- *  - Primarily uses GeckoTerminal API (free, no key) to discover pools and fetch historical OHLCV data.
+ *  - Primarily uses GeckoTerminal API (free, no key), through crypto-price-fetchers'
+ *    GeckoTerminal client (gecko-terminal.js), to discover pools and fetch historical OHLCV data.
  *  - Smart pool selection via pool-selector.js module.
- *  - Computes the ratio: price_A_in_PLS / price_B_in_PLS → direct comparable ratio.
+ *  - Fetches each token's own candles in its pool, named by its address, whichever side
+ *    of the pool it is on, priced in USD.
+ *  - Computes the ratio: price_A_in_USD / price_B_in_USD → direct comparable ratio.
  *  - Supports hourly, daily, and weekly timeframes.
  *  - Improved ASCII chart:
  *    • Y-scale uses data min/max with smart tick spacing for unique, readable values.

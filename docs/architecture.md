@@ -90,9 +90,12 @@ prices, even when no pool holds both:
    pool's history is less than half the longest among the five, it takes
    the pool with the longest history instead, provided that pool has at
    least a tenth of the top pool's liquidity.
-2. It fetches each pool's candles at the interval asked, hourly, daily, or
-   daily resampled to weeks, priced in PLS, so the ratio of the two is the
-   ratio of the tokens.
+2. It fetches each token's candles in its pool at the interval asked,
+   hourly, daily, or daily resampled to weeks. A pool holds two tokens, and
+   its candles price the one GeckoTerminal calls its base unless a request
+   names the other, so each request names the chart's token by its
+   address, whichever side of the pool it is on. Both tokens' candles are
+   priced in USD, so the ratio of the two is the ratio of the tokens.
 3. When GeckoTerminal has no candles, it falls back to each token's current
    USD price from DexTools (`dextools.js`): one point.
 4. It prints the chart, with labels on both axes (`generateNiceTicks.js`
@@ -142,13 +145,24 @@ argument, which the shell's history would keep.
 ## crypto-price-fetchers
 
 This repo installs [crypto-price-fetchers](https://github.com/nottoseethesun/crypto-price-fetchers)
-from GitHub, pinned to a commit, as a dependency that `npm install`
-installs, at the top and in `chart-price-ratio/`, at the same commit (a
-test holds them equal). It gives the runner that runs the Sheets script
-under Node (`crypto-price-fetchers/apps-script-runner`), the key store
-(`crypto-price-fetchers/api-key-store`), and the security lint's rule
-against printing a secret (`crypto-price-fetchers/eslint-rules/no-secret-logging`).
-A change there reaches this repo when the pin moves.
+from GitHub, as a dependency that `npm install` installs, at the top and in
+`chart-price-ratio/`. It gives the runner that runs the Sheets script under
+Node (`crypto-price-fetchers/apps-script-runner`), the key store
+(`crypto-price-fetchers/api-key-store`), the GeckoTerminal client the ratio
+chart asks through (`crypto-price-fetchers/dex-prices/geckoterminal`),
+which keeps within a budget of requests and sends a request refused as too
+many again after its waits, and the security lint's rule against printing
+a secret (`crypto-price-fetchers/eslint-rules/no-secret-logging`).
+
+Both `package.json` files name its main branch (`#main`), the same ref (a
+test holds them equal), and each `package-lock.json` keeps the commit
+installed, which `npm ci` installs. A change there reaches this repo once
+the lockfiles are made again. `npm run github-project-deps -- main` does
+that at main's newest commit, and `-- release` switches both to the latest
+release (`#semver:*`), its highest version tag: crypto-price-fetchers'
+versions tool sets the ref, makes each lockfile again from a fresh
+`node_modules`, and puts every `package.json` and lockfile back if an
+install fails.
 
 ---
 

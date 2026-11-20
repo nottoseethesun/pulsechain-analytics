@@ -1,22 +1,23 @@
 /**
- * pool-selector.js
+ * Picks the pool the ratio chart reads a token's prices from.
+ * @module chart-price-ratio/pool-selector
  *
- * Standalone module for intelligently selecting the best liquidity pool
- * for a given token on GeckoTerminal.
+ * What: the chart needs a pool with liquidity, so its prices are the
+ * market's, and with history, so the chart reaches back. The pool with the
+ * most liquidity can be new, with little history, while a pool with a
+ * little less has much more.
  *
- * Logic:
- * - Fetches the top 5 pools by liquidity.
- * - Measures historical data depth (daily candles) for each.
- * - Prefers the highest-liquidity pool.
- * - If that pool has less than 50% of the deepest history available,
- *   switches to the pool with the longest history, provided it has
- *   at least 10% of the top pool's liquidity.
+ * How: it takes the five pools of the token that hold the most value, as
+ * GeckoTerminal lists them (`gecko-terminal.js`), and counts each one's
+ * daily candles, up to the chart's most. It keeps the pool with the most
+ * liquidity, unless that pool has less than half the history of the
+ * deepest one: then it takes the deepest pool that holds at least a tenth
+ * of the top pool's liquidity. A pool with no candles is left out.
  *
- * This prevents using a high-liquidity but brand-new pool when
- * a slightly lower-liquidity pool has much deeper historical data.
+ * Fit: `ratio-series.js` asks it for each of the chart's two tokens.
  */
 
-import { getClosesGecko } from "./gecko-terminal.js";
+import { getClosesGecko, getTokenPools } from "./gecko-terminal.js";
 
 /**
  * Fetches the best liquidity pool for a token using GeckoTerminal,
@@ -25,27 +26,19 @@ import { getClosesGecko } from "./gecko-terminal.js";
  * @param {string} tokenAddress - Token contract address (lowercase)
  * @param {string} network - Network name for GeckoTerminal API (e.g., 'pulsechain')
  * @param {number} maxCandles - Maximum candles to fetch for history check
- * @returns {Promise<{address: string, name: string, liquidity: number, historyDays: number}>}
- *          Selected pool details
+ * @returns {Promise<{address: string, token: string, name: string, liquidity: number, historyDays: number}>}
+ *          Selected pool details, with the token whose prices the chart reads from it
  */
 export async function getBestPoolWithHistory(
   tokenAddress,
   network = "pulsechain",
   maxCandles = 1000,
 ) {
-  const url = `https://api.geckoterminal.com/api/v2/networks/${network}/tokens/${tokenAddress}/pools?page=1`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Gecko pool discovery failed (${res.status})`);
-  const json = await res.json();
-  const pools = json.data;
+  const pools = await getTokenPools(network, tokenAddress);
   if (pools.length === 0) throw new Error("No pools found on GeckoTerminal");
 
   // Sort by liquidity descending
-  pools.sort(
-    (a, b) =>
-      parseFloat(b.attributes.reserve_in_usd) -
-      parseFloat(a.attributes.reserve_in_usd),
-  );
+  pools.sort((a, b) => b.liquidityUsd - a.liquidityUsd);
 
   // Limit to top 5 to reduce API load
   const topPools = pools.slice(0, Math.min(5, pools.length));
@@ -53,27 +46,26 @@ export async function getBestPoolWithHistory(
   const poolHistories = [];
   for (const pool of topPools) {
     try {
-      const ohlcv = await getClosesGecko(
+      const ohlcv = await getClosesGecko({
         network,
-        pool.attributes.address,
-        "day",
-        maxCandles,
-      );
-      const historyLength = ohlcv.length;
+        pool: pool.address,
+        token: tokenAddress,
+        timeframe: "day",
+        limit: maxCandles,
+      });
       const entry = {
-        address: pool.attributes.address,
-        name: pool.attributes.name,
-        liquidity: parseFloat(pool.attributes.reserve_in_usd),
-        historyDays: historyLength,
+        address: pool.address,
+        token: tokenAddress,
+        name: pool.name,
+        liquidity: pool.liquidityUsd,
+        historyDays: ohlcv.length,
       };
       poolHistories.push(entry);
       console.log(
         `Pool ${entry.address.slice(0, 8)}... (${entry.name}): Liquidity ~$${entry.liquidity.toLocaleString()}, History: ${entry.historyDays} days`,
       );
     } catch {
-      console.warn(
-        `Skipping pool ${pool.attributes.address}: no historical data`,
-      );
+      console.warn(`Skipping pool ${pool.address}: no historical data`);
     }
   }
 

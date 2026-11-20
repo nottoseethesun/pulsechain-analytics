@@ -28,10 +28,10 @@ logic, since LP Ranger's rules forbid a second copy. A fix belongs in the
 `.gs`, where it fixes both. `wrapper.gs` gets no Node version: it exists only
 because a sheet reaches a library's functions through a wrapper.
 
-`package.json` installs crypto-price-fetchers from GitHub, pinned to a
-commit; a change to the runner reaches this repo when the pin moves. The
-Node version reads its rpc endpoint from `config.json` beside it, which git
-ignores; `config-example.json` shows the shape.
+A change to the runner reaches this repo once its lockfiles are made again
+(see crypto-price-fetchers, below). The Node version reads its rpc endpoint
+from `config.json` beside it, which git ignores; `config-example.json`
+shows the shape.
 
 The script of the same name at the repo's top folder,
 `fetch-amount-of-token-transferred.js`, is a separate tool, on ethers, with
@@ -53,8 +53,21 @@ DexTools (`chart-price-ratio/dextools.js`). A key is never a setting in a
 file git keeps, nor a command-line argument. A test names a key file of its
 own, never the owner's, and passes no `API_KEYS_PASSWORD` it did not set.
 
-`chart-price-ratio/package.json` pins crypto-price-fetchers at the same
-commit as the top `package.json`, which a test holds; move both together.
+## crypto-price-fetchers
+
+The top `package.json` and `chart-price-ratio/package.json` install
+crypto-price-fetchers from GitHub, following its main branch (`#main`),
+the same ref in both, which `test/dependencies.test.js` holds; each
+`package-lock.json` keeps the commit installed.
+`npm run github-project-deps -- main|release` runs crypto-price-fetchers'
+versions tool, which sets the ref in both to `#main` or `#semver:*` (the
+latest release) and makes both lockfiles again; the tool lives there, and
+this repo keeps no copy.
+
+The ratio chart asks GeckoTerminal through crypto-price-fetchers' client
+(`crypto-price-fetchers/dex-prices/geckoterminal`), which
+`chart-price-ratio/gecko-terminal.js` shapes for the chart; this repo keeps
+no GeckoTerminal client of its own.
 
 ## Docs
 

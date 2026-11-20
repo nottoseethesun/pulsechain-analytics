@@ -88,17 +88,23 @@ async function dexToolsSeries(run) {
 }
 
 /**
- * Fetches the two pools' closing prices from GeckoTerminal at the
- * interval asked, resampling daily ones to weeks.
+ * Fetches each token's closing prices in its pool from GeckoTerminal at
+ * the interval asked, resampling daily ones to weeks.
  *
  * @param {Object} run - The run
- * @param {{address: string}} poolA - Token A's pool
- * @param {{address: string}} poolB - Token B's pool
+ * @param {{address: string, token: string}} poolA - Token A's pool, and token A
+ * @param {{address: string, token: string}} poolB - Token B's pool, and token B
  * @returns {Promise<{dataA: Array, dataB: Array}>} The two series
  */
 async function geckoCloses(run, poolA, poolB) {
   const closes = (pool, timeframe) =>
-    getClosesGecko(run.network, pool.address, timeframe, run.maxCandles);
+    getClosesGecko({
+      network: run.network,
+      pool: pool.address,
+      token: pool.token,
+      timeframe,
+      limit: run.maxCandles,
+    });
   if (run.interval === "weekly") {
     console.log("Fetching daily data for weekly resampling...");
     const dailyA = await closes(poolA, "day");
@@ -159,7 +165,7 @@ async function geckoSeries(run) {
   }
   try {
     const closes = await geckoCloses(run, poolA, poolB);
-    return { ...closes, source: "GeckoTerminal (PLS-based historical)" };
+    return { ...closes, source: "GeckoTerminal (USD-based historical)" };
   } catch (e) {
     console.warn(`GeckoTerminal historical data failed: ${e.message}`);
     return dexToolsFallback(run);

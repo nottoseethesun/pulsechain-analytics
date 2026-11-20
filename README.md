@@ -93,6 +93,35 @@ among them, from GitHub. `chart-price-ratio/` and `check-token-balance/`
 each have a package of their own: run `npm install` in the folder of the
 tool you use too.
 
+### Choosing Versions of Dependencies that are Raw Github Projects
+
+This step is entirely optional: `npm install` already installs everything
+the tools need.
+
+crypto-price-fetchers is installed straight from its GitHub project,
+rather than from the npm registry, by the top folder and by
+`chart-price-ratio/`. Each `package.json` names it with a ref: `#main`,
+its main branch, which this repo follows, or `#semver:*`, its latest
+release, its highest version tag. Each `package-lock.json` keeps the commit
+the ref named when the lockfile was made, and `npm ci` installs that
+commit.
+
+To move both to the newest commit of main, or to switch both to the latest
+release, from the repo's top folder:
+
+```bash
+npm run github-project-deps -- main
+npm run github-project-deps -- release
+```
+
+Each sets the ref in both `package.json` files, then makes each folder's
+`package-lock.json` again from a fresh `node_modules`, so the newest commit
+of main, or the newest release, is installed. If an install fails, as it
+does for a release whose top folder has no package.json, every
+`package.json` and `package-lock.json` goes back as it was, and
+`node_modules` is installed again from them.
+`npm run github-project-deps -- --help` says more.
+
 ### Api keys
 
 The ratio chart, `chart-price-ratio/`, can fall back to DexTools, which
