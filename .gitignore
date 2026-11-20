@@ -7,6 +7,10 @@ api-keys.json.tmp
 # committed config-example.json
 /for-google-apps/check-token-balance/config.json
 
+# The owner's settings of the sweep against Summ (his paths and token
+# lists), beside its committed config-example.json
+/summ-sweep/config.json
+
 # Logs
 logs
 *.log

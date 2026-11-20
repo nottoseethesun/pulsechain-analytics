@@ -51,12 +51,17 @@ the ones that hold no key and none of the owner's own settings.
 
 | File | In git | What it holds |
 | ---- | ------ | ------------- |
-| `config.json` | yes | The services whose keys the programs send, under `apiKeys`. No key. |
+| `config.json` | yes | The services whose keys the programs send, under `apiKeys`, and the chain's facts the Summ sweep reads, under `pulsechain`. No key. |
+| `summ-sweep/config.json` | no | The owner's settings for the Summ sweep: the path of his Summ template and of his LP Ranger checkout, and each token's symbols in Summ and in a csv. `summ-sweep/config-example.json` beside it shows the shape. |
 | `api-keys.json` | no | The keys, each encrypted with the owner's password. `api-keys.json.tmp` is the file it is written through. `API_KEYS_FILE_PATH` names another, as the tests do. |
 | `chart-price-ratio/config.json` | yes | The ratio chart's settings: network, DexTools' plan, the interval, the CSV's name. No key. |
 | `check-token-balance/config.json` | yes | The balance checker's rpc endpoint. |
 | `for-google-apps/check-token-balance/config.json` | no | The Node version's rpc endpoint; `config-example.json` beside it shows the shape. |
 | `coverage/` | no | A test run's coverage report. |
+
+The Summ sweep writes its csv and its report at the paths its command line
+names, outside the repo, and never over a file already there without
+`--replace`.
 
 ---
 
@@ -101,8 +106,8 @@ over 500 lines is split, not excused.
 ## Tests
 
 The tests are in `test/`, on Node's test runner. They run the tools
-against stand-ins for PulseChain, GeckoTerminal and DexTools, so they ask
-nothing outside the computer. They never read the owner's key file or
+against stand-ins for PulseChain, GeckoTerminal, DexTools and LP Ranger's
+tool, so they ask nothing outside the computer. They never read the owner's key file or
 password.
 
 | Test | What it covers |
@@ -116,6 +121,9 @@ password.
 | `dependencies.test.js` | crypto-price-fetchers installed from GitHub, following its main branch or its latest release, by the ratio chart too, and `npm run github-project-deps` running its versions tool. |
 | `wallet-history.test.js` | The paced provider, the blocks of a range, the logs that name a wallet, the transactions it sent, their receipts and its tokens' facts, against a stand-in chain. |
 | `wallet-history-coin.test.js` | The PLS a wallet moved: the calls of a trace that pay it, the flows of its own transactions, and the payments from elsewhere its balance reveals, against a stand-in chain whose balances are worked out apart from the code tested. |
+| `summ-sweep.test.js` | The Summ sweep's reading of Summ's saved pages, its match of amounts in both forms Summ prints, the legs of a wallet's logs, and the match of the chain's legs with Summ's. |
+| `summ-sweep-splits.test.js` | The split of withdrawals from positions into principal and fees, the collects it refuses to split, and LP Ranger's tool run through a stand-in and as a real program. |
+| `summ-sweep-run.test.js` | The whole sweep against a stand-in chain, a withdrawal paid as PLS among it, and its command line, which writes the csv through crypto-price-fetchers' Summ csv utility. |
 
 `test/helpers/` holds the stand-ins:
 
@@ -142,6 +150,12 @@ password.
   contract requests, refuses a log search wider than its limit, and counts
   every request. Its balances come from the description, not from the code
   tested.
+- `summ-pages.js`: writes pages of Summ's results in the form Summ's
+  connector returns them, for the Summ sweep to read.
+- `summ-sweep-case.js`: the made-up wallet history the Summ sweep's tests
+  sweep: its stand-in chain, LP Ranger's records of its withdrawals,
+  Summ's rows of it, the header of Summ's csv template, and the temp
+  folders the tests make and remove.
 
 `npm run test:coverage` fails below 80% of lines covered. Code written to
 check something goes into the tests, so it is kept and run again rather

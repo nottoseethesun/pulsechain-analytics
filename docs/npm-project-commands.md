@@ -13,6 +13,7 @@ gates work. This file covers how to drive them.
 
 - [Passing Flags](#passing-flags)
 - [Api Keys](#api-keys)
+- [Bookkeeping](#bookkeeping)
 - [Dependency Versions](#dependency-versions)
 - [Developer Tools](#developer-tools)
 - [Test](#test)
@@ -45,6 +46,18 @@ command manages them.
 
 `source ./unlock-api-keys.sh`, which is no npm command, keeps the password
 for a terminal: see [the README](../README.md#api-keys).
+
+---
+
+## Bookkeeping
+
+The owner keeps his crypto taxes in Summ. One command compares a wallet's
+history on PulseChain with Summ's rows of it; `docs/architecture.md`
+says [how](architecture.md#the-summ-sweep).
+
+| Command | Flags | Description | Example |
+| ------- | ----- | ----------- | ------- |
+| `summ-sweep` | `--wallet <address>`, `--start-date <day>`, `--end-date <day>`, `--summ-results <files...>`, `--out <file>`, `--report <file>`, all required; `--replace`; `--help` | Sweeps the wallet's history from the first day to the last, each `YYYY-MM-DD` in UTC, against the pages of Summ's results saved to the files named. Writes the income rows of the withdrawals to fix in Summ to the csv, through crypto-price-fetchers' Summ csv utility, and a report, as json, of the withdrawals to fix, the legs Summ lacks, Summ's legs no chain leg matched, and the problems found. Writes over neither file without `--replace`. Reads the chain's facts from the top `config.json` and the owner's settings from `summ-sweep/config.json`. Exits with 0 when both files were written, 1 when they were not. | `npm run summ-sweep -- --wallet 0x… --start-date 2026-01-01 --end-date 2026-11-20 --summ-results page-1.txt page-2.txt --out rows.csv --report report.json` |
 
 ---
 

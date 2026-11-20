@@ -1,0 +1,14 @@
+{
+  "templatePath": "/home/you/summ/summ-template.csv",
+  "lpRangerDir": "/home/you/code/lp-ranger/github-repo/lp-ranger",
+  "summSymbols": {
+    "0x2b591e99afe9f32eaa6214f7b7629768c40eeb39": ["HEX"],
+    "0x57fde0a71132198bbec939b98976993d8d89d225": ["HEX"],
+    "0xa0b73e1ff0b80914ab6fe0444e65848c4c34450b": ["CRO", "CRONOS"]
+  },
+  "csvSymbols": {
+    "0x2b591e99afe9f32eaa6214f7b7629768c40eeb39": "HEX",
+    "0x57fde0a71132198bbec939b98976993d8d89d225": "eHEX",
+    "0xcc05bf158202b4f461ede8843d76dcd7bbad07f2": "9mm-V3-POS"
+  }
+}

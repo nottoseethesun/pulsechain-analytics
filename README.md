@@ -12,8 +12,10 @@ USE AT YOUR OWN RISK: SEE LICENSE FILE, INCLUDED.
 
 Tools that answer questions about PulseChain: how much of a token one
 transaction sent a wallet, what a wallet held at a past block or date, how
-two tokens' prices compare over time, and what a wallet moved over a range
-of blocks, read from the chain alone (`wallet-history/`).
+two tokens' prices compare over time, what a wallet moved over a range of
+blocks, read from the chain alone (`wallet-history/`), and what of those
+moves the crypto tax calculator Summ lacks or holds wrongly
+(`summ-sweep/`, run by `npm run summ-sweep`).
 
 Some tools also come as Google Apps Script, so that a Google Sheet's cell
 can call them. Apps Script cannot import npm packages such as ethers. So an
@@ -157,6 +159,17 @@ in a file, nor a command-line argument.
 Each tool's file header says how to use it. A Sheets script also has
 functions whose names start with "test". Each calls the script's functions
 with sample arguments, which show how to call them.
+
+### The Summ Sweep
+
+The sweep needs the owner's settings in `summ-sweep/config.json`, which git
+ignores: copy `summ-sweep/config-example.json` to it, and set the path of
+the Summ csv template, the path of an LP Ranger checkout, and the symbols
+Summ and a csv give each token whose symbol differs from its contract's.
+It also needs Summ's rows of the wallet, saved to files a page at a time
+from Summ's connector. `npm run summ-sweep -- --help` lists its options;
+[`docs/npm-project-commands.md`](docs/npm-project-commands.md#bookkeeping)
+gives an example.
 
 ## Node Versions of the Sheets Scripts
 

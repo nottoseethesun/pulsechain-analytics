@@ -110,8 +110,8 @@ npm run check
 They cover `fetch-amount-of-token-transferred.js`, its Sheets twin, which
 runs unchanged under Node, the twin's Node version, how the balance checker
 writes a balance, the ratio chart, its command line (commander, in
-`chart-price-ratio/ratio-command.js`) included, the api keys, and a
-wallet's history (`wallet-history/`). The
+`chart-price-ratio/ratio-command.js`) included, the api keys, a wallet's
+history (`wallet-history/`), and the Summ sweep (`summ-sweep/`). The
 Sheets script also has test functions that the owner runs by hand in Apps
 Script; `docs/engineering.md` sets the two kinds apart. `test/helpers/`
 holds the stand-ins:
@@ -133,6 +133,12 @@ holds the stand-ins:
   `wallet-history/`, built from blocks a test describes. It works out
   balances from the description, never through the code tested, refuses a
   log search wider than its limit, and counts every request.
+- `summ-pages.js` writes pages of Summ's results as Summ's connector
+  returns them.
+- `summ-sweep-case.js` is the made-up wallet history the Summ sweep's tests
+  sweep: its chain, LP Ranger's records, Summ's rows, the header of Summ's
+  csv template, and temp folders. The tests hold no amount, id, name or
+  address from the owner's own books, since the repo is public.
 
 ## A wallet's history
 
@@ -144,6 +150,26 @@ pacing are second copies of LP Ranger's wallet report's, since those files
 load LP Ranger's settings as they load and LP Ranger is never changed.
 Counts and balances at past blocks need an endpoint that keeps past state,
 and traces one that offers the debug methods, as g4mm4's does.
+
+## The Summ sweep
+
+`summ-sweep/` (`npm run summ-sweep`) compares a wallet's history with
+Summ's rows of it, saved a page at a time from Summ's connector. It writes
+a report of the withdrawals from 9mm V3 positions to fix in Summ and the
+legs Summ lacks, and a csv of the income rows of the fixes' fees. Claude
+makes the fixes through Summ's connector.
+
+**Every csv file for Summ is written by crypto-price-fetchers' Summ csv
+utility** (`crypto-price-fetchers/summ-csv`), as the sweep writes its csv:
+never by a script written for the occasion. The owner's rule.
+
+The sweep reads each withdrawal through LP Ranger's
+`util/bookkeeping/coins-in-transaction.js`, run as a program of its own in
+the owner's LP Ranger checkout, since LP Ranger is never changed. The
+chain's facts are in the top `config.json`, under `pulsechain`; the owner's
+settings (his template's path, his LP Ranger checkout, each token's symbols
+in Summ and in a csv) are in `summ-sweep/config.json`, which git ignores;
+`config-example.json` beside it shows the shape.
 
 ## Known bugs
 

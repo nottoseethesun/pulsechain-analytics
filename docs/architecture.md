@@ -1,10 +1,12 @@
 # pulsechain-analytics — System Architecture
 
-pulsechain-analytics answers four questions about PulseChain: how much
-of a token one transaction sent a wallet, what a
-wallet held at a past block or date, how two tokens' prices compare
-over time, and what a wallet moved over a range of blocks. Some answers come as Google Sheets functions, in Apps Script,
-and all of them as Node programs.
+pulsechain-analytics answers five questions about PulseChain: how much
+of a token one transaction sent a wallet, what a wallet held at a past
+block or date, how two tokens' prices compare over time, what a wallet
+moved over a range of blocks, and what of those moves Summ, the crypto
+tax calculator the owner keeps his books in, lacks or holds wrongly.
+Some answers come as Google Sheets functions, in Apps Script, and all of
+them as Node programs.
 
 Two companion references sit alongside this one:
 
@@ -22,6 +24,12 @@ Two companion references sit alongside this one:
 - [The Balance Checker](#the-balance-checker)
 - [The Ratio Chart](#the-ratio-chart)
 - [A Wallet's History](#a-wallets-history)
+- [The Summ Sweep](#the-summ-sweep)
+  - [What the Sweep Reads](#what-the-sweep-reads)
+  - [Legs and the Match](#legs-and-the-match)
+    - [Amounts as Summ Prints Them](#amounts-as-summ-prints-them)
+  - [Withdrawals from Positions](#withdrawals-from-positions)
+  - [What the Sweep Writes](#what-the-sweep-writes)
 - [Api Keys](#api-keys)
 - [crypto-price-fetchers](#crypto-price-fetchers)
 - [Technology Choices](#technology-choices)
@@ -30,7 +38,7 @@ Two companion references sit alongside this one:
 
 ## The Tools
 
-Five tools answer the four questions. Two of them work out the same
+Six tools answer the five questions. Two of them work out the same
 amount, one with ethers and one as a Sheets script.
 
 | Tool | Where | What it answers |
@@ -40,6 +48,7 @@ amount, one with ethers and one as a Sheets script.
 | The balance checker | `check-token-balance/` | A wallet's balances of tokens, PLS among them, at a block or a date. A package of its own. |
 | The ratio chart | `chart-price-ratio/` | The ratio of two tokens' prices over time, as a chart in the terminal. A package of its own. |
 | A wallet's history | `wallet-history/` | Every token and every PLS a wallet moved over a range of blocks, from the chain alone: functions a program calls, with no command line of their own. |
+| The Summ sweep | `summ-sweep/`, run by `npm run summ-sweep` | What Summ lacks or holds wrongly of the tokens a wallet moved over a range of days: the withdrawals from 9mm V3 positions to fix in Summ, with the income rows of their fees, and the legs Summ lacks. |
 
 ---
 
@@ -174,6 +183,130 @@ them.
 
 ---
 
+## The Summ Sweep
+
+The owner keeps his crypto taxes in Summ, which reads each of his
+wallets' transactions itself. Its record of a wallet can lack moves, and
+it often holds a withdrawal from a 9mm V3 position as one leg per coin,
+the principal and the fees together, which books the fees as liquidity
+removed rather than as income. `summ-sweep/` compares a wallet's history,
+read from the chain alone ([A Wallet's History](#a-wallets-history)), with
+Summ's rows of the wallet, and says what to fix in Summ and what Summ
+lacks. `npm run summ-sweep` runs it (`command-line.js`), and `sweep.js`
+runs its steps.
+
+### What the Sweep Reads
+
+A sweep takes a wallet, its first and last day, in UTC, and Summ's rows of
+the wallet over those days. Summ's connector returns the rows a page at a
+time, and the pages are saved to files: `summ-results.js` reads them, and
+refuses a set with a page missing or given twice, or a page holding fewer
+rows than it says it returned. The range of blocks runs from the first
+block of the first day to the last block of the last.
+
+The chain's facts are in the top `config.json`, under `pulsechain`: the
+endpoint, the chain's id, the position manager, WPLS, the widest span of
+a log search, and the spacing and size of requests. The owner's own
+settings are in `summ-sweep/config.json`, which git ignores, since the
+repo is public: the path of his Summ template and of his LP Ranger
+checkout, and each token's symbols in Summ and in a csv.
+`summ-sweep/config-example.json` shows the shape. The endpoint must keep
+past state and offer the debug methods, as for the history.
+
+### Legs and the Match
+
+A leg is one token in or out of one transaction. `legs.js` makes the
+chain's legs from the history's logs: a Transfer of a token, a position's
+NFT as a leg of 1, and wrapping or unwrapping PLS as a leg of WPLS. A
+transfer from the wallet to itself is two legs, one out and one in.
+
+`match.js` makes Summ's legs from its rows: each amount on a row is a leg
+in or out. A transfer between two of the owner's wallets is one row
+holding both sides, so only the swept wallet's side counts. A row entered
+by hand has no hash, so it takes the hash of the transaction at its time,
+and, when several transactions share that time, of the one with its
+amount. PLS is left out of both sides, since gas and PLS moves are the
+history's flows of PLS rather than token legs.
+
+A chain leg matches a Summ leg of the same transaction, direction and
+token whose amount holds the leg's amount, one leg to one first, then the
+chain's legs of one token added up against one Summ leg. A token is known
+in Summ by its symbols in the owner's settings, or else by its own symbol
+in capitals, since Summ names some tokens otherwise than their contracts
+do. What is left on each side is a gap: a chain leg Summ lacks, or a Summ
+leg the chain does not show.
+
+#### Amounts as Summ Prints Them
+
+The chain holds an amount exactly, as a whole number of the token's
+smallest units; Summ keeps amounts as JavaScript numbers, which hold
+about 16 significant digits. Summ prints an amount in one of two forms:
+as its JavaScript number, or rounded to 10 significant digits, keeping
+every digit of its whole part. A step is the gap between a JavaScript
+number and the next one up. Each turn of an amount into a JavaScript
+number moves it by up to half a step, and Summ's figures sit at most one
+step from the amount they stand for, so `amounts.js` matches a figure
+within two steps of the chain's amount, or of that amount rounded as
+Summ rounds.
+
+### Withdrawals from Positions
+
+A withdrawal from a 9mm V3 position is two events of the position
+manager: DecreaseLiquidity, which moves the principal out of the pool's
+liquidity and states its amounts, and Collect, which pays out what the
+position is owed, the principal and the fees it earned. The two can come
+in one transaction or in several, so the principal a collect pays out is
+the sum of the position's DecreaseLiquidity amounts since its last
+collect, and its fees are the rest of what the wallet received.
+
+1. Each transaction the wallet sent to the position manager is read by
+   LP Ranger's own tool, `util/bookkeeping/coins-in-transaction.js`, run
+   as a program of its own in the owner's LP Ranger checkout
+   (`lp-ranger.js`). Its files load LP Ranger's settings as they load, and
+   LP Ranger is never changed, so the sweep runs the tool rather than
+   importing it, and reads the json it prints.
+2. `positions.js` works out each coin's principal and fees. A pool holds
+   two coins, the one whose contract address sorts lower first, so each
+   coin the wallet received is placed on its side by its address. The fee
+   comes from what the wallet received, its legs, rather than from the
+   Collect event, whose amounts can exceed what the pool sent by a few of
+   the coin's smallest units. A collect it cannot split is reported, never
+   guessed at: one that collects from two positions, one whose coins
+   cannot be placed on the two sides, and one that paid out less than the
+   principal.
+3. `splits.js` sorts each coin with principal into Summ's three cases.
+   Summ holds the whole amount on one leg: the leg is a fix, to be set to
+   the principal and the category Remove liquidity through Summ's
+   connector, and the fee becomes an income row. Summ holds the principal
+   and the fee as two legs: the coin is reconciled. Summ holds neither:
+   both parts are legs Summ lacks.
+
+When a pool holds WPLS, the position manager can unwrap it and pay the
+wallet PLS inside the transaction, which logs no Transfer. That PLS,
+counted as WPLS, places the coins on their sides, but it has no token
+leg to match, so the sweep reports it as a problem.
+
+### What the Sweep Writes
+
+A sweep writes two files, at the paths its command line names, and
+neither over a file already there without `--replace`:
+
+- **The csv**, of the income rows of the fixes' fees, through
+  crypto-price-fetchers' Summ csv utility, the one way a csv for Summ is
+  written: it takes the header from the owner's template, checks every
+  row against Summ's rules, and writes nothing while a row breaks one.
+  A sweep with no fixes writes no csv.
+- **The report**, as json: the fixes, each with the ids Summ gave its
+  leg; the legs Summ lacks; Summ's legs no chain leg matched; and the
+  problems. Amounts are written as decimal text of the token's smallest
+  units.
+
+A change in the wallet's balance of PLS that no payment explains stops
+the sweep before it matches anything, since a history missing a payment
+would be compared as if it were whole.
+
+---
+
 ## Api Keys
 
 The keys this repo's programs send are listed in its top `config.json`,
@@ -204,8 +337,10 @@ Node (`crypto-price-fetchers/apps-script-runner`), the key store
 (`crypto-price-fetchers/api-key-store`), the GeckoTerminal client the ratio
 chart asks through (`crypto-price-fetchers/dex-prices/geckoterminal`),
 which keeps within a budget of requests and sends a request refused as too
-many again after its waits, and the security lint's rule against printing
-a secret (`crypto-price-fetchers/eslint-rules/no-secret-logging`).
+many again after its waits, the Summ csv utility the Summ sweep writes its
+csv through (`crypto-price-fetchers/summ-csv`), and the security lint's
+rule against printing a secret
+(`crypto-price-fetchers/eslint-rules/no-secret-logging`).
 
 Both `package.json` files name its main branch (`#main`), the same ref (a
 test holds them equal), and each `package-lock.json` keeps the commit
@@ -226,4 +361,4 @@ install fails.
 - **Apps Script's own services** in the Sheets script, which can import no
   package.
 - **asciichart** for the ratio chart; **commander** for the command lines
-  of the balance checker and the ratio chart.
+  of the balance checker, the ratio chart and the Summ sweep.
