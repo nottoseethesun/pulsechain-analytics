@@ -111,8 +111,9 @@ password.
 | `fetch-amount-of-token-transferred-gs.test.js` | The Sheets script, run unchanged under Node. |
 | `fetch-amount-of-token-transferred-node-version.test.js` | The Sheets script's Node version, its command line included. |
 | `format-balance.test.js` | How the balance checker writes a balance. |
-| `pulse-token-ratio.test.js` | The ratio chart, run as its owner runs it, against a stand-in GeckoTerminal and DexTools, with the DexTools key from a key file of the test's own: its prices, its fallback, its command line, its exit codes, and the fewest points it charts. |
-| `api-keys.test.js` | The keys `config.json` lists, the key manager, the copy of `unlock-api-keys.sh`, and the ratio chart's pin of crypto-price-fetchers. |
+| `pulse-token-ratio.test.js` | The ratio chart, run as its owner runs it, against a stand-in GeckoTerminal and DexTools, with the DexTools key from a key file of the test's own: its prices, a token's own prices when it is its pool's quote token, its fallback, its command line, its exit codes, and the fewest points it charts. |
+| `api-keys.test.js` | The keys `config.json` lists, the key manager, and the copy of `unlock-api-keys.sh`. |
+| `dependencies.test.js` | crypto-price-fetchers installed from GitHub, following its main branch or its latest release, by the ratio chart too, and `npm run github-project-deps` running its versions tool. |
 
 `test/helpers/` holds the stand-ins:
 
@@ -129,7 +130,8 @@ password.
   `fetch` in a program a test starts with answers from a file the test
   writes, and logs each request without any key.
 - `ratio-chart.js`: runs the ratio chart in a child process with that
-  preload, and builds GeckoTerminal's and DexTools' answers.
+  preload, and builds GeckoTerminal's and DexTools' answers, among them a
+  pool whose base token is not the chart's token (`quoteSideAnswers`).
 - `known-bug.js`: declares a known-bug test.
 
 `npm run test:coverage` fails below 80% of lines covered. Code written to

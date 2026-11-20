@@ -2,12 +2,14 @@
 
 A Node tool that charts the ratio of two PulseChain tokens' prices (token A
 / token B) in the terminal, even when no pool trades one for the other. It
-prices each token in PLS, from a pool of its own, so the ratio of the two
-prices needs no pool between them.
+prices each token in USD, from a pool of its own, whichever side of the
+pool the token is on, so the ratio of the two prices needs no pool between
+them.
 
-The prices come from **GeckoTerminal**, which needs no api key. When
-GeckoTerminal has no candles, the chart falls back to each token's current
-price from **DexTools**: one point.
+The prices come from **GeckoTerminal**, which needs no api key, asked
+through crypto-price-fetchers' GeckoTerminal client. When GeckoTerminal
+has no candles, the chart falls back to each token's current price from
+**DexTools**: one point.
 
 IMPORTANT: Use at your own risk as defined in the included file, `../LICENSE`.
 
@@ -43,8 +45,10 @@ cd pulsechain-analytics/chart-price-ratio
 npm install
 ```
 
-`npm install` installs what the chart needs, crypto-price-fetchers' key
-store among it.
+`npm install` installs what the chart needs, crypto-price-fetchers among
+it, for its key store and its GeckoTerminal client. Which version of
+crypto-price-fetchers is installed, and how to change it, is in the repo's
+[README](../README.md#choosing-versions-of-dependencies-that-are-raw-github-projects).
 
 ## Configuration
 

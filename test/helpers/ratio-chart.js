@@ -51,6 +51,21 @@ export const DEXTOOLS_CHECK_URL =
   "https://public-api.dextools.io/standard/v2/blockchain?sort=name&order=asc";
 
 /**
+ * Names a pool's candles, as crypto-price-fetchers' GeckoTerminal client
+ * asks for the latest thousand, in USD: of the token named, or, with none
+ * named, of the pool's base token, as GeckoTerminal prices them.
+ *
+ * @param {string} pool - The pool's address
+ * @param {string} timeframe - 'day' or 'hour'
+ * @param {string} [token] - The token priced, by its address
+ * @returns {string} The url
+ */
+function candlesUrl(pool, timeframe, token) {
+  const priced = token === undefined ? "" : `&token=${token}`;
+  return `${GECKO}/pools/${pool}/ohlcv/${timeframe}?aggregate=1&limit=1000&currency=usd${priced}`;
+}
+
+/**
  * Builds a pool's daily candles: one a day from 2026-01-01, closing at the
  * prices given.
  *
@@ -71,8 +86,9 @@ function dailyCandles(closes) {
 
 /**
  * Builds GeckoTerminal's answers for the two tokens: their names, one pool
- * each, and each pool's daily candles. Hourly candles are not answered
- * unless `hourly` says how.
+ * each, and each pool's daily candles of its token, asked by the token's
+ * address. Hourly candles are not answered unless `hourlyRefused` adds
+ * their refusal.
  *
  * @param {Array<number>} closesA - Token A's pool's daily closes
  * @param {Array<number>} closesB - Token B's pool's daily closes
@@ -102,14 +118,36 @@ export function geckoAnswers(closesA, closesB) {
       url: `${GECKO}/tokens/${TOKEN_B}/pools?page=1`,
       body: pool(POOL_B, "BET / WPLS", "2000"),
     },
-    {
-      url: `${GECKO}/pools/${POOL_A}/ohlcv/day?limit=1000`,
-      body: candles(closesA),
-    },
-    {
-      url: `${GECKO}/pools/${POOL_B}/ohlcv/day?limit=1000`,
-      body: candles(closesB),
-    },
+    { url: candlesUrl(POOL_A, "day", TOKEN_A), body: candles(closesA) },
+    { url: candlesUrl(POOL_B, "day", TOKEN_B), body: candles(closesB) },
+  ];
+}
+
+/**
+ * Builds GeckoTerminal's answers for two tokens of which the first is its
+ * pool's quote token. GeckoTerminal prices a pool's base token unless a
+ * request names another: token A's pool, ALP / WPLS with WPLS its base,
+ * answers WPLS's closes to a request that names no token, and token A's to
+ * one that names token A. Token B is its pool's base, and its pool answers
+ * token B's closes either way.
+ *
+ * @param {Array<number>} closesA - Token A's daily closes
+ * @param {Array<number>} closesB - Token B's daily closes
+ * @param {Array<number>} wplsCloses - WPLS's daily closes
+ * @returns {Array<{url: string, body: Object}>} The answers
+ */
+export function quoteSideAnswers(closesA, closesB, wplsCloses) {
+  const candles = (closes) => ({
+    data: { attributes: { ohlcv_list: dailyCandles(closes) } },
+  });
+  return [
+    ...geckoAnswers(closesA, closesB).filter(
+      (answer) => !answer.url.includes("/ohlcv/"),
+    ),
+    { url: candlesUrl(POOL_A, "day"), body: candles(wplsCloses) },
+    { url: candlesUrl(POOL_A, "day", TOKEN_A), body: candles(closesA) },
+    { url: candlesUrl(POOL_B, "day"), body: candles(closesB) },
+    { url: candlesUrl(POOL_B, "day", TOKEN_B), body: candles(closesB) },
   ];
 }
 
@@ -119,8 +157,11 @@ export function geckoAnswers(closesA, closesB) {
  * @returns {Array<{url: string, status: number, body: Object}>} The answers
  */
 export function hourlyRefused() {
-  return [POOL_A, POOL_B].map((pool) => ({
-    url: `${GECKO}/pools/${pool}/ohlcv/hour?limit=1000`,
+  return [
+    [POOL_A, TOKEN_A],
+    [POOL_B, TOKEN_B],
+  ].map(([pool, token]) => ({
+    url: candlesUrl(pool, "hour", token),
     status: 500,
     body: {},
   }));

@@ -20,18 +20,6 @@ import { readNeededKeys } from "crypto-price-fetchers/api-key-store";
 /** The repo's top folder. */
 const REPO_TOP = fileURLToPath(new URL("..", import.meta.url));
 
-/**
- * Reads a package.json.
- *
- * @param {...string} parts - Its path, from the repo's top folder
- * @returns {Object} Its contents
- */
-function readPackage(...parts) {
-  return JSON.parse(
-    fs.readFileSync(path.join(REPO_TOP, ...parts, "package.json"), "utf8"),
-  );
-}
-
 describe("the api keys", () => {
   it("are DexTools', for the ratio chart's fallback, as config.json lists them", () => {
     assert.deepEqual(
@@ -52,18 +40,6 @@ describe("the api keys", () => {
     assert.equal(
       fs.readFileSync(path.join(REPO_TOP, "unlock-api-keys.sh"), "utf8"),
       fs.readFileSync(theirs, "utf8"),
-    );
-  });
-
-  it("are opened by the ratio chart from the same crypto-price-fetchers the repo pins", () => {
-    const pin = readPackage().dependencies["crypto-price-fetchers"];
-    assert.match(
-      pin,
-      /^github:nottoseethesun\/crypto-price-fetchers#[0-9a-f]{40}$/,
-    );
-    assert.equal(
-      readPackage("chart-price-ratio").dependencies["crypto-price-fetchers"],
-      pin,
     );
   });
 
