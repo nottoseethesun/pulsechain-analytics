@@ -110,7 +110,8 @@ npm run check
 They cover `fetch-amount-of-token-transferred.js`, its Sheets twin, which
 runs unchanged under Node, the twin's Node version, how the balance checker
 writes a balance, the ratio chart, its command line (commander, in
-`chart-price-ratio/ratio-command.js`) included, and the api keys. The
+`chart-price-ratio/ratio-command.js`) included, the api keys, and a
+wallet's history (`wallet-history/`). The
 Sheets script also has test functions that the owner runs by hand in Apps
 Script; `docs/engineering.md` sets the two kinds apart. `test/helpers/`
 holds the stand-ins:
@@ -128,6 +129,21 @@ holds the stand-ins:
   with answers from a file the test writes; `ratio-chart.js` runs the ratio
   chart with it, against a stand-in GeckoTerminal and DexTools.
 - `known-bug.js` declares a known-bug test, described below.
+- `stand-in-wallet-chain.js` is a PulseChain endpoint held in memory for
+  `wallet-history/`, built from blocks a test describes. It works out
+  balances from the description, never through the code tested, refuses a
+  log search wider than its limit, and counts every request.
+
+## A wallet's history
+
+`wallet-history/` reads what a wallet moved from the chain alone: tokens
+from the logs, its transactions from its nonce, PLS from receipts, traces
+and its balance. The explorer is never asked: it left out transactions and
+listed transfers the chain does not hold. Its nonce search and request
+pacing are second copies of LP Ranger's wallet report's, since those files
+load LP Ranger's settings as they load and LP Ranger is never changed.
+Counts and balances at past blocks need an endpoint that keeps past state,
+and traces one that offers the debug methods, as g4mm4's does.
 
 ## Known bugs
 
