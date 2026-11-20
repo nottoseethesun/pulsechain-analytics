@@ -27,24 +27,14 @@ import {
   addressTopic,
 } from "../wallet-history/transfers.js";
 import { summPage } from "./helpers/summ-pages.js";
-
-/** The wallet: made up. */
-const WALLET = `0x${"aa".repeat(20)}`;
-
-/** Another of the owner's wallets: made up. */
-const OTHER = `0x${"bb".repeat(20)}`;
-
-/** A pool: made up. */
-const POOL = `0x${"cc".repeat(20)}`;
-
-/** PulseChain's HEX. */
-const HEX = "0x2b591e99afe9f32eaa6214f7b7629768c40eeb39";
-
-/** WPLS. */
-const WPLS = "0xa1077a294dde1b09bb078844df40758a5d0f9a27";
-
-/** The 9mm V3 position manager. */
-const PM = "0xcc05bf158202b4f461ede8843d76dcd7bbad07f2";
+import {
+  HEX,
+  OTHER,
+  PM,
+  POOL,
+  WALLET,
+  WPLS,
+} from "./helpers/summ-sweep-case.js";
 
 /** A made-up transaction hash. */
 const HASH = `0x${"ab".repeat(32)}`;
@@ -392,6 +382,30 @@ describe("matchLegs", () => {
       result.summUnmatched.map((one) => one.amount),
       ["9"],
     );
+  });
+
+  it("leaves out of a later match the Summ legs an earlier one used, without changing them", () => {
+    const summLegs = summLegsOf(
+      [summRow({ incoming: [{ amount: "1", symbol: "HEX" }] })],
+      WALLET,
+    );
+    const first = matchLegs([leg({ amount: 100000000n })], summLegs, new Map());
+
+    const second = matchLegs(
+      [leg({ logIndex: 1, amount: 100000000n })],
+      summLegs,
+      new Map(),
+      first.used,
+    );
+
+    assert.equal(first.unmatched.length, 0);
+    assert.equal(second.unmatched.length, 1);
+    assert.deepEqual(second.summUnmatched, []);
+    assert.deepEqual(Object.keys(summLegs.get(HASH).in[0]).sort(), [
+      "amount",
+      "row",
+      "symbol",
+    ]);
   });
 
   it("gives a row entered by hand the hash of the transaction at its time", () => {

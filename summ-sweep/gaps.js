@@ -10,7 +10,7 @@
  * transactions asks of the rows:
  *
  * - A row's description says how much of its transaction Summ holds:
- *   nothing (bucket B), or only its gas, as an approval, or some other
+ *   nothing (bucket B), or only its gas, as an approval, or any other
  *   part (bucket A).
  * - The gas of a transaction the wallet sent and Summ holds nothing of
  *   goes on its first row, and on no other, so Summ counts it once.
@@ -18,48 +18,27 @@
  *   moved no token and no PLS, is a Fee row of its gas: one that failed,
  *   or one such as an approval. One that moved PLS is a question, since
  *   the sweep writes no rows of PLS.
- * - A transaction newer than Summ's newest row of the wallet is one
- *   Summ's sync has not reached. Its rows say so and carry no gas, which
- *   that sync brings; one with no token legs gets no Fee row.
+ * - A transaction later than the time the run is given as reached by
+ *   Summ's sync of the wallet is one that sync has not read yet. Its rows
+ *   say so and carry no gas, which that sync brings; one with no token
+ *   legs gets no Fee row. The time is the owner's or Claude's to give,
+ *   from Summ: Summ's own rows do not show it.
  *
- * How: the legs are taken transaction by transaction, in time order, and
- * each transaction's rows in the order of their logs, so its first row is
- * the one its gas goes on.
+ * How: the legs are taken transaction by transaction, and each
+ * transaction's rows in the order of their logs, so its first row is the
+ * one its gas goes on.
  *
  * Fit: `summ-sweep/sweep.js` runs it on the legs and parts the match left
  * over, and writes its rows to the csv with the income rows of the fixes.
  */
 
+import { getAddress } from "ethers";
 import { sameAddress } from "../wallet-history/sent.js";
 import { decimalText } from "./amounts.js";
 import { transactionGaps } from "./gap-rules.js";
+import { groupBy } from "./group-by.js";
 import { BLOCKCHAIN, PLS, PLS_DECIMALS, withGas } from "./rows.js";
-
-/**
- * Items by the hash of their transaction, in lower case.
- *
- * @param {object[]} items - The items
- * @param {function(object): string} hashOf - An item's hash
- * @returns {Map<string, object[]>} The items of each hash
- */
-function byHash(items, hashOf) {
-  const map = new Map();
-  for (const item of items) {
-    const hash = hashOf(item).toLowerCase();
-    map.set(hash, [...(map.get(hash) ?? []), item]);
-  }
-  return map;
-}
-
-/**
- * A time as the rows' notes write it.
- *
- * @param {number} seconds - Seconds since 1970
- * @returns {string} Such as `2026-11-04 19:22:55`, in UTC
- */
-function timeText(seconds) {
-  return new Date(seconds * 1000).toISOString().slice(0, 19).replace("T", " ");
-}
+import { timeText } from "./times.js";
 
 /**
  * How much of a transaction Summ holds, as a row's description says it.
@@ -82,7 +61,7 @@ function holdText(categories) {
  *
  * @param {object} sent - The transaction, as the wallet sent it
  * @param {object} flow - Its PLS
- * @param {string} wallet - The wallet, in lower case
+ * @param {string} wallet - The wallet, in EIP-55's mixed case
  * @param {string} description - What the row is
  * @returns {object} The row, as the Summ csv utility takes it
  */
@@ -93,7 +72,7 @@ function feeRow(sent, flow, wallet, description) {
     baseCurrency: PLS,
     baseAmount: { raw: flow.gasPaid, decimals: PLS_DECIMALS },
     from: wallet,
-    to: sent.to.toLowerCase(),
+    to: getAddress(sent.to),
     blockchain: BLOCKCHAIN,
     id: flow.hash.toLowerCase(),
     description,
@@ -106,7 +85,7 @@ function feeRow(sent, flow, wallet, description) {
  *
  * @param {object} sent - The transaction, as the wallet sent it
  * @param {object} flow - Its PLS
- * @param {string} wallet - The wallet, in lower case
+ * @param {string} wallet - The wallet, in EIP-55's mixed case
  * @returns {{row: object}|{question: object}} Its Fee row, or its
  *   question
  */
@@ -151,21 +130,21 @@ function legless(sent, flow, wallet) {
  * @param {{rows: object[], questions: object[]}} found - The rows, each
  *   with the log index it sorts by, and the questions
  * @param {object} context - `categories`, of Summ's rows of it; `flow`,
- *   its PLS, when the wallet sent it; `newer`, the note of a transaction
- *   Summ's sync has not reached, or `null`
+ *   its PLS, when the wallet sent it; `later`, the note of a transaction
+ *   Summ's sync has not read yet, or `null`
  * @returns {{rows: object[], questions: object[]}} The rows, in the order
  *   of their logs, and the questions
  */
-function finish(found, { categories, flow, newer }) {
+function finish(found, { categories, flow, later }) {
   const hold = holdText(categories);
   const rows = [...found.rows]
     .sort((a, b) => a.order - b.order)
     .map(({ row }) => ({
       ...row,
-      description: `${row.description} ${hold}${newer ?? ""}`,
+      description: `${row.description} ${hold}${later ?? ""}`,
     }));
   const owesGas =
-    flow !== undefined && categories === undefined && newer === null;
+    flow !== undefined && categories === undefined && later === null;
   if (!owesGas) return { rows, questions: found.questions };
   const gas = `${decimalText(flow.gasPaid, PLS_DECIMALS)} ${PLS}`;
   if (rows.length > 0)
@@ -199,6 +178,17 @@ export function sortRows(rows) {
 }
 
 /**
+ * Items by the hash of their transaction, in lower case.
+ *
+ * @param {object[]} items - The items
+ * @param {function(object): string} hashOf - An item's hash
+ * @returns {Map<string, object[]>} The items of each hash
+ */
+function byHash(items, hashOf) {
+  return groupBy(items, (item) => hashOf(item).toLowerCase());
+}
+
+/**
  * The rows and questions for what Summ lacks.
  *
  * @param {object} gaps - What to book
@@ -213,23 +203,22 @@ export function sortRows(rows) {
  * @param {Map<string, object>} gaps.records - LP Ranger's records, by
  *   hash
  * @param {object[]} gaps.summRows - Summ's rows of the wallet
+ * @param {number} gaps.syncedTo - The time Summ's sync of the wallet has
+ *   read its transactions to, in seconds since 1970
  * @param {object} gaps.lists - The owner's lists
- * @param {object} gaps.chain - The chain's facts: `positionManager`
+ * @param {object} gaps.chain - The chain's facts: `positionManager`, in
+ *   EIP-55's mixed case
  * @returns {{rows: object[], questions: object[]}} The rows, sorted, and
  *   the questions
  */
 export function rowsForGaps(gaps) {
-  const { history, summRows, chain } = gaps;
-  const wallet = gaps.wallet.toLowerCase();
+  const { history, chain, syncedTo } = gaps;
+  const wallet = getAddress(gaps.wallet);
   const env = { wallet, lists: gaps.lists, chain };
-  const summByHash = byHash(summRows, (row) => row.hash);
-  const horizon =
-    summRows.length === 0
-      ? null
-      : Math.max(...summRows.map((row) => row.timestamp));
-  const newerNote = (timestamp) =>
-    horizon !== null && timestamp > horizon
-      ? ` Summ's newest row of this wallet is of ${timeText(horizon)} UTC, so Summ's sync has not reached this transaction: its gas is left off, for that sync to bring.`
+  const summByHash = byHash(gaps.summRows, (row) => row.hash);
+  const laterNote = (timestamp) =>
+    timestamp > syncedTo
+      ? ` It is later than ${timeText(syncedTo)} UTC, the time this run was given as reached by Summ's sync of the wallet, so its gas is left off, for that sync to bring.`
       : null;
   const sentByHash = byHash(history.sent, (one) => one.hash);
   const flowByHash = byHash(history.own, (one) => one.hash);
@@ -255,11 +244,10 @@ export function rowsForGaps(gaps) {
       },
       env,
     );
-    const categories = summByHash.get(hash)?.map((row) => row.category);
     const done = finish(found, {
-      categories,
+      categories: summByHash.get(hash)?.map((row) => row.category),
       flow,
-      newer: newerNote(legs[0].timestamp),
+      later: laterNote(legs[0].timestamp),
     });
     rows.push(...done.rows);
     questions.push(...done.questions);
@@ -267,7 +255,7 @@ export function rowsForGaps(gaps) {
   for (const [hash, [sent]] of sentByHash) {
     const flow = flowByHash.get(hash)[0];
     if (legsByHash.has(hash) || summByHash.has(hash)) continue;
-    if (newerNote(flow.timestamp) !== null) continue;
+    if (laterNote(flow.timestamp) !== null) continue;
     const booked = legless(sent, flow, wallet);
     if (booked.row !== undefined) rows.push(booked.row);
     else questions.push(booked.question);

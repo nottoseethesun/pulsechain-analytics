@@ -57,9 +57,11 @@ const amount = await fetcher.getTokenTransferred(txId, tokenAddress, walletAddre
 await fetcher.close();
 ```
 
-It runs the script with the runner from
+It runs the script with the runner of
 [crypto-price-fetchers](https://github.com/nottoseethesun/crypto-price-fetchers),
-which `npm ci` installs. The file header says what differs from the sheet.
+the owner's repo of code his projects share, which `npm ci` installs; the
+runner runs an Apps Script file under Node, with Node versions of Apps
+Script's services. The file header says what differs from the sheet.
 
 ## A Note on Caching
 

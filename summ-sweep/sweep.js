@@ -20,15 +20,20 @@
  * How: the steps run in the order each needs the last: the logs and the
  * wallet's own transactions first, then their receipts, the PLS each moved
  * and the PLS from elsewhere, then the tokens' facts and the blocks'
- * times, and only then the match. A change in the wallet's balance the
+ * times, and only then the match. A block the search for the wallet's
+ * transactions read already gives its time, so only the other blocks the
+ * logs name are read for theirs. A change in the wallet's balance the
  * search for PLS cannot explain stops the sweep, since a history missing a
- * payment would be compared as if it were whole.
+ * payment would be compared as if it were whole. Addresses are put in
+ * EIP-55's mixed case where they come in: the wallet, the chain's
+ * contracts and the owner's lists.
  *
  * Fit: `summ-sweep/command-line.js` runs it for `npm run summ-sweep`, and
  * writes its rows through crypto-price-fetchers' Summ csv utility and its
  * report as json.
  */
 
+import { getAddress } from "ethers";
 import { blockTimes } from "../wallet-history/blocks.js";
 import { walletTransferLogs } from "../wallet-history/transfers.js";
 import { sameAddress, walletSentTransactions } from "../wallet-history/sent.js";
@@ -102,11 +107,13 @@ async function readHistory(paced, range) {
     paced,
     logs.map((log) => log.address),
   );
-  const times = await blockTimes(
+  const known = new Map(sent.map((one) => [one.blockNumber, one.timestamp]));
+  const read = await blockTimes(
     paced,
-    logs.map((log) => log.blockNumber),
+    logs.map((log) => log.blockNumber).filter((number) => !known.has(number)),
     chain.batchSize,
   );
+  const times = new Map([...known, ...read]);
   const legs = tokenLegs({
     wallet,
     logs,
@@ -123,12 +130,12 @@ async function readHistory(paced, range) {
  * coin.
  *
  * @param {object} history - The history read
- * @param {object} chain - The chain's facts
+ * @param {object} chain - The chain's facts, in EIP-55's mixed case
  * @returns {function(string): Map<string, bigint>} The coins received in a
- *   transaction, by contract in lower case
+ *   transaction, by contract
  */
 function receivedIn(history, chain) {
-  const wrapped = chain.wrappedCoin.toLowerCase();
+  const wrapped = chain.wrappedCoin;
   return (transactionHash) => {
     const coins = new Map();
     const add = (coin, amount) =>
@@ -165,6 +172,8 @@ function receivedIn(history, chain) {
  *   income tokens, and each token's symbols in Summ and in a csv
  * @param {object[]} sweep.summRows - Summ's rows for the wallet, from
  *   `parseSummResults`
+ * @param {number} sweep.syncedTo - The time Summ's sync of the wallet has
+ *   read its transactions to, in seconds since 1970
  * @param {function(string[]): Promise<Map<string, object>>}
  *   sweep.readRecords - Reads transactions through LP Ranger's tool
  * @returns {Promise<object>} `history`; `records`; `unmatched`, the legs
@@ -172,9 +181,14 @@ function receivedIn(history, chain) {
  *   Summ; `rows`, for the csv; `questions`, for the owner; and `problems`
  */
 export async function sweepWallet(paced, sweep) {
-  const { wallet, chain } = sweep;
+  const wallet = getAddress(sweep.wallet);
+  const chain = {
+    ...sweep.chain,
+    positionManager: getAddress(sweep.chain.positionManager),
+    wrappedCoin: getAddress(sweep.chain.wrappedCoin),
+  };
   const lists = ownerLists(sweep.owner);
-  const history = await readHistory(paced, sweep);
+  const history = await readHistory(paced, { ...sweep, wallet, chain });
   const summRows = attachManualRows(sweep.summRows, history.legs);
   const summLegs = summLegsOf(summRows, wallet);
   const whole = matchLegs(history.legs, summLegs, lists.summSymbols);
@@ -194,7 +208,12 @@ export async function sweepWallet(paced, sweep) {
     wallet,
     csvSymbolOf: (token, symbol) => csvSymbolOf(lists, token, symbol),
   });
-  const parts = matchLegs(sorted.parts, summLegs, lists.summSymbols);
+  const parts = matchLegs(
+    sorted.parts,
+    summLegs,
+    lists.summSymbols,
+    whole.used,
+  );
   const unmatched = [
     ...whole.unmatched.filter((leg) => !sorted.splitLegs.has(leg)),
     ...parts.unmatched,
@@ -207,6 +226,7 @@ export async function sweepWallet(paced, sweep) {
     problems,
     records,
     summRows,
+    syncedTo: sweep.syncedTo,
     lists,
     chain,
   });

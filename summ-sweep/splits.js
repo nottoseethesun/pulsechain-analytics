@@ -4,9 +4,10 @@
  * @module summ-sweep/splits
  *
  * What: a collect pays the wallet a position's principal and its fees in
- * one transfer per coin, and Summ often holds that transfer as one leg,
- * which books the fees as liquidity removed, or leaves the leg
- * uncategorised. The owner books the fees as income. So for each coin of a
+ * one transfer per coin, and Summ's sync records each transfer as one
+ * leg, since nothing in a Transfer log tells principal from fees: the leg
+ * books the fees as liquidity removed, or stays uncategorised. The owner
+ * books the fees as income. So for each coin of a
  * collect with principal (`splitCollects`), there are three cases. Summ
  * holds the whole amount on one leg: the leg is to be set to the principal
  * and the category Remove liquidity, which Claude does through the Summ
@@ -28,6 +29,7 @@
  * in Summ, and writes their income rows to the csv with the gap rows.
  */
 
+import { getAddress } from "ethers";
 import { decimalText } from "./amounts.js";
 import { legRow } from "./rows.js";
 
@@ -66,7 +68,7 @@ function feeRow(split, leg, wallet, symbol) {
     symbol,
     amount: split.fee,
     from: leg.counterparty,
-    to: wallet.toLowerCase(),
+    to: getAddress(wallet),
     description: `Fees of 9mm V3 position #${split.nftId}: the ${received} ${symbol} it paid out, less the principal of ${principal}. Summ holds the whole ${received} on one leg, which is set to the principal, as Remove liquidity.`,
   });
 }

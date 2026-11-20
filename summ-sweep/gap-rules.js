@@ -10,9 +10,11 @@
  * 1. A part of a withdrawal from a 9mm V3 position: the principal is
  *    Remove liquidity, and the fees are Income.
  * 2. A transaction the wallet sent to the position manager: a token out
- *    is a deposit, Add liquidity; the position's NFT in is Receive LP
- *    token, and out, Return LP token; a coin in that a collect with no
- *    principal paid is Income, all of it fees.
+ *    is a deposit, Add liquidity, into the position its IncreaseLiquidity
+ *    event names; the position's NFT in is Receive LP token, and out,
+ *    Return LP token; a coin in that a collect with no principal paid is
+ *    Income, all of it fees. A deposit's rows name the PLS the
+ *    transaction paid the position manager, which has no log.
  * 3. Wrapping PLS: the WPLS in is Swap in. Unwrapping: the WPLS out is
  *    Swap out. The PLS side moves without a log, so it has no row here.
  * 4. A token on the owner's list of spam, coming in: Spam.
@@ -48,7 +50,7 @@ import { csvSymbolOf } from "./owner-lists.js";
 import { PLS, PLS_DECIMALS, legRow } from "./rows.js";
 
 /** The zero address: the sender of a mint, and the receiver of a burn. */
-const ZERO = ZeroAddress.toLowerCase();
+const ZERO = ZeroAddress;
 
 /**
  * A leg's amount, with its symbol, as a description writes it.
@@ -63,8 +65,9 @@ function amountOf(amount, leg, symbol) {
 }
 
 /**
- * The number of the position a transaction to the position manager
- * worked on, from LP Ranger's record of it or the position's NFT.
+ * The number of the position a deposit went into: the NFT its
+ * IncreaseLiquidity event names, in LP Ranger's record, or else the NFT
+ * the position manager minted to the wallet in the transaction.
  *
  * @param {object} transaction - The transaction
  * @returns {string} Such as ` #12345`, or the empty text when neither
@@ -72,10 +75,35 @@ function amountOf(amount, leg, symbol) {
  */
 function positionNumber(transaction) {
   const events = transaction.record?.liquidity ?? [];
-  const named = events.find((event) => event.nftId !== undefined);
-  const nft = transaction.legs.find((leg) => leg.nftId !== undefined);
-  if (named !== undefined) return ` #${named.nftId}`;
-  return nft === undefined ? "" : ` #${nft.nftId}`;
+  const increase = events.find((event) => event.event === "IncreaseLiquidity");
+  const minted = transaction.legs.find(
+    (leg) =>
+      leg.nftId !== undefined &&
+      leg.direction === "in" &&
+      leg.counterparty === ZERO,
+  );
+  if (increase !== undefined) return ` #${increase.nftId}`;
+  return minted === undefined ? "" : ` #${minted.nftId}`;
+}
+
+/**
+ * The note of the PLS a transaction paid the position manager, which
+ * wraps it into the pool's WPLS: the PLS it sent, less any the position
+ * manager handed back.
+ *
+ * @param {object} transaction - The transaction
+ * @param {object} env - The wallet, the owner's lists and the chain
+ * @returns {string} The note, or the empty text when it paid none
+ */
+function plsDepositNote(transaction, env) {
+  const { flow } = transaction;
+  if (flow === undefined) return "";
+  const refunded = flow.handedBack
+    .filter((one) => one.from === env.chain.positionManager)
+    .reduce((sum, one) => sum + one.amount, 0n);
+  const paid = flow.sent - refunded;
+  if (paid <= 0n) return "";
+  return ` The transaction also paid the position manager ${decimalText(paid, PLS_DECIMALS)} ${PLS}, which moved without a log, so this file holds no row for it.`;
 }
 
 /**
@@ -132,15 +160,21 @@ function swapOf(transaction, env) {
  * A leg's facts for a question.
  *
  * @param {object} leg - The leg
- * @returns {object} Its direction, token, symbol, amount, decimals,
- *   counterparty, and its NFT id and part when it has them
+ * @param {object} env - The wallet, the owner's lists and the chain
+ * @returns {object} Its direction, token, symbol, amount (in the token's
+ *   smallest units, and as whole tokens with the csv symbol, `null` when
+ *   the token lacks its decimals or a symbol), decimals, counterparty, and
+ *   its NFT id and part when it has them
  */
-function legFacts(leg) {
+function legFacts(leg, env) {
   return {
     direction: leg.direction,
     token: leg.token,
     symbol: leg.symbol,
     amount: leg.amount,
+    amountText: hasFacts(leg, env)
+      ? amountOf(leg.amount, leg, csvSymbolOf(env.lists, leg.token, leg.symbol))
+      : null,
     decimals: leg.decimals,
     counterparty: leg.counterparty,
     nftId: leg.nftId,
@@ -149,18 +183,20 @@ function legFacts(leg) {
 }
 
 /**
- * A question for the owner about some legs of a transaction.
+ * A question for the owner about legs of a transaction that no rule
+ * settles.
  *
  * @param {object[]} legs - The legs
  * @param {string} reason - Why no rule settles them
+ * @param {object} env - The wallet, the owner's lists and the chain
  * @returns {object} The question
  */
-function question(legs, reason) {
+function question(legs, reason, env) {
   return {
     hash: legs[0].hash,
     timestamp: legs[0].timestamp,
     reason,
-    legs: legs.map(legFacts),
+    legs: legs.map((leg) => legFacts(leg, env)),
   };
 }
 
@@ -215,6 +251,7 @@ function swapRows(transaction, swap, env) {
         question(
           one.legs,
           "its legs Summ lacks of this token, in and out, add up to nothing",
+          env,
         ),
       );
   }
@@ -320,13 +357,14 @@ function positionRule(group, transaction, env) {
   const leg = group.first;
   const position = `9mm V3 position${positionNumber(transaction)}`;
   const minted = leg.counterparty === ZERO ? leg.token : leg.counterparty;
+  const plsNote = plsDepositNote(transaction, env);
   if (leg.nftId !== undefined)
     return leg.direction === "in"
       ? {
           type: "receive-lp-token",
           from: minted,
           to: env.wallet,
-          text: `The NFT of 9mm V3 position #${leg.nftId}, which the position manager gave the wallet for the position.`,
+          text: `The NFT of 9mm V3 position #${leg.nftId}, which the position manager gave the wallet for the position.${plsNote}`,
         }
       : {
           type: "return-lp-token",
@@ -339,7 +377,7 @@ function positionRule(group, transaction, env) {
       type: "add-liquidity",
       from: env.wallet,
       to: leg.counterparty,
-      text: `Deposit into ${position}.`,
+      text: `Deposit into ${position}.${plsNote}`,
     };
   if (transaction.problem !== undefined)
     return {
@@ -474,7 +512,8 @@ const RULES = Object.freeze([
 ]);
 
 /**
- * Why no rule settles some legs.
+ * Why no rule settles the legs of one token, one direction and one NFT
+ * id in a transaction.
  *
  * @param {object} leg - The first of them
  * @returns {string} The reason
@@ -532,13 +571,14 @@ function bookGroup(group, transaction, env) {
         leg.decimals === null
           ? "its contract gave no decimals"
           : "its contract gave no symbol, and the owner's settings give none",
+        env,
       ),
     };
   for (const rule of RULES) {
     const booked = rule(group, transaction, env);
     if (booked === undefined) continue;
     if (booked.question !== undefined)
-      return { question: question(group.legs, booked.question) };
+      return { question: question(group.legs, booked.question, env) };
     const summed =
       group.legs.length > 1
         ? ` It adds up ${group.legs.length} legs of ${symbol}.`
@@ -557,7 +597,7 @@ function bookGroup(group, transaction, env) {
       },
     };
   }
-  return { question: question(group.legs, reasonOf(leg)) };
+  return { question: question(group.legs, reasonOf(leg), env) };
 }
 
 /**
@@ -568,8 +608,9 @@ function bookGroup(group, transaction, env) {
  *   when the wallet sent it; `toPositionManager`; `record`, LP Ranger's
  *   record of it; `splits`, its coins of collects; and `problem`, why its
  *   collect could not be split, when it could not
- * @param {object} env - `wallet`, in lower case; `lists`, the owner's
- *   lists; `chain`, the chain's facts
+ * @param {object} env - `wallet`; `lists`, the owner's lists; `chain`,
+ *   the chain's facts, `positionManager` among them; every address in
+ *   EIP-55's mixed case
  * @returns {{rows: object[], questions: object[]}} The rows, each with the
  *   log index it sorts by, and the questions
  */

@@ -240,13 +240,14 @@ describe("what all the rows of a transaction share", () => {
     assert.equal(rows[1].feeAmount, undefined);
   });
 
-  it("leaves the gas of a transaction newer than Summ's newest row to Summ's sync", () => {
+  it("leaves the gas of a transaction later than the time given as reached by Summ's sync to that sync", () => {
     const legs = [gapLeg({ n: 9, counterparty: OTHER })];
 
     const { rows } = runGaps({
       legs,
       txs: [sentBy(9), sentBy(10, { succeeded: false })],
-      summRows: [summRowOf(5, "trade")],
+      summRows: [summRowOf(20, "trade")],
+      syncedTo: TIME + 5,
       owner: { incomeTokens: [TKN] },
     });
 
@@ -254,7 +255,7 @@ describe("what all the rows of a transaction share", () => {
     assert.equal(rows[0].feeAmount, undefined);
     assert.match(
       rows[0].description,
-      /Summ's newest row of this wallet is of 2023-11-14 22:13:25 UTC, so Summ's sync has not reached this transaction: its gas is left off, for that sync to bring\.$/,
+      / It is later than 2023-11-14 22:13:25 UTC, the time this run was given as reached by Summ's sync of the wallet, so its gas is left off, for that sync to bring\.$/,
     );
   });
 

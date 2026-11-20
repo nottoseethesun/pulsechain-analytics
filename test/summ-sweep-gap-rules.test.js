@@ -12,10 +12,12 @@
 
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
+import { getAddress } from "ethers";
 import {
   HEX,
   ONE,
   OTHER,
+  PLS_ONE,
   PM,
   POOL,
   TKN,
@@ -60,6 +62,39 @@ describe("the rules of a position's transactions", () => {
     );
     assert.deepEqual(rows[0].feeAmount, { raw: 300n, decimals: 18 });
     assert.equal(rows[1].feeAmount, undefined);
+  });
+
+  it("names the position a deposit's IncreaseLiquidity event names, and the PLS the deposit paid", () => {
+    const legs = [
+      gapLeg({ direction: "out", amount: 2n * ONE, counterparty: POOL }),
+    ];
+    const record = {
+      liquidity: [
+        { event: "DecreaseLiquidity", nftId: "5", amount0: "1", amount1: "1" },
+        { event: "IncreaseLiquidity", nftId: "8", amount0: "2", amount1: "3" },
+      ],
+    };
+
+    const { rows } = runGaps({
+      legs,
+      txs: [
+        sentBy(0, {
+          to: PM,
+          sent: 2n * PLS_ONE,
+          handedBack: [
+            { from: PM, amount: PLS_ONE / 2n },
+            { from: OTHER, amount: PLS_ONE },
+          ],
+        }),
+      ],
+      records: new Map([[hashOf(0), record]]),
+      summRows: HELD(0),
+    });
+
+    assert.equal(
+      rows[0].description,
+      "Deposit into 9mm V3 position #8. The transaction also paid the position manager 1.5 PLS, which moved without a log, so this file holds no row for it. Bucket A: Summ holds only this transaction's gas, as an approval.",
+    );
   });
 
   it("books a withdrawal's parts, a collect of fees alone, and a burned NFT", () => {
@@ -150,9 +185,12 @@ describe("the rules of a position's transactions", () => {
 });
 
 describe("the rules of wraps, spam, the owner's wallets and income", () => {
-  it("books each by its rule, the owner's lists in any case", () => {
-    const mine = "0x" + "AB".repeat(20);
-    const spam = "0x" + "c1".repeat(20);
+  it("books each by its rule, the owner's lists in any case ethers accepts", () => {
+    /*- The owner's lists name the wallet in capitals and the spam token in
+     * small letters; the legs, as `tokenLegs` makes them, carry EIP-55's
+     * mixed case. */
+    const mine = getAddress(`0x${"ab".repeat(20)}`);
+    const spam = getAddress(`0x${"c1".repeat(20)}`);
     const legs = [
       gapLeg({ token: WPLS, counterparty: WPLS, wrap: "deposit" }),
       gapLeg({
@@ -163,8 +201,8 @@ describe("the rules of wraps, spam, the owner's wallets and income", () => {
         wrap: "withdrawal",
       }),
       gapLeg({ n: 2, token: spam, symbol: "WIN", counterparty: OTHER }),
-      gapLeg({ n: 3, counterparty: mine.toLowerCase() }),
-      gapLeg({ n: 4, direction: "out", counterparty: mine.toLowerCase() }),
+      gapLeg({ n: 3, counterparty: mine }),
+      gapLeg({ n: 4, direction: "out", counterparty: mine }),
       gapLeg({ n: 5, token: HEX, counterparty: OTHER }),
     ];
 
@@ -172,8 +210,8 @@ describe("the rules of wraps, spam, the owner's wallets and income", () => {
       legs,
       summRows: [0, 1, 2, 3, 4, 5].flatMap(HELD),
       owner: {
-        ownWallets: { [mine]: "Cold storage" },
-        spamTokens: [spam.toUpperCase().replace("0X", "0x")],
+        ownWallets: { [`0x${mine.slice(2).toUpperCase()}`]: "Cold storage" },
+        spamTokens: [spam.toLowerCase()],
         incomeTokens: [HEX],
       },
     });
@@ -209,7 +247,7 @@ describe("the rules of wraps, spam, the owner's wallets and income", () => {
   });
 
   it("adds up legs of one token, and takes the owner's symbol for a token without one", () => {
-    const nameless = "0x" + "c2".repeat(20);
+    const nameless = getAddress(`0x${"c2".repeat(20)}`);
     const legs = [
       gapLeg({ token: nameless, counterparty: OTHER }),
       gapLeg({ logIndex: 1, token: nameless, counterparty: OTHER }),
@@ -261,5 +299,9 @@ describe("the questions", () => {
       ],
     );
     assert.deepEqual(questions[4].legs[0].nftId, 3n);
+    assert.deepEqual(
+      questions.map((one) => one.legs[0].amountText),
+      ["1 TKN", "1 TKN", "1 TKN", "1 TKN", "1 9MM-V3-POS", "1 TKN", null, null],
+    );
   });
 });

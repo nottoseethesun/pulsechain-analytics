@@ -3,7 +3,7 @@
  * `npm run summ-sweep`.
  * @module summ-sweep/command-line
  *
- * What: sweeps one wallet over a range of dates (`sweepWallet`, in
+ * What: sweeps one wallet over a range of days (`sweepWallet`, in
  * `summ-sweep/sweep.js`) against the pages of Summ's results Claude saved,
  * and writes two files: the csv of rows for Summ, through
  * crypto-price-fetchers' Summ csv utility, the one way such a file is
@@ -11,16 +11,22 @@
  * Summ lacks, the questions for the owner about the legs no rule books,
  * Summ's legs no leg matched, and the problems found.
  *
- * How: the chain's facts (endpoint, chain id, position manager, wrapped
- * coin, span of a log search, spacing and size of requests) are in the
- * top `config.json`, which git keeps; the owner's own settings (the path
- * of his Summ template and of his LP Ranger checkout, his own wallets,
- * his spam and income tokens, and each token's symbols in Summ and in a
- * csv) are in `summ-sweep/config.json`, which git ignores, since this
- * repo is public; `summ-sweep/config-example.json` shows its shape. A date is a day in UTC: the range runs from the first
- * block of its first day to the last block of its last. A report's
- * amounts, which are BigInts, are written as decimal text, json having
- * no BigInt.
+ * How: each option is checked as it is parsed: the wallet is an address,
+ * put in EIP-55's mixed case; each day is a real day, in UTC; and the time
+ * Summ's sync reached is a real time, in UTC. A mistake there is refused
+ * before anything is read, with the option named. The chain's facts
+ * (endpoint, chain id, position manager, wrapped coin, span of a log
+ * search, spacing and size of requests) are in the top `config.json`,
+ * which git keeps; the owner's own settings (the path of his Summ template
+ * and of his LP Ranger checkout, his own wallets, his spam and income
+ * tokens, and each token's symbols in Summ and in a csv) are in
+ * `summ-sweep/config.json`, which git ignores, since this repo is public;
+ * `summ-sweep/config-example.json` shows its shape. The range runs from
+ * the first block of its first day to the last block of its last. Before
+ * either file is written, the rows are checked by the csv utility and
+ * both paths are checked for files already there, so a run that fails
+ * writes neither. A report's amounts, which are BigInts, are written as
+ * decimal text, json having no BigInt.
  *
  * Fit: `summ-sweep.js` at the repo's top runs `runSummSweep`. The tests
  * give it a stand-in chain and a stand-in LP Ranger.
@@ -28,19 +34,24 @@
 
 import fs from "node:fs";
 import path from "node:path";
-import { Command, CommanderError } from "commander";
-import { JsonRpcProvider, Network } from "ethers";
-import { writeSummCsv } from "crypto-price-fetchers/summ-csv";
+import { Command, CommanderError, InvalidArgumentError } from "commander";
+import { JsonRpcProvider, Network, getAddress, isAddress } from "ethers";
+import {
+  readTemplateHeader,
+  summCsvText,
+  writeSummCsv,
+} from "crypto-price-fetchers/summ-csv";
 import { pacedProvider } from "../wallet-history/paced-provider.js";
 import { blockAtOrAfter } from "../wallet-history/blocks.js";
 import { parseSummResults } from "./summ-results.js";
 import { readThroughLpRanger } from "./lp-ranger.js";
 import { sweepWallet } from "./sweep.js";
+import { secondsOfDay, secondsOfTime } from "./times.js";
 
 /** One day, in seconds. */
 const DAY = 86400;
 
-/** The end of the help: the two files, and the settings. */
+/** The end of the help: the two files, the settings and the exit codes. */
 const HELP_AFTER = `
 The csv holds the rows for what Summ lacks, written by crypto-price-fetchers'
 Summ csv utility; the report, as json, lists the splits to fix in Summ (a
@@ -49,25 +60,62 @@ lacks, the questions about the legs no rule books, Summ's legs no leg
 matched, and the problems found. Neither is written over without
 --replace.
 
+--summ-synced-to is the time up to which Summ's sync has read the wallet's
+transactions, from Summ. A transaction after it is one that sync has not
+read yet: its rows carry no gas, for the sync to bring.
+
 The chain's facts come from the top config.json, and the owner's settings
 from summ-sweep/config.json, which git ignores; summ-sweep/config-example.json
 shows its shape.
+
+Exit codes: 0 when the report was written, and the csv with it when there
+were rows; 1 when they were not.
 `;
 
 /**
- * The seconds since 1970 of the start of a day in UTC.
+ * Reads the wallet's option: an address, in any case that ethers accepts.
  *
- * @param {string} day - The day, as `YYYY-MM-DD`
- * @returns {number} The seconds
- * @throws {Error} When the text is no real day
+ * @param {string} value - The option's text
+ * @returns {string} The address, in EIP-55's mixed case
+ * @throws {InvalidArgumentError} When it is no address
  */
-export function dayStart(day) {
-  const seconds = Date.parse(`${day}T00:00:00Z`) / 1000;
-  const back = Number.isFinite(seconds)
-    ? new Date(seconds * 1000).toISOString().slice(0, 10)
-    : "";
-  if (back !== day)
-    throw new Error(`"${day}" is not a day written as YYYY-MM-DD`);
+function walletArgument(value) {
+  if (!isAddress(value))
+    throw new InvalidArgumentError(
+      "It is not an address, or its mixed case does not match its checksum.",
+    );
+  return getAddress(value);
+}
+
+/**
+ * Reads a day's option.
+ *
+ * @param {string} value - The option's text
+ * @returns {number} The seconds since 1970 of the day's start, in UTC
+ * @throws {InvalidArgumentError} When it is no real day
+ */
+function dayArgument(value) {
+  const seconds = secondsOfDay(value);
+  if (seconds === null)
+    throw new InvalidArgumentError(
+      `"${value}" is not a day written as YYYY-MM-DD.`,
+    );
+  return seconds;
+}
+
+/**
+ * Reads the option of the time Summ's sync reached.
+ *
+ * @param {string} value - The option's text
+ * @returns {number} The seconds since 1970
+ * @throws {InvalidArgumentError} When it is no real time
+ */
+function timeArgument(value) {
+  const seconds = secondsOfTime(value);
+  if (seconds === null)
+    throw new InvalidArgumentError(
+      `"${value}" is not a time written as "YYYY-MM-DD HH:MM:SS".`,
+    );
   return seconds;
 }
 
@@ -90,7 +138,8 @@ function jsonValue(_key, value) {
  * The report of a sweep.
  *
  * @param {object} result - What `sweepWallet` gave
- * @param {object} range - The wallet and its blocks
+ * @param {object} range - The wallet, its blocks and the time Summ's sync
+ *   reached
  * @returns {object} The report
  */
 function reportOf(result, range) {
@@ -119,14 +168,24 @@ function reportOf(result, range) {
 }
 
 /**
- * Writes a file, unless one is there and the run may not replace it.
+ * Checks, before anything is written, that both files can be: the rows
+ * pass the csv utility's rules, and no file is in the way of a run
+ * without `--replace`.
  *
- * @param {string} file - The file
- * @param {string} text - What to write
- * @param {boolean} replace - Whether to write over a file already there
+ * @param {object} result - What `sweepWallet` gave
+ * @param {object} options - The parsed options
+ * @param {object} owner - The owner's settings: `templatePath`
+ * @throws {Error} When a row breaks a rule, or a file is in the way
  */
-function writeFile(file, text, replace) {
-  fs.writeFileSync(file, text, { flag: replace ? "w" : "wx" });
+function checkBeforeWriting(result, options, owner) {
+  const writing = result.rows.length > 0;
+  if (writing) summCsvText(result.rows, readTemplateHeader(owner.templatePath));
+  if (options.replace === true) return;
+  for (const file of writing ? [options.out, options.report] : [options.report])
+    if (fs.existsSync(file))
+      throw new Error(
+        `${file} is already there: pass --replace to write over it`,
+      );
 }
 
 /**
@@ -138,12 +197,13 @@ function writeFile(file, text, replace) {
  */
 async function sweepWith(options, context) {
   const { chain, owner, say, makeProvider, run } = context;
+  if (options.endDate < options.startDate)
+    throw new Error("--end-date is before --start-date");
   const paced = pacedProvider(makeProvider(chain), {
     spacingMs: chain.requestSpacingMs,
   });
-  const fromBlock = await blockAtOrAfter(paced, dayStart(options.startDate));
-  const toBlock =
-    (await blockAtOrAfter(paced, dayStart(options.endDate) + DAY)) - 1;
+  const fromBlock = await blockAtOrAfter(paced, options.startDate);
+  const toBlock = (await blockAtOrAfter(paced, options.endDate + DAY)) - 1;
   const summRows = parseSummResults(
     options.summResults.map((file) => fs.readFileSync(file, "utf8")),
   );
@@ -154,6 +214,7 @@ async function sweepWith(options, context) {
     chain,
     owner,
     summRows,
+    syncedTo: options.summSyncedTo,
     readRecords: (hashes) =>
       readThroughLpRanger(hashes, {
         lpRangerDir: owner.lpRangerDir,
@@ -163,6 +224,7 @@ async function sweepWith(options, context) {
         run,
       }),
   });
+  checkBeforeWriting(result, options, owner);
   const replace = options.replace === true;
   if (result.rows.length > 0)
     writeSummCsv({
@@ -171,11 +233,16 @@ async function sweepWith(options, context) {
       outPath: options.out,
       replace,
     });
-  const range = { wallet: options.wallet, fromBlock, toBlock };
-  writeFile(
+  const range = {
+    wallet: options.wallet,
+    fromBlock,
+    toBlock,
+    summSyncedTo: options.summSyncedTo,
+  };
+  fs.writeFileSync(
     options.report,
     `${JSON.stringify(reportOf(result, range), jsonValue, 2)}\n`,
-    replace,
+    { flag: replace ? "w" : "wx" },
   );
   say(
     `Blocks ${fromBlock} to ${toBlock}: ${result.history.legs.length} token legs, ${result.unmatched.length} legs and parts Summ lacks, ${result.fixes.length} splits to fix in Summ, ${result.questions.length} questions, ${result.problems.length} problems.`,
@@ -217,31 +284,35 @@ function chainProvider(chain) {
 }
 
 /**
- * Runs the command line.
+ * The command, its options declared once, from which commander reads the
+ * arguments and writes the help.
  *
- * @param {string[]} argv - The arguments, as `process.argv` holds them
- * @param {object} [deps] - Stand-ins for the tests: `stdout`, `stderr`,
- *   `repoTop`, the folder whose `config.json` and `summ-sweep/config.json`
- *   are read, `makeProvider`, which makes the chain's provider, and `run`,
- *   which runs LP Ranger's tool
- * @returns {Promise<number>} The exit code: 0 when both files were
- *   written, 1 when they were not
+ * @param {object} stdout - Where the help goes
+ * @param {object} stderr - Where a mistake in the arguments goes
+ * @returns {Command} The command
  */
-export async function runSummSweep(argv, deps = {}) {
-  const stdout = deps.stdout ?? process.stdout;
-  const stderr = deps.stderr ?? process.stderr;
-  const repoTop = deps.repoTop ?? process.cwd();
-  const program = new Command()
+function sweepCommand(stdout, stderr) {
+  return new Command()
     .name("summ-sweep")
     .description(
       "Sweeps a wallet's history on PulseChain against Summ's rows, and writes the rows Summ lacks and a report of what to fix.",
     )
-    .requiredOption("--wallet <address>", "the wallet")
+    .requiredOption("--wallet <address>", "the wallet", walletArgument)
     .requiredOption(
       "--start-date <day>",
       "the first day, as YYYY-MM-DD, in UTC",
+      dayArgument,
     )
-    .requiredOption("--end-date <day>", "the last day, as YYYY-MM-DD, in UTC")
+    .requiredOption(
+      "--end-date <day>",
+      "the last day, as YYYY-MM-DD, in UTC",
+      dayArgument,
+    )
+    .requiredOption(
+      "--summ-synced-to <time>",
+      'the time Summ\'s sync of the wallet reached, as "YYYY-MM-DD HH:MM:SS", in UTC',
+      timeArgument,
+    )
     .requiredOption(
       "--summ-results <files...>",
       "the saved pages of Summ's results",
@@ -255,6 +326,24 @@ export async function runSummSweep(argv, deps = {}) {
       writeOut: (text) => stdout.write(text),
       writeErr: (text) => stderr.write(text),
     });
+}
+
+/**
+ * Runs the command line.
+ *
+ * @param {string[]} argv - The arguments, as `process.argv` holds them
+ * @param {object} [deps] - Stand-ins for the tests: `stdout`, `stderr`,
+ *   `repoTop`, the folder whose `config.json` and `summ-sweep/config.json`
+ *   are read, `makeProvider`, which makes the chain's provider, and `run`,
+ *   which runs LP Ranger's tool
+ * @returns {Promise<number>} The exit code: 0 when the report was written,
+ *   and the csv with it when there were rows; 1 when they were not
+ */
+export async function runSummSweep(argv, deps = {}) {
+  const stdout = deps.stdout ?? process.stdout;
+  const stderr = deps.stderr ?? process.stderr;
+  const repoTop = deps.repoTop ?? process.cwd();
+  const program = sweepCommand(stdout, stderr);
   try {
     program.parse(argv);
     const chain = settingsFrom(

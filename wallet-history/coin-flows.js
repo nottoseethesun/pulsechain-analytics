@@ -31,6 +31,7 @@
  * the PLS that came in from transactions the wallet did not send.
  */
 
+import { getAddress } from "ethers";
 import { sameAddress } from "./sent.js";
 
 /** The kinds of call that move PLS to their recipient. */
@@ -58,7 +59,7 @@ function valueOf(frame) {
  *   calls it made under `calls`
  * @param {string} wallet - The wallet
  * @returns {Array<{from: string, amount: bigint}>} Each payment: who paid,
- *   and how much, in the PLS's smallest units
+ *   in EIP-55's mixed case, and how much, in the PLS's smallest units
  */
 export function paidTo(frame, wallet) {
   if (typeof frame.error === "string") return [];
@@ -67,7 +68,7 @@ export function paidTo(frame, wallet) {
     PAYING_CALLS.includes(frame.type) &&
     sameAddress(frame.to, wallet) &&
     value > 0n
-      ? [{ from: frame.from, amount: value }]
+      ? [{ from: getAddress(frame.from), amount: value }]
       : [];
   const inner = Array.isArray(frame.calls) ? frame.calls : [];
   return [...own, ...inner.flatMap((call) => paidTo(call, wallet))];

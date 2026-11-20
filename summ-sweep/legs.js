@@ -17,11 +17,14 @@
  * token's id in a fourth topic. A Transfer from the wallet to itself is a
  * leg out and a leg in. Each leg carries its token's symbol and decimals,
  * from `tokenFacts`, or `null` for each its contract did not give, and
- * its block's time; an NFT's decimals are 0.
+ * its block's time; an NFT's decimals are 0. Its addresses, the token's
+ * and the counterparty's, are in EIP-55's mixed case, and its hash in
+ * lower case.
  *
  * Fit: `summ-sweep/match.js` matches these legs with Summ's.
  */
 
+import { getAddress } from "ethers";
 import {
   DEPOSIT_TOPIC,
   TRANSFER_TOPIC,
@@ -30,13 +33,13 @@ import {
 import { sameAddress } from "../wallet-history/sent.js";
 
 /**
- * The address an indexed topic holds, in lower case.
+ * The address an indexed topic holds.
  *
  * @param {string} topic - The topic: 32 bytes, the address in the last 20
- * @returns {string} The address
+ * @returns {string} The address, in EIP-55's mixed case
  */
 function topicAddress(topic) {
-  return `0x${topic.slice(26).toLowerCase()}`;
+  return getAddress(`0x${topic.slice(26)}`);
 }
 
 /**
@@ -48,7 +51,7 @@ function topicAddress(topic) {
  * @returns {Array<object>} The legs, without their token's facts and time
  */
 function legsOfLog(log, wallet, wrappedCoin) {
-  const token = log.address.toLowerCase();
+  const token = getAddress(log.address);
   const at = {
     hash: log.transactionHash.toLowerCase(),
     blockNumber: log.blockNumber,
@@ -92,7 +95,8 @@ function legsOfLog(log, wallet, wrappedCoin) {
  * @param {object[]} history.logs - The logs that name it, from
  *   `walletTransferLogs`
  * @param {Map<string, {symbol: (string|null), decimals: (number|null)}>}
- *   history.tokens - Each token's facts, by contract in lower case
+ *   history.tokens - Each token's facts, by contract in EIP-55's mixed
+ *   case
  * @param {Map<number, number>} history.times - Each block's time, in
  *   seconds since 1970
  * @param {string} history.wrappedCoin - The wrapped coin's contract

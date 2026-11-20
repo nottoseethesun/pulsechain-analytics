@@ -8,15 +8,16 @@
  * transactions answers in pages of text. Claude saves those pages as
  * files, and `parseSummResults` reads them into rows: each row is one of
  * Summ's actions, with its ids, the transaction's hash, its time, its
- * category, its two sides (each a name and an address), and the amounts
- * of each currency that came in and went out, as Summ prints them.
+ * category, its two sides (each a name and an address, in EIP-55's mixed
+ * case), and the amounts of each currency that came in and went out, as
+ * Summ prints them.
  *
  * How: a page starts with a line giving its number, how many rows it
  * returned and how many there are in all, then a block per row, headed
  * `## <n>. <category>`, with one `- **Field**: value` line per field. An
  * amounts line lists `<amount> <symbol>` items, joined by `, `, and ends
  * with their value in USD in parentheses, which is dropped. A saved file
- * may hold the page's text, or the connector's answer as JSON, a list of
+ * holds the page's text, or the connector's answer as JSON, a list of
  * parts whose `text` fields hold it. Every page from 1 to the last must be
  * given, and each must hold the rows its first line says, so a sweep never
  * compares the chain with part of Summ's rows.
@@ -25,6 +26,8 @@
  * (`summ-sweep/match.js`), and reads their transaction ids when a leg Summ
  * holds is to be edited.
  */
+
+import { getAddress } from "ethers";
 
 /** The first line of a page. */
 const PAGE_LINE =
@@ -84,7 +87,7 @@ function sideOf(text) {
   const address = RAW_ADDRESS.exec(text);
   return {
     name: text.split(" | ")[0].trim(),
-    address: address === null ? null : address[1].toLowerCase(),
+    address: address === null ? null : getAddress(address[1]),
   };
 }
 

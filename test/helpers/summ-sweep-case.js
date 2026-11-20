@@ -24,36 +24,55 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { ethers } from "ethers";
+import { ethers, getAddress } from "ethers";
 import {
   TRANSFER_TOPIC,
   addressTopic,
 } from "../../wallet-history/transfers.js";
 import { standInWalletChain } from "./stand-in-wallet-chain.js";
 
+/*-
+ * Every address here is in EIP-55's mixed case, as the sweep holds them:
+ * the made-up ones through `getAddress`, the public ones as written.
+ */
+
 /** The wallet: made up. */
-export const WALLET = `0x${"aa".repeat(20)}`;
+export const WALLET = getAddress(`0x${"aa".repeat(20)}`);
 
 /** Another wallet: made up. */
-export const OTHER = `0x${"bb".repeat(20)}`;
+export const OTHER = getAddress(`0x${"bb".repeat(20)}`);
 
 /** A pool: made up. */
-export const POOL = `0x${"cc".repeat(20)}`;
+export const POOL = getAddress(`0x${"cc".repeat(20)}`);
 
 /** A made-up token, whose contract sorts above HEX's. */
-export const TKN = `0x${"dd".repeat(20)}`;
+export const TKN = getAddress(`0x${"dd".repeat(20)}`);
 
 /** PulseChain's HEX. */
-export const HEX = "0x2b591e99afe9f32eaa6214f7b7629768c40eeb39";
+export const HEX = "0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39";
 
 /** WPLS. */
-export const WPLS = "0xa1077a294dde1b09bb078844df40758a5d0f9a27";
+export const WPLS = "0xA1077a294dDE1B09bB078844df40758a5D0f9a27";
 
 /** The 9mm V3 position manager. */
-export const PM = "0xcc05bf158202b4f461ede8843d76dcd7bbad07f2";
+export const PM = "0xCC05bf158202b4F461Ede8843d76dcd7Bbad07f2";
 
 /** One whole token of eight decimals. */
 export const ONE = 100000000n;
+
+/** The chain's facts the sweep's tests give it. */
+export const CHAIN = Object.freeze({
+  wrappedCoin: WPLS,
+  positionManager: PM,
+  spanBlocks: 9000,
+  batchSize: 50,
+});
+
+/*-
+ * The time the tests give as reached by Summ's sync: block 30's, the
+ * time of Summ's newest row of the case, 2023-11-14 22:18:20 UTC.
+ */
+export const SYNCED_TO = 1_700_000_300;
 
 /**
  * A made-up transaction hash.

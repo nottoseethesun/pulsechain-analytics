@@ -14,7 +14,7 @@
 
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { AbiCoder, ethers } from "ethers";
+import { AbiCoder, ethers, getAddress } from "ethers";
 import { pacedProvider } from "../wallet-history/paced-provider.js";
 import { blockAtOrAfter, hexBlock, spansOf } from "../wallet-history/blocks.js";
 import {
@@ -31,17 +31,22 @@ import {
   standInWalletChain,
 } from "./helpers/stand-in-wallet-chain.js";
 
-/** The wallet: made up, in mixed case. */
-const WALLET = "0xAaAaAaAaAaAaAaAaAaAaAaAaAaAaAaAaAaAaAaAa";
+/*-
+ * The made-up wallets, pool and token, each in EIP-55's mixed case, as
+ * every address the repo holds is.
+ */
 
-/** Another wallet: made up. */
-const OTHER = `0x${"bb".repeat(20)}`;
+/** The wallet. */
+const WALLET = getAddress(`0x${"aa".repeat(20)}`);
 
-/** A pool: made up. */
-const POOL = `0x${"cc".repeat(20)}`;
+/** Another wallet. */
+const OTHER = getAddress(`0x${"bb".repeat(20)}`);
 
-/** A token: made up. */
-const TOKEN = `0x${"dd".repeat(20)}`;
+/** A pool. */
+const POOL = getAddress(`0x${"cc".repeat(20)}`);
+
+/** A token. */
+const TOKEN = getAddress(`0x${"dd".repeat(20)}`);
 
 /** WPLS, PulseChain's wrapped PLS. */
 const WPLS = "0xA1077a294dDE1B09bB078844df40758a5D0f9a27";
@@ -372,7 +377,7 @@ describe("readReceipts", () => {
 
 describe("tokenFacts", () => {
   const coder = AbiCoder.defaultAbiCoder();
-  const old = `0x${"ee".repeat(20)}`;
+  const old = getAddress(`0x${"ee".repeat(20)}`);
   const chain = () =>
     standInWalletChain({
       latest: 1,

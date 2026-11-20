@@ -2,7 +2,8 @@
 
 ## Conventions
 
-Follow LP Ranger's coding standards: its `CLAUDE.md` and everything under
+Follow the coding standards of LP Ranger, the owner's bot that manages his
+9mm V3 liquidity positions: its `CLAUDE.md` and everything under
 `docs/claude/`, in [nottoseethesun/lp-ranger](https://github.com/nottoseethesun/lp-ranger)
 or the local clone at `~/code/lp-ranger/github-repo/lp-ranger/`. Read them, and
 never change anything in LP Ranger.
@@ -22,8 +23,10 @@ a function this repo's copy lacks, `getTokenTransferredUseCache`, which
 
 `for-google-apps/check-token-balance/fetch-amount-of-token-transferred.js` is
 the Node version of the `.gs` beside it. It runs the `.gs` unchanged, through
-the runner crypto-price-fetchers provides
-(`crypto-price-fetchers/apps-script-runner`), and never copies the script's
+the runner of crypto-price-fetchers, the owner's repo of code his projects
+share, which this repo installs (below); the runner
+(`crypto-price-fetchers/apps-script-runner`) runs an Apps Script file under
+Node. The Node version never copies the script's
 logic, since LP Ranger's rules forbid a second copy. A fix belongs in the
 `.gs`, where it fixes both. `wrapper.gs` gets no Node version: it exists only
 because a sheet reaches a library's functions through a wrapper.
@@ -45,8 +48,8 @@ ratio chart's fallback, as the top `config.json` lists them under
 ignores, encrypted with one password the owner types, by
 crypto-price-fetchers' key store (`crypto-price-fetchers/api-key-store`).
 `npm run api-keys` runs its manager (`manage-api-keys.js`), and
-`source ./unlock-api-keys.sh` keeps the password for a terminal in
-`API_KEYS_PASSWORD`. `unlock-api-keys.sh` is a copy of
+`source ./unlock-api-keys.sh`, a script at the repo's top, keeps the
+password for a terminal in `API_KEYS_PASSWORD`. `unlock-api-keys.sh` is a copy of
 crypto-price-fetchers', which a test holds it to; a change to it is made
 there. The ratio chart opens the DexTools key the first time it asks
 DexTools (`chart-price-ratio/dextools.js`). A key is never a setting in a
@@ -58,11 +61,11 @@ own, never the owner's, and passes no `API_KEYS_PASSWORD` it did not set.
 The top `package.json` and `chart-price-ratio/package.json` install
 crypto-price-fetchers from GitHub, following its main branch (`#main`),
 the same ref in both, which `test/dependencies.test.js` holds; each
-`package-lock.json` keeps the commit installed.
-`npm run github-project-deps -- main|release` runs crypto-price-fetchers'
-versions tool, which sets the ref in both to `#main` or `#semver:*` (the
-latest release) and makes both lockfiles again; the tool lives there, and
-this repo keeps no copy.
+`package-lock.json` keeps the commit installed. crypto-price-fetchers'
+versions tool, which this repo runs as
+`npm run github-project-deps -- main|release`, sets the ref in both to
+`#main` or `#semver:*` (the latest release) and makes both lockfiles
+again; the tool lives there, and this repo keeps no copy.
 
 The ratio chart asks GeckoTerminal through crypto-price-fetchers' client
 (`crypto-price-fetchers/dex-prices/geckoterminal`), which
@@ -77,9 +80,10 @@ covers the files, the gates, the tests and CI, and
 `docs/` does. A change keeps them true.
 
 Every doc passes the owner's documentation audit: it tells no story of an
-old bug, leads every topic and sub-topic with the context it needs,
-explains with facts rather than adjectives, and leaves out no step in the
-logic of an explanation.
+old bug, leads every topic and sub-topic with the context it needs, says
+which codebase a tool comes from and what it is for before it names the
+tool (an `npm run` command, a bin, a script), explains with facts rather
+than adjectives, and leaves out no step in the logic of an explanation.
 
 ## Gates and CI
 
@@ -88,8 +92,9 @@ Ranger's rules, markdownlint, Prettier, actionlint, knip's unused files),
 the tests with at least 80% of lines covered, and the security audits (npm
 audit for the three packages, the security lint in
 `eslint-security.config.js` with crypto-price-fetchers' `no-secret-logging`,
-secretlint). It must pass before a commit and a push; the husky pre-commit
-hook runs `npm run lint`. CI runs `npm run check` on Node 22 and 24
+secretlint). It must pass before a commit and a push; husky, the package
+that runs scripts at git's hooks, runs `npm run lint` before each commit.
+CI runs `npm run check` on Node 22 and 24
 (`ci.yml`) and each audit as a job of its own (`security-audit.yml`), after
 installing the three packages. `main` is protected: those five checks must
 pass on a pull request, never squashed, and no branch is deleted. LP
@@ -109,7 +114,8 @@ npm run check
 
 They cover `fetch-amount-of-token-transferred.js`, its Sheets twin, which
 runs unchanged under Node, the twin's Node version, how the balance checker
-writes a balance, the ratio chart, its command line (commander, in
+writes a balance, the ratio chart, its command line (declared with
+commander, the package that reads a command line's options, in
 `chart-price-ratio/ratio-command.js`) included, the api keys, a wallet's
 history (`wallet-history/`), and the Summ sweep (`summ-sweep/`). The
 Sheets script also has test functions that the owner runs by hand in Apps
@@ -146,8 +152,8 @@ holds the stand-ins:
 
 `wallet-history/` reads what a wallet moved from the chain alone: tokens
 from the logs, its transactions from its nonce, PLS from receipts, traces
-and its balance. The explorer is never asked: it left out transactions and
-listed transfers the chain does not hold. Its nonce search and request
+and its balance. The explorer is never asked: its lists are a copy its own
+indexer makes, which nothing holds to the chain. Its nonce search and request
 pacing are second copies of LP Ranger's wallet report's, since those files
 load LP Ranger's settings as they load and LP Ranger is never changed.
 Counts and balances at past blocks need an endpoint that keeps past state,
@@ -156,20 +162,29 @@ and traces one that offers the debug methods, as g4mm4's does.
 ## The Summ sweep
 
 `summ-sweep/` (`npm run summ-sweep`) compares a wallet's history with
-Summ's rows of it, saved a page at a time from Summ's connector. It writes
-a csv of rows for what Summ lacks, booked by the rules of the owner's
-skill for missing transactions (`gap-rules.js`, `gaps.js`), and a report
-of the withdrawals from 9mm V3 positions to fix in Summ and the questions
-for the legs no rule books. Claude makes the fixes through Summ's
-connector, and puts the questions to the owner.
+its records in Summ, the owner's crypto tax calculator, saved a page at a
+time from Summ's connector for Claude. It writes a csv of rows for what
+Summ lacks, booked by the rules of the owner's skill for missing
+transactions, the procedure in his private skill files (`gap-rules.js`,
+`gaps.js`), and a report of the withdrawals from 9mm V3 positions to fix
+in Summ and the questions for the legs no rule books. Claude makes the
+fixes through Summ's connector, and puts the questions to the owner.
+
+The owner gives the time up to which Summ's sync has read the wallet's
+transactions (`--summ-synced-to`), since Summ's connector gives an
+account's last sync as a date alone; a transaction after that time gets
+no gas, for the sync to bring. Addresses are held in EIP-55's mixed case,
+as LP Ranger holds them, and compared as text; the Summ csv utility writes
+them in lower case.
 
 **Every csv file for Summ is written by crypto-price-fetchers' Summ csv
 utility** (`crypto-price-fetchers/summ-csv`), as the sweep writes its csv:
 never by a script written for the occasion. The owner's rule.
 
 The sweep reads each withdrawal through LP Ranger's
-`util/bookkeeping/coins-in-transaction.js`, run as a program of its own in
-the owner's LP Ranger checkout, since LP Ranger is never changed. The
+`util/bookkeeping/coins-in-transaction.js`, which prints what one
+transaction moved for a wallet, run as a program of its own in the
+owner's LP Ranger checkout, since LP Ranger is never changed. The
 chain's facts are in the top `config.json`, under `pulsechain`; the owner's
 settings (his template's path, his LP Ranger checkout, his own wallets,
 his spam and income tokens, each token's symbols in Summ and in a csv) are

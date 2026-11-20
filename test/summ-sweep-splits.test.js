@@ -20,7 +20,9 @@ import { readThroughLpRanger } from "../summ-sweep/lp-ranger.js";
 import {
   HEX,
   ONE,
+  OTHER,
   PM,
+  POOL,
   RECORDS,
   TKN,
   WALLET,
@@ -122,6 +124,70 @@ describe("splitCollects", () => {
     assert.equal(
       problems[2].problem,
       `it paid out less ${HEX} than the principal its DecreaseLiquidity events name`,
+    );
+  });
+
+  it("orders a pool's two coins by their addresses as numbers, whatever their case", () => {
+    /*- OTHER, 0xbBbB…, is the lower number, while POOL, 0xCcCC…, comes
+     * first as text, since capitals sort before small letters. */
+    const records = new Map([
+      [
+        hashOf(7),
+        {
+          liquidity: [
+            event("DecreaseLiquidity", 2, 1n, 3n),
+            event("Collect", 2, 2n, 4n),
+          ],
+        },
+      ],
+    ]);
+
+    const { splits } = splitCollects({
+      order: [hashOf(7)],
+      records,
+      receivedIn: received([
+        [POOL, 4n],
+        [OTHER, 2n],
+      ]),
+    });
+
+    assert.deepEqual(
+      splits.map((one) => [one.token, one.principal, one.fee]),
+      [
+        [OTHER, 1n, 1n],
+        [POOL, 3n, 1n],
+      ],
+    );
+  });
+
+  it("stops on a record that is missing, or of another shape, naming the transaction", () => {
+    const run = (records) =>
+      splitCollects({
+        order: [hashOf(8)],
+        records,
+        receivedIn: received([]),
+      });
+
+    assert.throws(() => run(new Map()), {
+      message: `LP Ranger's record of ${hashOf(8)} holds no list of liquidity events`,
+    });
+    assert.throws(
+      () =>
+        run(
+          new Map([
+            [
+              hashOf(8),
+              {
+                liquidity: [
+                  { event: "Collect", nftId: 7, amount0: "1", amount1: "1" },
+                ],
+              },
+            ],
+          ]),
+        ),
+      {
+        message: `LP Ranger's record of ${hashOf(8)} gives an event's nftId as 7, not a string of digits`,
+      },
     );
   });
 });

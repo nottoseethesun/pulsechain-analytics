@@ -6,15 +6,17 @@
  * What: `rowsForGaps` takes what the sweep has read by the time the match
  * is done: the wallet's legs, the transactions it sent and their PLS, the
  * legs and parts Summ lacks, the coins of collects, LP Ranger's records
- * and Summ's rows. These builders make each from a few values a test
- * sets, with made-up wallets, tokens and hashes, and `runGaps` fills in
- * what a test leaves out: no Summ rows, no collects, and empty owner's
- * lists.
+ * and Summ's rows. These builders make each from the values a test sets,
+ * with made-up wallets, tokens and hashes, every address in EIP-55's
+ * mixed case, and `runGaps` fills in what a test leaves out: no Summ
+ * rows, no collects, empty owner's lists, and a time reached by Summ's
+ * sync after every transaction.
  *
  * Fit: `test/summ-sweep-gap-rules.test.js` and `test/summ-sweep-gaps.test.js`
  * use it.
  */
 
+import { ZeroAddress, getAddress } from "ethers";
 import { rowsForGaps } from "../../summ-sweep/gaps.js";
 import { ownerLists } from "../../summ-sweep/owner-lists.js";
 import {
@@ -31,20 +33,23 @@ import {
 
 export { HEX, ONE, OTHER, PM, POOL, TKN, WALLET, WPLS, hashOf };
 
-/** A router: made up. */
-export const ROUTER = `0x${"ee".repeat(20)}`;
+/** A router: made up, in EIP-55's mixed case. */
+export const ROUTER = getAddress(`0x${"ee".repeat(20)}`);
 
-/** A second made-up token. */
-export const DAI = `0x${"d1".repeat(20)}`;
+/** A second made-up token, in EIP-55's mixed case. */
+export const DAI = getAddress(`0x${"d1".repeat(20)}`);
 
-/** A third made-up token. */
-export const MAXI = `0x${"d2".repeat(20)}`;
+/** A third made-up token, in EIP-55's mixed case. */
+export const MAXI = getAddress(`0x${"d2".repeat(20)}`);
 
 /** The zero address. */
-export const ZERO = `0x${"00".repeat(20)}`;
+export const ZERO = ZeroAddress;
 
 /** A made-up time, in seconds since 1970: 2023-11-14 22:13:20 UTC. */
 export const TIME = 1_700_000_000;
+
+/** The time Summ's sync reached, unless a test sets one: after them all. */
+const SYNCED_TO = TIME + 1_000_000;
 
 /** One PLS, in wei. */
 export const PLS_ONE = 10n ** 18n;
@@ -132,7 +137,8 @@ export function summRowOf(n, category) {
  *
  * @param {object} input - `legs`, the wallet's; `gaps`, those Summ lacks,
  *   or else all the legs; `txs`, from `sentBy`; and, when set, `splits`,
- *   `problems`, `records`, `summRows` and `owner`, the owner's settings
+ *   `problems`, `records`, `summRows`, `syncedTo`, the time Summ's sync
+ *   reached, and `owner`, the owner's settings
  * @returns {{rows: object[], questions: object[]}} What it gives
  */
 export function runGaps(input) {
@@ -150,6 +156,7 @@ export function runGaps(input) {
     problems: input.problems ?? [],
     records: input.records ?? new Map(),
     summRows: input.summRows ?? [],
+    syncedTo: input.syncedTo ?? SYNCED_TO,
     lists: ownerLists(input.owner ?? {}),
     chain: { positionManager: PM },
   });

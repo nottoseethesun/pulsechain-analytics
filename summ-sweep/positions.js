@@ -3,45 +3,53 @@
  * @module summ-sweep/positions
  *
  * What: a 9mm V3 position, an NFT of the position manager, holds two
- * coins. Withdrawing from it takes two steps, which may be in one
- * transaction or two: `decreaseLiquidity`, which takes liquidity out of
- * the pool and logs a DecreaseLiquidity event with the two coins'
- * amounts, the principal; and `collect`, which pays the wallet everything
- * the position is owed: that principal, plus the fees the position earned.
- * So the fees of a collect are the coins it paid out, less every
- * DecreaseLiquidity of the same NFT since the NFT's last collect. A collect
- * with no DecreaseLiquidity before it is all fees. The owner books fees as
- * income, and principal as liquidity removed.
+ * coins. Withdrawing from it takes two steps, in one transaction or in
+ * more than one: `decreaseLiquidity`, which takes liquidity out of the
+ * pool and logs a DecreaseLiquidity event with the two coins' amounts, the
+ * principal; and `collect`, which pays the wallet everything the position
+ * is owed: that principal, plus the fees the position earned. So the fees
+ * of a collect are the coins it paid out, less every DecreaseLiquidity of
+ * the same NFT since the NFT's last collect. A collect with no
+ * DecreaseLiquidity before it is all fees. The owner books fees as income,
+ * and principal as liquidity removed.
  *
  * How: the transactions the wallet sent to the position manager are read
  * in the order sent, through LP Ranger's tool (`summ-sweep/lp-ranger.js`),
- * and each NFT's DecreaseLiquidity amounts are added up until its next
- * Collect, which takes them. The coins paid out are the coins the wallet
- * received in the collect's transaction: its token legs in, and the PLS
- * the position manager handed back when it unwrapped WPLS, counted as
- * WPLS. The pool orders its two coins by address, lowest first, as every
- * Uniswap V3 pool does, so the amounts an event names first and second
- * belong to the lower and the higher of the two coins' contracts. When
- * only one coin came in, the Collect event's amounts say which side it is.
- * The coins received, rather than the Collect event's amounts, are used,
- * since the position manager's Collect event states what it asked the pool
- * for, and the pool can pay a few of a coin's smallest units less.
+ * whose record gives each liquidity event's NFT id and amounts as strings
+ * of digits; a record of another shape stops the sweep, naming the
+ * transaction. Each NFT's DecreaseLiquidity amounts are added up until its
+ * next Collect, which takes them. The coins paid out are the coins the
+ * wallet received in the collect's transaction: its token legs in, and the
+ * PLS the position manager handed back when it unwrapped WPLS, counted as
+ * WPLS. The pool orders its two coins by address, as numbers, lowest
+ * first, as every Uniswap V3 pool does, so the amounts an event names
+ * first and second belong to the lower and the higher of the two coins'
+ * contracts. When only one coin came in, the Collect event's amounts say
+ * which side it is. The coins received, rather than the Collect event's
+ * amounts, are used: the position manager's Collect event states the
+ * amounts it asked the pool for, and the pool sends what it owes the
+ * position, which can be less.
  *
  * Fit: `summ-sweep/splits.js` uses each split to fix Summ's legs that hold
  * principal and fees together, and to write the fees as income rows.
  */
 
+/** Text of digits only: how LP Ranger's record writes an NFT id or amount. */
+const DIGITS = /^\d+$/;
+
 /**
  * The contracts of a collect's two coins, lowest first, from the coins the
  * wallet received and the Collect event's amounts.
  *
- * @param {string[]} coins - The coins received, by contract in lower case
+ * @param {string[]} coins - The coins received, by contract
  * @param {bigint[]} collected - The Collect event's two amounts
  * @returns {Array<string|null>|null} Each side's contract, `null` for a
  *   side that paid nothing; `null` when the coins cannot be placed
  */
 function sidesOf(coins, collected) {
-  const sorted = [...coins].sort();
+  const sorted = [...coins].sort((a, b) =>
+    BigInt(a) < BigInt(b) ? -1 : BigInt(a) > BigInt(b) ? 1 : 0,
+  );
   if (sorted.length === 2) return sorted;
   if (sorted.length === 0) return [null, null];
   if (sorted.length > 2) return null;
@@ -51,21 +59,46 @@ function sidesOf(coins, collected) {
 }
 
 /**
+ * A value of LP Ranger's record that must be a string of digits.
+ *
+ * @param {*} value - The value
+ * @param {string} name - What it is, for the error
+ * @param {string} hash - The transaction the record is of
+ * @returns {string} The value
+ * @throws {Error} When it is not a string of digits
+ */
+function digitsOf(value, name, hash) {
+  if (typeof value === "string" && DIGITS.test(value)) return value;
+  throw new Error(
+    `LP Ranger's record of ${hash} gives an event's ${name} as ${JSON.stringify(value)}, not a string of digits`,
+  );
+}
+
+/**
  * The DecreaseLiquidity and Collect events of one transaction, taken in
  * order: each decrease added to its NFT's principal waiting, each collect
  * taking it.
  *
- * @param {object} record - LP Ranger's record of the transaction
+ * @param {string} hash - The transaction
+ * @param {object|undefined} record - LP Ranger's record of it
  * @param {Map<string, bigint[]>} waiting - Each NFT's principal waiting
  *   for its next collect, which this updates
  * @returns {Array<{nftId: string, principal: bigint[],
  *   collected: bigint[]}>} The transaction's collects
+ * @throws {Error} When the record is missing, or of another shape
  */
-function collectsOf(record, waiting) {
+function collectsOf(hash, record, waiting) {
+  if (record === undefined || !Array.isArray(record.liquidity))
+    throw new Error(
+      `LP Ranger's record of ${hash} holds no list of liquidity events`,
+    );
   const collects = [];
   for (const event of record.liquidity) {
-    const nftId = String(event.nftId);
-    const amounts = [BigInt(event.amount0), BigInt(event.amount1)];
+    const nftId = digitsOf(event.nftId, "nftId", hash);
+    const amounts = [
+      BigInt(digitsOf(event.amount0, "amount0", hash)),
+      BigInt(digitsOf(event.amount1, "amount1", hash)),
+    ];
     const before = waiting.get(nftId) ?? [0n, 0n];
     if (event.event === "DecreaseLiquidity")
       waiting.set(nftId, [before[0] + amounts[0], before[1] + amounts[1]]);
@@ -87,7 +120,7 @@ function collectsOf(record, waiting) {
  * @param {Map<string, object>} reading.records - LP Ranger's record of
  *   each, by hash in lower case
  * @param {function(string): Map<string, bigint>} reading.receivedIn - The
- *   coins the wallet received in a transaction, by contract in lower case
+ *   coins the wallet received in a transaction, by contract
  * @returns {{splits: Array<{hash: string, nftId: string, token: string,
  *   received: bigint, principal: bigint, fee: bigint}>,
  *   problems: Array<{hash: string, problem: string}>}} Each coin of each
@@ -98,7 +131,7 @@ export function splitCollects({ order, records, receivedIn }) {
   const splits = [];
   const problems = [];
   for (const hash of order) {
-    const collects = collectsOf(records.get(hash), waiting);
+    const collects = collectsOf(hash, records.get(hash), waiting);
     if (collects.length === 0) continue;
     if (collects.length > 1) {
       problems.push({
