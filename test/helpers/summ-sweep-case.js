@@ -18,7 +18,7 @@
  * once its tests end.
  *
  * Fit: `test/summ-sweep-splits.test.js` and `test/summ-sweep-run.test.js`
- * use it.
+ * use it, and `test/helpers/summ-gaps.js` takes its wallets and tokens.
  */
 
 import fs from "node:fs";
@@ -129,7 +129,7 @@ export function event(event, nftId, amount0, amount1) {
  * @param {string} symbol - The symbol
  * @returns {object} The answers
  */
-function tokenAnswers(symbol) {
+export function tokenAnswers(symbol) {
   const coder = ethers.AbiCoder.defaultAbiCoder();
   return {
     symbol: coder.encode(["string"], [symbol]),

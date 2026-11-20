@@ -29,6 +29,9 @@ Two companion references sit alongside this one:
   - [Legs and the Match](#legs-and-the-match)
     - [Amounts as Summ Prints Them](#amounts-as-summ-prints-them)
   - [Withdrawals from Positions](#withdrawals-from-positions)
+  - [Rows for What Summ Lacks](#rows-for-what-summ-lacks)
+    - [The Rules](#the-rules)
+    - [What Every Row of a Transaction Shares](#what-every-row-of-a-transaction-shares)
   - [What the Sweep Writes](#what-the-sweep-writes)
 - [Api Keys](#api-keys)
 - [crypto-price-fetchers](#crypto-price-fetchers)
@@ -48,7 +51,7 @@ amount, one with ethers and one as a Sheets script.
 | The balance checker | `check-token-balance/` | A wallet's balances of tokens, PLS among them, at a block or a date. A package of its own. |
 | The ratio chart | `chart-price-ratio/` | The ratio of two tokens' prices over time, as a chart in the terminal. A package of its own. |
 | A wallet's history | `wallet-history/` | Every token and every PLS a wallet moved over a range of blocks, from the chain alone: functions a program calls, with no command line of their own. |
-| The Summ sweep | `summ-sweep/`, run by `npm run summ-sweep` | What Summ lacks or holds wrongly of the tokens a wallet moved over a range of days: the withdrawals from 9mm V3 positions to fix in Summ, with the income rows of their fees, and the legs Summ lacks. |
+| The Summ sweep | `summ-sweep/`, run by `npm run summ-sweep` | What Summ lacks or holds wrongly of the tokens a wallet moved over a range of days: the withdrawals from 9mm V3 positions to fix in Summ, a csv of rows for what Summ lacks, and questions for the owner about the legs no rule books. |
 
 ---
 
@@ -191,9 +194,10 @@ it often holds a withdrawal from a 9mm V3 position as one leg per coin,
 the principal and the fees together, which books the fees as liquidity
 removed rather than as income. `summ-sweep/` compares a wallet's history,
 read from the chain alone ([A Wallet's History](#a-wallets-history)), with
-Summ's rows of the wallet, and says what to fix in Summ and what Summ
-lacks. `npm run summ-sweep` runs it (`command-line.js`), and `sweep.js`
-runs its steps.
+Summ's rows of the wallet. It says what to fix in Summ, writes rows for
+what Summ lacks, and asks the owner about the legs its rules cannot book.
+`npm run summ-sweep` runs it (`command-line.js`), and `sweep.js` runs its
+steps.
 
 ### What the Sweep Reads
 
@@ -209,9 +213,12 @@ endpoint, the chain's id, the position manager, WPLS, the widest span of
 a log search, and the spacing and size of requests. The owner's own
 settings are in `summ-sweep/config.json`, which git ignores, since the
 repo is public: the path of his Summ template and of his LP Ranger
-checkout, and each token's symbols in Summ and in a csv.
-`summ-sweep/config-example.json` shows the shape. The endpoint must keep
-past state and offer the debug methods, as for the history.
+checkout; his own wallets, each with its name; the tokens he counts as
+spam, and those he receives as income; and each token's symbols in Summ
+and in a csv, where they differ from its contract's own
+(`owner-lists.js`). `summ-sweep/config-example.json` shows the shape. The
+endpoint must keep past state and offer the debug methods, as for the
+history.
 
 ### Legs and the Match
 
@@ -233,8 +240,11 @@ token whose amount holds the leg's amount, one leg to one first, then the
 chain's legs of one token added up against one Summ leg. A token is known
 in Summ by its symbols in the owner's settings, or else by its own symbol
 in capitals, since Summ names some tokens otherwise than their contracts
-do. What is left on each side is a gap: a chain leg Summ lacks, or a Summ
-leg the chain does not show.
+do. A token whose contract gave no decimals matches nothing, since its
+amount cannot be read as a figure, and neither does one whose contract
+gave no symbol and that the settings leave out. What is left on each
+side is a gap: a chain leg Summ lacks, or a Summ leg the chain does not
+show.
 
 #### Amounts as Summ Prints Them
 
@@ -286,20 +296,80 @@ wallet PLS inside the transaction, which logs no Transfer. That PLS,
 counted as WPLS, places the coins on their sides, but it has no token
 leg to match, so the sweep reports it as a problem.
 
+### Rows for What Summ Lacks
+
+What Summ lacks, once the match and the splits are done, is the legs and
+parts left over, and the transactions the wallet sent that Summ holds
+nothing of and that moved no token. `gaps.js` books them by the rules of
+the owner's skill for missing transactions (`gap-rules.js`), and a leg
+no rule books is a question for the owner in the report, never a guess.
+
+#### The Rules
+
+The legs of one transaction are booked by what the chain shows it did.
+The first rule that fits a leg books it:
+
+1. **A part of a withdrawal from a position**: the principal is Remove
+   liquidity, and the fees are Income.
+2. **A transaction the wallet sent to the position manager**: a token out
+   is a deposit, Add liquidity; the position's NFT in is Receive LP token,
+   and out, Return LP token; a coin in that a collect with no principal
+   paid is Income, all of it fees.
+3. **Wrapping PLS**: the WPLS in is Swap in; unwrapping, the WPLS out is
+   Swap out. The PLS side moves without a log, so it has no row.
+4. **A token on the owner's list of spam**, coming in: Spam.
+5. **A token from or to one of the owner's other wallets**: Receive or
+   Send, with the wallet's name in the description.
+6. **A swap**: a transaction the wallet sent in which one asset, a token
+   or PLS, went out and one other came in, counting every leg the wallet
+   has in it, matched or not, and the PLS it sent and was handed back.
+   Each token's legs Summ lacks are added up, in less out: a Buy row when
+   more came in, a Sell row when more went out. A transaction with more
+   than one asset on a side, such as adding liquidity to a pool of two
+   tokens, is no swap here, and its legs go to the other rules.
+7. **A token on the owner's list of income tokens**, coming in: Income.
+
+Every other leg is a question: a token sent to or received from an
+address on none of the owner's lists, a burn or a mint outside the
+position manager, an NFT outside it, a transfer from the wallet to
+itself, a coin of a collect the sweep could not split, and a token whose
+contract gave no decimals, or no symbol that the settings do not give.
+The legs of one token, one direction and one NFT id make one row, and the
+row says how many legs it adds up.
+
+#### What Every Row of a Transaction Shares
+
+- **How much of it Summ holds**: nothing (bucket B), only its gas, as an
+  approval, or some other part (bucket A), in the description.
+- **Its gas**: when the wallet sent the transaction and Summ holds nothing
+  of it, its gas goes on its first row, and on no other, so Summ counts it
+  once. When the transaction has no row, only questions, its questions
+  say so.
+- **Summ's sync**: a transaction newer than Summ's newest row of the
+  wallet is one Summ's sync has not reached. Its rows say so, and carry
+  no gas, which that sync brings.
+
+A transaction the wallet sent that Summ holds nothing of and that moved
+no token is a Fee row of its gas when it failed, or when it moved no PLS
+either, as an approval does. One that moved PLS is a question, since the
+sweep writes no rows of PLS, and so is one that created a contract. One
+newer than Summ's newest row gets nothing, for Summ's sync to bring.
+
 ### What the Sweep Writes
 
 A sweep writes two files, at the paths its command line names, and
 neither over a file already there without `--replace`:
 
-- **The csv**, of the income rows of the fixes' fees, through
-  crypto-price-fetchers' Summ csv utility, the one way a csv for Summ is
-  written: it takes the header from the owner's template, checks every
-  row against Summ's rules, and writes nothing while a row breaks one.
-  A sweep with no fixes writes no csv.
+- **The csv**, of the income rows of the fixes' fees and the rows for
+  what Summ lacks, through crypto-price-fetchers' Summ csv utility, the
+  one way a csv for Summ is written: it takes the header from the owner's
+  template, checks every row against Summ's rules, and writes nothing
+  while a row breaks one. A sweep with no rows writes no csv.
 - **The report**, as json: the fixes, each with the ids Summ gave its
-  leg; the legs Summ lacks; Summ's legs no chain leg matched; and the
-  problems. Amounts are written as decimal text of the token's smallest
-  units.
+  leg; the legs and parts Summ lacks; the questions, each with its legs
+  and the reason no rule books them; Summ's legs no chain leg matched;
+  and the problems. Amounts are written as decimal text of the token's
+  smallest units.
 
 A change in the wallet's balance of PLS that no payment explains stops
 the sweep before it matches anything, since a history missing a payment

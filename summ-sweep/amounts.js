@@ -93,12 +93,14 @@ function withinTwoSteps(first, second) {
  * forms Summ prints.
  *
  * @param {bigint} raw - The chain's amount, in the token's smallest units
- * @param {number} decimals - The token's decimals
+ * @param {number|null} decimals - The token's decimals; `null` when its
+ *   contract gave none, so no figure can be read against the amount
  * @param {string} printed - Summ's figure, such as `1234.567891`
  * @returns {boolean} Whether they match
  */
 export function summHolds(raw, decimals, printed) {
   const summNumber = Number(printed);
+  if (decimals === null) return false;
   if (printed.trim() === "" || !Number.isFinite(summNumber)) return false;
   return [raw, roundedLikeSumm(raw, decimals)].some((amount) =>
     withinTwoSteps(summNumber, Number(decimalText(amount, decimals))),

@@ -139,6 +139,8 @@ holds the stand-ins:
   sweep: its chain, LP Ranger's records, Summ's rows, the header of Summ's
   csv template, and temp folders. The tests hold no amount, id, name or
   address from the owner's own books, since the repo is public.
+- `summ-gaps.js` builds the legs and transactions the tests of the gap
+  rules book, and runs `rowsForGaps` on them.
 
 ## A wallet's history
 
@@ -155,9 +157,11 @@ and traces one that offers the debug methods, as g4mm4's does.
 
 `summ-sweep/` (`npm run summ-sweep`) compares a wallet's history with
 Summ's rows of it, saved a page at a time from Summ's connector. It writes
-a report of the withdrawals from 9mm V3 positions to fix in Summ and the
-legs Summ lacks, and a csv of the income rows of the fixes' fees. Claude
-makes the fixes through Summ's connector.
+a csv of rows for what Summ lacks, booked by the rules of the owner's
+skill for missing transactions (`gap-rules.js`, `gaps.js`), and a report
+of the withdrawals from 9mm V3 positions to fix in Summ and the questions
+for the legs no rule books. Claude makes the fixes through Summ's
+connector, and puts the questions to the owner.
 
 **Every csv file for Summ is written by crypto-price-fetchers' Summ csv
 utility** (`crypto-price-fetchers/summ-csv`), as the sweep writes its csv:
@@ -167,9 +171,10 @@ The sweep reads each withdrawal through LP Ranger's
 `util/bookkeeping/coins-in-transaction.js`, run as a program of its own in
 the owner's LP Ranger checkout, since LP Ranger is never changed. The
 chain's facts are in the top `config.json`, under `pulsechain`; the owner's
-settings (his template's path, his LP Ranger checkout, each token's symbols
-in Summ and in a csv) are in `summ-sweep/config.json`, which git ignores;
-`config-example.json` beside it shows the shape.
+settings (his template's path, his LP Ranger checkout, his own wallets,
+his spam and income tokens, each token's symbols in Summ and in a csv) are
+in `summ-sweep/config.json`, which git ignores; `config-example.json`
+beside it shows the shape.
 
 ## Known bugs
 

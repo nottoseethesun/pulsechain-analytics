@@ -164,8 +164,10 @@ with sample arguments, which show how to call them.
 
 The sweep needs the owner's settings in `summ-sweep/config.json`, which git
 ignores: copy `summ-sweep/config-example.json` to it, and set the path of
-the Summ csv template, the path of an LP Ranger checkout, and the symbols
-Summ and a csv give each token whose symbol differs from its contract's.
+the Summ csv template, the path of an LP Ranger checkout, the owner's
+other wallets with their names, the tokens to book as spam and as income,
+and the symbols Summ and a csv give each token whose symbol differs from
+its contract's.
 It also needs Summ's rows of the wallet, saved to files a page at a time
 from Summ's connector. `npm run summ-sweep -- --help` lists its options;
 [`docs/npm-project-commands.md`](docs/npm-project-commands.md#bookkeeping)

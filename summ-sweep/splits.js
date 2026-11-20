@@ -29,6 +29,7 @@
  */
 
 import { decimalText } from "./amounts.js";
+import { legRow } from "./rows.js";
 
 /**
  * The legs of a collect's coin: the wallet's token legs in, in the
@@ -60,18 +61,14 @@ function legsOfSplit(legs, split) {
 function feeRow(split, leg, wallet, symbol) {
   const received = decimalText(split.received, leg.decimals);
   const principal = decimalText(split.principal, leg.decimals);
-  return {
-    timestamp: leg.timestamp,
+  return legRow(leg, {
     type: "income",
-    baseCurrency: symbol,
-    baseAmount: { raw: split.fee, decimals: leg.decimals },
+    symbol,
+    amount: split.fee,
     from: leg.counterparty,
-    to: wallet,
-    blockchain: "pulsechain",
-    id: split.hash,
-    description: `LP Ranger fee income from 9mm V3 position #${split.nftId}: the fee part of the ${received} ${symbol} it paid out, less the principal ${principal}. Summ holds the whole ${received} on one leg, which is set to the principal, as Remove liquidity.`,
-    contractAddress: split.token,
-  };
+    to: wallet.toLowerCase(),
+    description: `Fees of 9mm V3 position #${split.nftId}: the ${received} ${symbol} it paid out, less the principal of ${principal}. Summ holds the whole ${received} on one leg, which is set to the principal, as Remove liquidity.`,
+  });
 }
 
 /**

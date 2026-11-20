@@ -14,7 +14,8 @@
  * contract's: both PulseChain's HEX and the HEX bridged from Ethereum show
  * as `HEX`, and bridged ICSA as `EICSA` or `ICSA`. So each token's symbols
  * in Summ come from the owner's list, by contract, or else are the
- * contract's own symbol in capitals. A row's incoming amounts are the
+ * contract's own symbol in capitals; a token whose contract gave no
+ * symbol, and that the list leaves out, matches nothing. A row's incoming amounts are the
  * wallet's when the row's receiver is the wallet, or it names none, or
  * the row is not a transfer, since a trade lists both its sides; a
  * transfer between two wallets lists both sides, and only the wallet's
@@ -166,7 +167,7 @@ function matchGroup(legs, pool, symbolsOf, matches) {
  * @param {object[]} legs - The chain's token legs, from `tokenLegs`
  * @param {Map<string, {in: object[], out: object[]}>} summLegs - Summ's
  *   legs, from `summLegsOf`
- * @param {Object<string, string[]>} summSymbols - The owner's list of each
+ * @param {Map<string, string[]>} summSymbols - The owner's list of each
  *   token's symbols in Summ, by contract in lower case
  * @returns {{matches: Map<object, object>, unmatched: object[],
  *   summUnmatched: object[]}} Each matched leg with Summ's leg, the legs
@@ -174,7 +175,7 @@ function matchGroup(legs, pool, symbolsOf, matches) {
  */
 export function matchLegs(legs, summLegs, summSymbols) {
   const symbolsOf = (token, symbol) =>
-    summSymbols[token] ?? [String(symbol).toUpperCase()];
+    summSymbols.get(token) ?? (symbol === null ? [] : [symbol.toUpperCase()]);
   const groups = new Map();
   for (const leg of legs) {
     const key = `${leg.hash} ${leg.direction}`;

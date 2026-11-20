@@ -37,6 +37,7 @@ import {
   summRows,
   sweepChain,
   tempFolder,
+  tokenAnswers,
   transaction,
 } from "./helpers/summ-sweep-case.js";
 
@@ -51,7 +52,7 @@ const CHAIN = {
 };
 
 describe("sweepWallet", () => {
-  it("fixes a split Summ holds whole, matches one it holds in parts, and lists the gaps", async () => {
+  it("fixes a split Summ holds whole, matches one it holds in parts, and books the gaps", async () => {
     const paced = pacedProvider(sweepChain(), { spacingMs: 0 });
 
     const result = await sweepWallet(paced, {
@@ -91,11 +92,16 @@ describe("sweepWallet", () => {
       result.rows.map((row) => [
         row.type,
         row.baseCurrency,
-        row.baseAmount,
+        row.baseAmount.raw,
         row.from,
         row.id,
       ]),
-      [["income", "pHEX", { raw: ONE, decimals: 8 }, POOL, hashOf(0)]],
+      [
+        ["income", "pHEX", ONE, POOL, hashOf(0)],
+        ["remove-liquidity", "TKN", 4n * ONE, POOL, hashOf(0)],
+        ["income", "TKN", ONE, POOL, hashOf(0)],
+        ["fee", "PLS", 300n, WALLET, hashOf(1)],
+      ],
     );
     assert.deepEqual(
       result.unmatched.map((leg) => [
@@ -110,6 +116,10 @@ describe("sweepWallet", () => {
         [hashOf(0), TKN, ONE, "fee"],
       ],
     );
+    assert.deepEqual(
+      result.questions.map((one) => [one.hash, one.reason]),
+      [[hashOf(9), "received from an address on none of the owner's lists"]],
+    );
     assert.deepEqual(result.summUnmatched, []);
   });
 
@@ -120,6 +130,7 @@ describe("sweepWallet", () => {
     const plsWei = 10n ** 18n;
     const chain = standInWalletChain({
       latest: 100,
+      contracts: { [HEX]: tokenAnswers("HEX") },
       blocks: {
         10: {
           transactions: [
@@ -159,6 +170,13 @@ describe("sweepWallet", () => {
       [
         [HEX, ONE, "principal"],
         [HEX, ONE, "fee"],
+      ],
+    );
+    assert.deepEqual(
+      result.rows.map((row) => [row.type, row.baseAmount.raw, row.feeAmount]),
+      [
+        ["remove-liquidity", ONE, { raw: 300n, decimals: 18 }],
+        ["income", ONE, undefined],
       ],
     );
     assert.deepEqual(result.problems, [
@@ -276,7 +294,7 @@ describe("runSummSweep", () => {
     assert.equal(run.code, 0);
     assert.match(
       run.out,
-      /3 that Summ lacks, 1 splits to fix in Summ, 0 problems\.\nWrote 1 rows to /,
+      /3 legs and parts Summ lacks, 1 splits to fix in Summ, 1 questions, 0 problems\.\nWrote 4 rows to /,
     );
     const csv = fs.readFileSync(path.join(top, "rows.csv"), "utf8").split("\n");
     assert.match(csv[1], /^2023-11-14 22:15:00,income,HEX,1,/);
@@ -289,6 +307,7 @@ describe("runSummSweep", () => {
       report.unmatched.map((leg) => leg.part ?? "whole"),
       ["whole", "principal", "fee"],
     );
+    assert.equal(report.questions[0].legs[0].amount, "200000000");
     assert.equal((await runOn(top, argsFor(top))).code, 1);
   });
 

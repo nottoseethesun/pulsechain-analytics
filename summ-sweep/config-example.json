@@ -1,6 +1,11 @@
 {
   "templatePath": "/home/you/summ/summ-template.csv",
   "lpRangerDir": "/home/you/code/lp-ranger/github-repo/lp-ranger",
+  "ownWallets": {
+    "0x1111111111111111111111111111111111111111": "Your other wallet's name in Summ"
+  },
+  "spamTokens": ["0x2222222222222222222222222222222222222222"],
+  "incomeTokens": ["0x3333333333333333333333333333333333333333"],
   "summSymbols": {
     "0x2b591e99afe9f32eaa6214f7b7629768c40eeb39": ["HEX"],
     "0x57fde0a71132198bbec939b98976993d8d89d225": ["HEX"],

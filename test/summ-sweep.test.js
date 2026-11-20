@@ -231,6 +231,7 @@ describe("summHolds and decimalText", () => {
     assert.equal(summHolds(150000000n, 8, "1"), false);
     assert.equal(summHolds(1n, 0, "x"), false);
     assert.equal(summHolds(0n, 0, " "), false);
+    assert.equal(summHolds(AMOUNT, null, "12345.67890123"), false);
   });
 });
 
@@ -246,6 +247,7 @@ describe("tokenLegs", () => {
   const facts = new Map([
     [HEX, { symbol: "HEX", decimals: 8 }],
     [PM, { symbol: "9mm-V3-POS", decimals: null }],
+    [WPLS, { symbol: "WPLS", decimals: 18 }],
   ]);
 
   it("makes a leg of each token in or out, NFTs and the wrapped coin included", () => {
@@ -275,6 +277,11 @@ describe("tokenLegs", () => {
         log(3, WPLS, [DEPOSIT_TOPIC, addressTopic(WALLET)]),
         log(4, WPLS, [WITHDRAWAL_TOPIC, addressTopic(WALLET)]),
         log(5, HEX, [DEPOSIT_TOPIC, addressTopic(WALLET)]),
+        log(6, OTHER, [
+          TRANSFER_TOPIC,
+          addressTopic(POOL),
+          addressTopic(WALLET),
+        ]),
       ],
     });
 
@@ -293,11 +300,13 @@ describe("tokenLegs", () => {
         [1, "out", "HEX", 5n, undefined, undefined, WALLET],
         [1, "in", "HEX", 5n, undefined, undefined, WALLET],
         [2, "in", "9mm-V3-POS", 1n, 12345n, undefined, ethers.ZeroAddress],
-        [3, "in", WPLS, 5n, undefined, "deposit", WPLS],
-        [4, "out", WPLS, 5n, undefined, "withdrawal", WPLS],
+        [3, "in", "WPLS", 5n, undefined, "deposit", WPLS],
+        [4, "out", "WPLS", 5n, undefined, "withdrawal", WPLS],
+        [6, "in", null, 5n, undefined, undefined, POOL],
       ],
     );
     assert.equal(legs[3].decimals, 0);
+    assert.equal(legs[6].decimals, null);
     assert.equal(legs[0].timestamp, TIME);
   });
 });
@@ -355,6 +364,7 @@ describe("matchLegs", () => {
         nftId: 7n,
       }),
       leg({ logIndex: 5, amount: 999n, hash: `0x${"ef".repeat(32)}` }),
+      leg({ logIndex: 6, amount: 900000000n, symbol: null, token: OTHER }),
     ];
     const summLegs = summLegsOf(
       [
@@ -370,11 +380,11 @@ describe("matchLegs", () => {
       WALLET,
     );
 
-    const result = matchLegs(legs, summLegs, { [PM]: ["9MM-V3-POS"] });
+    const result = matchLegs(legs, summLegs, new Map([[PM, ["9MM-V3-POS"]]]));
 
     assert.deepEqual(
       result.unmatched.map((one) => one.logIndex),
-      [1, 5],
+      [1, 5, 6],
     );
     assert.equal(result.matches.get(legs[2]).amount, "0.75");
     assert.equal(result.matches.get(legs[3]).amount, "0.75");

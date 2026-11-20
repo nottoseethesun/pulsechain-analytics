@@ -6,7 +6,6 @@
     "fetch-amount-of-token-transferred.js",
     "for-google-apps/check-token-balance/fetch-amount-of-token-transferred.js",
     "eslint-security.config.js",
-    "summ-sweep.js",
     "test/**/*.test.js"
   ],
   "project": ["**/*.js"]

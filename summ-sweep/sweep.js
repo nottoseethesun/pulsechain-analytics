@@ -9,11 +9,13 @@
  * them with Summ's legs (`summ-sweep/match.js`). Each withdrawal from a
  * 9mm V3 position is read through LP Ranger's own tool and split into
  * principal and fees (`summ-sweep/positions.js`), and reconciled with
- * Summ (`summ-sweep/splits.js`). What it gives back is what a sweep acts
- * on: the legs Summ lacks, the splits to fix in Summ with their income
- * rows, Summ's legs no leg matched, and every problem it found. A
- * withdrawal the position manager paid as PLS is one of the problems,
- * since the sweep matches token legs only.
+ * Summ (`summ-sweep/splits.js`). The legs and parts Summ lacks become
+ * rows or questions (`summ-sweep/gaps.js`). What it gives back is what a
+ * sweep acts on: the splits to fix in Summ, the rows for the csv (the
+ * fixes' income rows and the gaps' rows), the questions for the owner,
+ * Summ's legs no leg matched, and every problem it found. A withdrawal
+ * the position manager paid as PLS is one of the problems, since the
+ * sweep matches token legs only.
  *
  * How: the steps run in the order each needs the last: the logs and the
  * wallet's own transactions first, then their receipts, the PLS each moved
@@ -34,13 +36,13 @@ import { readReceipts, tokenFacts } from "../wallet-history/receipts.js";
 import { ownCoinFlows } from "../wallet-history/coin-flows.js";
 import { walletCoinInflows } from "../wallet-history/coin-inflows.js";
 import { decimalText } from "./amounts.js";
+import { rowsForGaps, sortRows } from "./gaps.js";
 import { tokenLegs } from "./legs.js";
 import { attachManualRows, matchLegs, summLegsOf } from "./match.js";
+import { csvSymbolOf, ownerLists } from "./owner-lists.js";
 import { splitCollects } from "./positions.js";
+import { PLS_DECIMALS } from "./rows.js";
 import { sortSplits } from "./splits.js";
-
-/** The decimals of the chain's own coin, PLS: amounts count in wei. */
-const OWN_COIN_DECIMALS = 18;
 
 /**
  * The problem of a coin with principal the position manager paid as PLS.
@@ -49,8 +51,8 @@ const OWN_COIN_DECIMALS = 18;
  * @returns {{hash: string, problem: string}} The problem
  */
 function paidAsCoinProblem(split) {
-  const received = decimalText(split.received, OWN_COIN_DECIMALS);
-  const fee = decimalText(split.fee, OWN_COIN_DECIMALS);
+  const received = decimalText(split.received, PLS_DECIMALS);
+  const fee = decimalText(split.fee, PLS_DECIMALS);
   return {
     hash: split.hash,
     problem: `position #${split.nftId} paid ${received} PLS through the position manager, ${fee} of it fees, and the sweep matches token legs only, so its principal and fees are not checked against Summ`,
@@ -158,23 +160,24 @@ function receivedIn(history, chain) {
  * @param {number} sweep.toBlock - The range's last block
  * @param {object} sweep.chain - The chain's facts: `wrappedCoin`,
  *   `positionManager`, `spanBlocks`, `batchSize`
- * @param {object} sweep.owner - The owner's lists: `summSymbols`, each
- *   token's symbols in Summ, and `csvSymbols`, its symbol in a csv, by
- *   contract in lower case
+ * @param {object} sweep.owner - The owner's settings, which
+ *   `summ-sweep/owner-lists.js` reads: his own wallets, his spam and
+ *   income tokens, and each token's symbols in Summ and in a csv
  * @param {object[]} sweep.summRows - Summ's rows for the wallet, from
  *   `parseSummResults`
  * @param {function(string[]): Promise<Map<string, object>>}
  *   sweep.readRecords - Reads transactions through LP Ranger's tool
- * @returns {Promise<object>} `history`, `unmatched` (the legs and parts
- *   Summ lacks), `summUnmatched`, `fixes` (the splits to fix in Summ),
- *   `rows` (the csv rows so far: the fixes' income rows) and `problems`
+ * @returns {Promise<object>} `history`; `records`; `unmatched`, the legs
+ *   and parts Summ lacks; `summUnmatched`; `fixes`, the splits to fix in
+ *   Summ; `rows`, for the csv; `questions`, for the owner; and `problems`
  */
 export async function sweepWallet(paced, sweep) {
-  const { wallet, chain, owner } = sweep;
+  const { wallet, chain } = sweep;
+  const lists = ownerLists(sweep.owner);
   const history = await readHistory(paced, sweep);
   const summRows = attachManualRows(sweep.summRows, history.legs);
   const summLegs = summLegsOf(summRows, wallet);
-  const whole = matchLegs(history.legs, summLegs, owner.summSymbols);
+  const whole = matchLegs(history.legs, summLegs, lists.summSymbols);
   const order = history.sent
     .filter((one) => sameAddress(one.to, chain.positionManager))
     .map((one) => one.hash.toLowerCase());
@@ -184,25 +187,37 @@ export async function sweepWallet(paced, sweep) {
     records,
     receivedIn: receivedIn(history, chain),
   });
-  const csvSymbolOf = (token, symbol) => owner.csvSymbols[token] ?? symbol;
   const sorted = sortSplits({
     splits,
     legs: history.legs,
     matches: whole.matches,
     wallet,
-    csvSymbolOf,
+    csvSymbolOf: (token, symbol) => csvSymbolOf(lists, token, symbol),
   });
-  const parts = matchLegs(sorted.parts, summLegs, owner.summSymbols);
+  const parts = matchLegs(sorted.parts, summLegs, lists.summSymbols);
+  const unmatched = [
+    ...whole.unmatched.filter((leg) => !sorted.splitLegs.has(leg)),
+    ...parts.unmatched,
+  ];
+  const gaps = rowsForGaps({
+    wallet,
+    history,
+    unmatched,
+    splits,
+    problems,
+    records,
+    summRows,
+    lists,
+    chain,
+  });
   return {
     history,
     records,
-    unmatched: [
-      ...whole.unmatched.filter((leg) => !sorted.splitLegs.has(leg)),
-      ...parts.unmatched,
-    ],
+    unmatched,
     summUnmatched: parts.summUnmatched,
     fixes: sorted.fixes,
-    rows: sorted.rows,
+    rows: sortRows([...sorted.rows, ...gaps.rows]),
+    questions: gaps.questions,
     problems: [...problems, ...sorted.paidAsCoin.map(paidAsCoinProblem)],
   };
 }

@@ -52,7 +52,7 @@ the ones that hold no key and none of the owner's own settings.
 | File | In git | What it holds |
 | ---- | ------ | ------------- |
 | `config.json` | yes | The services whose keys the programs send, under `apiKeys`, and the chain's facts the Summ sweep reads, under `pulsechain`. No key. |
-| `summ-sweep/config.json` | no | The owner's settings for the Summ sweep: the path of his Summ template and of his LP Ranger checkout, and each token's symbols in Summ and in a csv. `summ-sweep/config-example.json` beside it shows the shape. |
+| `summ-sweep/config.json` | no | The owner's settings for the Summ sweep: the path of his Summ template and of his LP Ranger checkout, his own wallets with their names, his spam and income tokens, and each token's symbols in Summ and in a csv. `summ-sweep/config-example.json` beside it shows the shape, with made-up addresses. |
 | `api-keys.json` | no | The keys, each encrypted with the owner's password. `api-keys.json.tmp` is the file it is written through. `API_KEYS_FILE_PATH` names another, as the tests do. |
 | `chart-price-ratio/config.json` | yes | The ratio chart's settings: network, DexTools' plan, the interval, the CSV's name. No key. |
 | `check-token-balance/config.json` | yes | The balance checker's rpc endpoint. |
@@ -124,6 +124,8 @@ password.
 | `summ-sweep.test.js` | The Summ sweep's reading of Summ's saved pages, its match of amounts in both forms Summ prints, the legs of a wallet's logs, and the match of the chain's legs with Summ's. |
 | `summ-sweep-splits.test.js` | The split of withdrawals from positions into principal and fees, the collects it refuses to split, and LP Ranger's tool run through a stand-in and as a real program. |
 | `summ-sweep-run.test.js` | The whole sweep against a stand-in chain, a withdrawal paid as PLS among it, and its command line, which writes the csv through crypto-price-fetchers' Summ csv utility. |
+| `summ-sweep-gap-rules.test.js` | The rules that book the legs Summ lacks outside a swap (a position's deposits, NFTs, withdrawals and fees; wraps; spam; the owner's wallets; income tokens), and the question for each leg no rule books. |
+| `summ-sweep-gaps.test.js` | The rows of swaps, of tokens and of PLS, with only what Summ lacks; how much of a transaction Summ holds; where its gas goes; a transaction Summ's sync has not reached; and the Fee rows and questions of transactions that moved no token. |
 
 `test/helpers/` holds the stand-ins:
 
@@ -156,6 +158,8 @@ password.
   sweep: its stand-in chain, LP Ranger's records of its withdrawals,
   Summ's rows of it, the header of Summ's csv template, and the temp
   folders the tests make and remove.
+- `summ-gaps.js`: builds the legs, transactions and Summ rows the tests
+  of the gap rules book, and runs `rowsForGaps` on them.
 
 `npm run test:coverage` fails below 80% of lines covered. Code written to
 check something goes into the tests, so it is kept and run again rather

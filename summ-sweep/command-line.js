@@ -8,15 +8,16 @@
  * and writes two files: the csv of rows for Summ, through
  * crypto-price-fetchers' Summ csv utility, the one way such a file is
  * made, and a report, as json, of the splits to fix in Summ, the legs
- * Summ lacks, Summ's legs no leg matched, and the problems found.
+ * Summ lacks, the questions for the owner about the legs no rule books,
+ * Summ's legs no leg matched, and the problems found.
  *
  * How: the chain's facts (endpoint, chain id, position manager, wrapped
  * coin, span of a log search, spacing and size of requests) are in the
  * top `config.json`, which git keeps; the owner's own settings (the path
- * of his Summ template and of his LP Ranger checkout, and each token's
- * symbols in Summ and in a csv) are in `summ-sweep/config.json`, which
- * git ignores, since this repo is public; `summ-sweep/config-example.json`
- * shows its shape. A date is a day in UTC: the range runs from the first
+ * of his Summ template and of his LP Ranger checkout, his own wallets,
+ * his spam and income tokens, and each token's symbols in Summ and in a
+ * csv) are in `summ-sweep/config.json`, which git ignores, since this
+ * repo is public; `summ-sweep/config-example.json` shows its shape. A date is a day in UTC: the range runs from the first
  * block of its first day to the last block of its last. A report's
  * amounts, which are BigInts, are written as decimal text, json having
  * no BigInt.
@@ -41,11 +42,12 @@ const DAY = 86400;
 
 /** The end of the help: the two files, and the settings. */
 const HELP_AFTER = `
-The csv holds the rows Summ lacks, written by crypto-price-fetchers' Summ
-csv utility; the report, as json, lists the splits to fix in Summ (a leg
-holding a withdrawal's principal and fees together), the legs Summ lacks,
-Summ's legs no leg matched, and the problems found. Neither is written
-over without --replace.
+The csv holds the rows for what Summ lacks, written by crypto-price-fetchers'
+Summ csv utility; the report, as json, lists the splits to fix in Summ (a
+leg holding a withdrawal's principal and fees together), the legs Summ
+lacks, the questions about the legs no rule books, Summ's legs no leg
+matched, and the problems found. Neither is written over without
+--replace.
 
 The chain's facts come from the top config.json, and the owner's settings
 from summ-sweep/config.json, which git ignores; summ-sweep/config-example.json
@@ -106,6 +108,7 @@ function reportOf(result, range) {
       summ: summ(summLeg),
     })),
     unmatched: result.unmatched.map(({ split: _split, ...leg }) => leg),
+    questions: result.questions,
     summUnmatched: result.summUnmatched.map((leg) => ({
       hash: leg.hash,
       direction: leg.direction,
@@ -175,7 +178,7 @@ async function sweepWith(options, context) {
     replace,
   );
   say(
-    `Blocks ${fromBlock} to ${toBlock}: ${result.history.legs.length} token legs, ${result.unmatched.length} that Summ lacks, ${result.fixes.length} splits to fix in Summ, ${result.problems.length} problems.`,
+    `Blocks ${fromBlock} to ${toBlock}: ${result.history.legs.length} token legs, ${result.unmatched.length} legs and parts Summ lacks, ${result.fixes.length} splits to fix in Summ, ${result.questions.length} questions, ${result.problems.length} problems.`,
   );
   say(
     result.rows.length > 0

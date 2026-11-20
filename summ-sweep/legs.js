@@ -16,7 +16,8 @@
  * third topics and holds the amount in its data; an NFT's names the
  * token's id in a fourth topic. A Transfer from the wallet to itself is a
  * leg out and a leg in. Each leg carries its token's symbol and decimals,
- * from `tokenFacts`, and its block's time.
+ * from `tokenFacts`, or `null` for each its contract did not give, and
+ * its block's time; an NFT's decimals are 0.
  *
  * Fit: `summ-sweep/match.js` matches these legs with Summ's.
  */
@@ -96,9 +97,10 @@ function legsOfLog(log, wallet, wrappedCoin) {
  *   seconds since 1970
  * @param {string} history.wrappedCoin - The wrapped coin's contract
  * @returns {Array<{hash: string, blockNumber: number, timestamp: number,
- *   logIndex: number, direction: string, token: string, symbol: string,
- *   decimals: number, amount: bigint, counterparty: string,
- *   nftId?: bigint, wrap?: string}>} The legs, in the logs' order
+ *   logIndex: number, direction: string, token: string,
+ *   symbol: (string|null), decimals: (number|null), amount: bigint,
+ *   counterparty: string, nftId?: bigint, wrap?: string}>} The legs, in
+ *   the logs' order
  */
 export function tokenLegs({ wallet, logs, tokens, times, wrappedCoin }) {
   return logs
@@ -108,8 +110,8 @@ export function tokenLegs({ wallet, logs, tokens, times, wrappedCoin }) {
       return {
         ...leg,
         timestamp: times.get(leg.blockNumber),
-        symbol: facts.symbol ?? leg.token,
-        decimals: leg.nftId === undefined ? (facts.decimals ?? 0) : 0,
+        symbol: facts.symbol,
+        decimals: leg.nftId === undefined ? facts.decimals : 0,
       };
     });
 }
