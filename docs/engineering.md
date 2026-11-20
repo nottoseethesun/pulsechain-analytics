@@ -114,6 +114,8 @@ password.
 | `pulse-token-ratio.test.js` | The ratio chart, run as its owner runs it, against a stand-in GeckoTerminal and DexTools, with the DexTools key from a key file of the test's own: its prices, a token's own prices when it is its pool's quote token, its fallback, its command line, its exit codes, and the fewest points it charts. |
 | `api-keys.test.js` | The keys `config.json` lists, the key manager, and the copy of `unlock-api-keys.sh`. |
 | `dependencies.test.js` | crypto-price-fetchers installed from GitHub, following its main branch or its latest release, by the ratio chart too, and `npm run github-project-deps` running its versions tool. |
+| `wallet-history.test.js` | The paced provider, the blocks of a range, the logs that name a wallet, the transactions it sent, their receipts and its tokens' facts, against a stand-in chain. |
+| `wallet-history-coin.test.js` | The PLS a wallet moved: the calls of a trace that pay it, the flows of its own transactions, and the payments from elsewhere its balance reveals, against a stand-in chain whose balances are worked out apart from the code tested. |
 
 `test/helpers/` holds the stand-ins:
 
@@ -133,6 +135,13 @@ password.
   preload, and builds GeckoTerminal's and DexTools' answers, among them a
   pool whose base token is not the chart's token (`quoteSideAnswers`).
 - `known-bug.js`: declares a known-bug test.
+- `stand-in-wallet-chain.js`: a PulseChain endpoint held in memory for
+  `wallet-history/`, built from a few blocks a test describes: their
+  transactions, logs, payments inside them, withdrawals and fee
+  recipient. It answers block, log, count, balance, receipt, trace and
+  contract requests, refuses a log search wider than its limit, and counts
+  every request. Its balances come from the description, not from the code
+  tested.
 
 `npm run test:coverage` fails below 80% of lines covered. Code written to
 check something goes into the tests, so it is kept and run again rather

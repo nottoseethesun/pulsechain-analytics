@@ -11,8 +11,9 @@
 USE AT YOUR OWN RISK: SEE LICENSE FILE, INCLUDED.
 
 Tools that answer questions about PulseChain: how much of a token one
-transaction sent a wallet, what a wallet held at a past block or date, and
-how two tokens' prices compare over time.
+transaction sent a wallet, what a wallet held at a past block or date, how
+two tokens' prices compare over time, and what a wallet moved over a range
+of blocks, read from the chain alone (`wallet-history/`).
 
 Some tools also come as Google Apps Script, so that a Google Sheet's cell
 can call them. Apps Script cannot import npm packages such as ethers. So an

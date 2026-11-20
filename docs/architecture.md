@@ -1,9 +1,9 @@
 # pulsechain-analytics — System Architecture
 
-pulsechain-analytics answers three questions about PulseChain: how much
+pulsechain-analytics answers four questions about PulseChain: how much
 of a token one transaction sent a wallet, what a
-wallet held at a past block or date, and how two tokens' prices compare
-over time. Some answers come as Google Sheets functions, in Apps Script,
+wallet held at a past block or date, how two tokens' prices compare
+over time, and what a wallet moved over a range of blocks. Some answers come as Google Sheets functions, in Apps Script,
 and all of them as Node programs.
 
 Two companion references sit alongside this one:
@@ -21,6 +21,7 @@ Two companion references sit alongside this one:
 - [The Amount a Transaction Sent](#the-amount-a-transaction-sent)
 - [The Balance Checker](#the-balance-checker)
 - [The Ratio Chart](#the-ratio-chart)
+- [A Wallet's History](#a-wallets-history)
 - [Api Keys](#api-keys)
 - [crypto-price-fetchers](#crypto-price-fetchers)
 - [Technology Choices](#technology-choices)
@@ -29,7 +30,7 @@ Two companion references sit alongside this one:
 
 ## The Tools
 
-Four tools answer the three questions. Two of them work out the same
+Five tools answer the four questions. Two of them work out the same
 amount, one with ethers and one as a Sheets script.
 
 | Tool | Where | What it answers |
@@ -38,6 +39,7 @@ amount, one with ethers and one as a Sheets script.
 | The same, as a Sheets script | `for-google-apps/check-token-balance/` | The same, in a sheet's cell, and from Node through the script's Node version. |
 | The balance checker | `check-token-balance/` | A wallet's balances of tokens, PLS among them, at a block or a date. A package of its own. |
 | The ratio chart | `chart-price-ratio/` | The ratio of two tokens' prices over time, as a chart in the terminal. A package of its own. |
+| A wallet's history | `wallet-history/` | Every token and every PLS a wallet moved over a range of blocks, from the chain alone: functions a program calls, with no command line of their own. |
 
 ---
 
@@ -118,6 +120,57 @@ too few points, no prices, or a request that failed.
 
 The DexTools key is opened from the repo's key store the first time the
 chart asks DexTools, so a run that never falls back asks for no password.
+
+---
+
+## A Wallet's History
+
+Bookkeeping needs everything a wallet moved, and an explorer's list of a
+wallet's transactions can leave some out and list transfers the chain
+does not hold. `wallet-history/` reads the history from the chain alone,
+through an rpc endpoint, in four parts, each a different record the chain
+keeps:
+
+1. **Tokens, from the logs** (`transfers.js`). A token contract logs a
+   Transfer event naming the sender and receiver of every move, and WPLS
+   logs a Deposit or Withdrawal when a wallet wraps or unwraps PLS.
+   `walletTransferLogs` searches for those that name the wallet, in spans
+   of blocks no wider than the endpoint takes (`blocks.js`). They include
+   transfers in transactions the wallet did not send, such as airdrops.
+2. **The wallet's transactions, from its nonce** (`sent.js`). The count of
+   transactions a wallet has sent rises with each one, whatever it does,
+   so `walletSentTransactions` halves every span of blocks whose two ends
+   show different counts down to single blocks, and reads those. It finds
+   the transactions no log names: one that reverted, one that only
+   approved, one that cancelled another.
+3. **PLS of the wallet's own transactions, from receipts and traces**
+   (`receipts.js`, `coin-flows.js`). PLS moves without a log. A
+   transaction's receipt gives its gas, and its value is the PLS it sent;
+   a trace, the transaction replayed call by call, shows the PLS a
+   contract handed back inside it, such as at the end of a swap into PLS.
+   `ownCoinFlows` gives each transaction's gas, PLS sent and handed back,
+   and the change those make to the wallet's balance.
+4. **PLS from elsewhere, from the balance** (`coin-inflows.js`). PLS also
+   arrives from transactions the wallet did not send, from validator
+   withdrawals and, for a block's fee recipient, from tips. Only the
+   wallet's own transactions can take PLS from it, so
+   `walletCoinInflows` halves each span whose change in balance its own
+   transactions do not explain, and reads each block left for those
+   payments: its trace, its withdrawals, and its tips. A block whose
+   payments still do not explain its change is reported, never guessed
+   at.
+
+`readReceipts` reads each receipt once, and `tokenFacts` asks each token's
+contract once for its symbol and decimals. Every request goes through a
+paced provider (`paced-provider.js`), a set time after the one before, as
+LP Ranger paces its own; requests made together in one turn go as one
+json-rpc batch. The counts and balances at past blocks need an endpoint
+that keeps past state, and the traces one that offers the debug methods:
+g4mm4's does both; rpc.pulsechain.com keeps past state but does not trace.
+LP Ranger's wallet report has its own nonce search and pacing, but its
+files load LP Ranger's settings as they load, and LP Ranger cannot change,
+so `wallet-history/` holds a second copy of each rather than importing
+them.
 
 ---
 
