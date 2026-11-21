@@ -3,7 +3,11 @@
   "version": "1.0.0",
   "type": "module",
   "dependencies": {
-    "commander": "14.0.2",
-    "ethers": "6.17.0"
+    "commander": "^14.0.2",
+    "crypto-price-fetchers": "github:nottoseethesun/crypto-price-fetchers#main",
+    "ethers": "^6.17.0"
+  },
+  "engines": {
+    "node": ">=24"
   }
 }

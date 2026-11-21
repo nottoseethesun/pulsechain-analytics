@@ -4,13 +4,15 @@
  *
  * What: the sweep's command line takes days as `YYYY-MM-DD` and a time as
  * `YYYY-MM-DD HH:MM:SS`, both in UTC, and the rows' notes write a time the
- * second way. `secondsOfDay` and `secondsOfTime` read them into seconds
- * since 1970, and `timeText` writes seconds back as a time.
+ * second way. `secondsOfTime` reads a time into seconds since 1970, and
+ * `timeText` writes seconds back as a time; a day is read by
+ * crypto-price-fetchers' `dayStartSeconds`
+ * (`crypto-price-fetchers/lib/calendar-day`).
  *
- * How: text is read with `Date.parse`, as an ISO time in UTC, and kept
- * only when writing the seconds back gives the same text, so a day that
- * does not exist, such as `2026-02-30`, or an hour past 23, is refused
- * rather than moved to a nearby day.
+ * How: a time is read with `Date.parse`, as an ISO time in UTC, and kept
+ * only when writing the seconds back gives the same text, so a time on a
+ * day that does not exist, such as `2026-02-30`, or an hour past 23, is
+ * refused rather than moved to a nearby day.
  *
  * Fit: `summ-sweep/command-line.js` reads its options with it, and
  * `summ-sweep/gaps.js` writes the time in a row's note.
@@ -24,19 +26,6 @@
  */
 export function timeText(seconds) {
   return new Date(seconds * 1000).toISOString().slice(0, 19).replace("T", " ");
-}
-
-/**
- * The seconds since 1970 of the start of a day in UTC.
- *
- * @param {string} day - The day, as `YYYY-MM-DD`
- * @returns {number|null} The seconds; `null` when the text is no real day
- *   written that way
- */
-export function secondsOfDay(day) {
-  const seconds = Date.parse(`${day}T00:00:00Z`) / 1000;
-  if (!Number.isFinite(seconds)) return null;
-  return timeText(seconds).slice(0, 10) === day ? seconds : null;
 }
 
 /**

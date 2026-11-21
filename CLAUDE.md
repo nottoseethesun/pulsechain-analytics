@@ -69,14 +69,32 @@ own, never the owner's, and passes no `API_KEYS_PASSWORD` it did not set.
 
 ## crypto-price-fetchers
 
-The top `package.json` and `chart-price-ratio/package.json` install
-crypto-price-fetchers from GitHub, following its main branch (`#main`),
-the same ref in both, which `test/dependencies.test.js` holds; each
-`package-lock.json` keeps the commit installed. crypto-price-fetchers'
-versions tool, which this repo runs as
-`npm run github-project-deps -- main|release`, sets the ref in both to
-`#main` or `#semver:*` (the latest release) and makes both lockfiles
-again; the tool lives there, and this repo keeps no copy.
+The top `package.json`, `chart-price-ratio/package.json` and
+`check-token-balance/package.json` install crypto-price-fetchers from
+GitHub, following its main branch (`#main`), the same ref in all three,
+which `test/dependencies.test.js` holds; each `package-lock.json` keeps the
+commit installed. crypto-price-fetchers' versions tool, which this repo
+runs as `npm run github-project-deps -- main|release`, sets the ref in all
+three to `#main` or `#semver:*` (the latest release) and makes each
+lockfile again; the tool lives there, and this repo keeps no copy. A
+package that imports a package lists it itself: the top lists commander,
+which the Summ sweep and the Sheets script's Node version declare their
+command lines with, rather than reach the copy crypto-price-fetchers
+installs.
+
+The command lines check a day with crypto-price-fetchers' `dayStartSeconds`
+(`crypto-price-fetchers/lib/calendar-day`), which refuses a day the
+calendar does not have, and an url with its `isHttpUrl`
+(`crypto-price-fetchers/lib/http-url`), as commander parses them; each
+entry point calls its `endQuietlyWhenOutputCloses`
+(`crypto-price-fetchers/lib/closed-output`) before it starts, so a command
+line whose output is piped into a program that stops reading, such as
+`head`, ends with its exit code and no stack trace. The help test checks
+that of each command line, and `test/repo-checks.test.js` holds the
+tracked files to its repo checks (`crypto-price-fetchers/lib/repo-checks`):
+every EVM address in EIP-55's form, every npm target named in
+`docs/npm-project-commands.md`, and every test file and helper named in
+the docs.
 
 The Summ sweep, which compares a wallet's history with its records in
 Summ (below), writes what its command line catches through
@@ -125,7 +143,8 @@ example. LP Ranger's rules do not yet ask for the examples; this repo does.
 ## Gates and CI
 
 `npm run check` is the one gate, LP Ranger's: the lint (ESLint, which checks
-JavaScript against rules, here LP Ranger's; markdownlint, which checks the
+JavaScript against rules, here LP Ranger's and crypto-price-fetchers'
+`no-or-default`, which refuses a default made with `||`; markdownlint, which checks the
 form of Markdown files; Prettier, which formats code; actionlint, which
 checks the GitHub Actions workflow files, run from its official release by
 crypto-price-fetchers' bin `run-actionlint`, which refuses an archive whose

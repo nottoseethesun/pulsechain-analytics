@@ -14,6 +14,7 @@
  */
 
 import { Argument, Command, InvalidArgumentError, Option } from "commander";
+import { isHttpUrl } from "crypto-price-fetchers/lib/http-url";
 
 /** The intervals GeckoTerminal's candles serve. */
 export const INTERVALS = Object.freeze(["hourly", "daily", "weekly"]);
@@ -72,6 +73,20 @@ function positiveInteger(value) {
 }
 
 /**
+ * Checks DexTools' api address, as commander parses it.
+ *
+ * @param {string} value - The address typed
+ * @returns {string} The address
+ * @throws {InvalidArgumentError} When it is not an http or https url
+ */
+function httpUrl(value) {
+  if (!isHttpUrl(value)) {
+    throw new InvalidArgumentError("Not an http or https url.");
+  }
+  return value;
+}
+
+/**
  * Builds the command line.
  *
  * @param {Object} config - config.json's settings, the options' defaults
@@ -125,6 +140,7 @@ export function buildRatioCommand(config) {
     .option(
       "--host <url>",
       "DexTools' api address",
+      httpUrl,
       dextools.host ?? "https://public-api.dextools.io",
     )
     .option(

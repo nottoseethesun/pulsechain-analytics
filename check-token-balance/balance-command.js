@@ -10,7 +10,8 @@
  *
  * - a block is a whole number;
  * - a date is a day of the calendar, written YYYY-MM-DD, which gives the
- *   start of that day in UTC, in seconds since 1970;
+ *   start of that day in UTC, in seconds since 1970, as
+ *   crypto-price-fetchers' `dayStartSeconds` reads it;
  * - an address is 0x and 40 hex digits, in one case or in the mixed case of
  *   EIP-55, whose checksum it then must match; it is held in EIP-55's form,
  *   as LP Ranger, the owner's bot that manages his 9mm V3 liquidity
@@ -19,13 +20,15 @@
  *   for PLS, PulseChain's own coin, which has no contract, or a contract's
  *   address;
  * - the rpc endpoint, the json-rpc api of the PulseChain node asked, is an
- *   http or https url.
+ *   http or https url, as crypto-price-fetchers' `isHttpUrl` says.
  *
  * `--block` and `--date` exclude each other; the action checks that one of
  * them is given.
  */
 
 import { Command, InvalidArgumentError, Option } from "commander";
+import { dayStartSeconds } from "crypto-price-fetchers/lib/calendar-day";
+import { isHttpUrl } from "crypto-price-fetchers/lib/http-url";
 import { ethers } from "ethers";
 
 /** The name the command line takes for PLS, which has no contract. */
@@ -87,17 +90,13 @@ export function blockNumber(value) {
  * @throws {InvalidArgumentError} When it is not a day of the calendar, written YYYY-MM-DD
  */
 export function utcDayStart(value) {
-  const start = new Date(`${value}T00:00:00.000Z`);
-  const isDay =
-    /^\d{4}-\d{2}-\d{2}$/.test(value) &&
-    !Number.isNaN(start.getTime()) &&
-    start.toISOString().slice(0, 10) === value;
-  if (!isDay) {
+  const seconds = dayStartSeconds(value);
+  if (seconds === null) {
     throw new InvalidArgumentError(
       "Not a day of the calendar written YYYY-MM-DD, such as 2026-11-01.",
     );
   }
-  return start.getTime() / 1000;
+  return seconds;
 }
 
 /**
@@ -146,7 +145,7 @@ export function tokenList(value) {
  * @throws {InvalidArgumentError} When it is not an http or https url
  */
 export function rpcUrl(value) {
-  if (!URL.canParse(value) || !/^https?:$/.test(new URL(value).protocol)) {
+  if (!isHttpUrl(value)) {
     throw new InvalidArgumentError("Not an http or https url.");
   }
   return value;

@@ -12,6 +12,9 @@
  * folder npm runs a script in, the repo's top, whose settings it reads.
  */
 
+import { endQuietlyWhenOutputCloses } from "crypto-price-fetchers/lib/closed-output";
 import { runSummSweep } from "./summ-sweep/command-line.js";
+
+endQuietlyWhenOutputCloses();
 
 process.exitCode = await runSummSweep(process.argv);

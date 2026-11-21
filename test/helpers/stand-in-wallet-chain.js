@@ -43,7 +43,7 @@ function hex(value) {
  * @param {string|null|undefined} b - The other
  * @returns {boolean} Whether both are present and the same
  */
-function same(a, b) {
+function isSame(a, b) {
   return typeof a === "string" && typeof b === "string"
     ? a.toLowerCase() === b.toLowerCase()
     : false;
@@ -87,7 +87,7 @@ function topicsMatch(topics, wanted) {
   return wanted.every((want, at) => {
     if (want === null) return true;
     const options = Array.isArray(want) ? want : [want];
-    return options.some((option) => same(option, topics[at]));
+    return options.some((option) => isSame(option, topics[at]));
   });
 }
 
@@ -153,28 +153,28 @@ export function standInWalletChain(description) {
     for (const transaction of block.transactions) {
       const gas = transaction.gasUsed * transaction.gasPrice;
       const succeeded = transaction.status === 1;
-      if (same(transaction.from, address))
+      if (isSame(transaction.from, address))
         change -= gas + (succeeded ? transaction.value : 0n);
-      if (succeeded && same(transaction.to, address))
+      if (succeeded && isSame(transaction.to, address))
         change += transaction.value;
       for (const pay of succeeded ? transaction.pays : []) {
         const moves =
           PAYING.includes(pay.type ?? "CALL") && pay.failed !== true;
-        if (moves && same(pay.to, address)) change += pay.amount;
-        if (moves && same(pay.from, address)) change -= pay.amount;
+        if (moves && isSame(pay.to, address)) change += pay.amount;
+        if (moves && isSame(pay.from, address)) change -= pay.amount;
       }
-      if (same(block.miner, address))
+      if (isSame(block.miner, address))
         change += transaction.gasUsed * (transaction.gasPrice - block.baseFee);
     }
     for (const withdrawal of block.withdrawals)
-      if (same(withdrawal.address, address))
+      if (isSame(withdrawal.address, address))
         change += withdrawal.amount * 10n ** 9n;
     return change;
   }
 
   const answers = {
     debug_traceTransaction: ([hash]) =>
-      traceOf(transactions().find((one) => same(one.hash, hash))),
+      traceOf(transactions().find((one) => isSame(one.hash, hash))),
     debug_traceBlockByNumber: ([number]) =>
       blockAt(Number(number)).transactions.map((transaction) => ({
         txHash: transaction.hash,
@@ -240,14 +240,14 @@ export function standInWalletChain(description) {
         .filter(
           (log) =>
             (filter.address === undefined ||
-              same(log.address, filter.address)) &&
+              isSame(log.address, filter.address)) &&
             topicsMatch(log.topics, filter.topics),
         );
     },
     async getTransactionCount(address, number) {
       count("getTransactionCount");
       return transactions().filter(
-        (one) => one.blockNumber <= number && same(one.from, address),
+        (one) => one.blockNumber <= number && isSame(one.from, address),
       ).length;
     },
     async getBalance(address, number) {
@@ -256,14 +256,14 @@ export function standInWalletChain(description) {
       for (const at of numbers())
         if (at <= number) balance += changeIn(at, address);
       for (const extra of description.unaccounted ?? [])
-        if (extra.block <= number && same(extra.address, address))
+        if (extra.block <= number && isSame(extra.address, address))
           balance += extra.amount;
       return balance;
     },
     async getTransactionReceipt(hash) {
       count("getTransactionReceipt");
       const one = transactions().find((transaction) =>
-        same(transaction.hash, hash),
+        isSame(transaction.hash, hash),
       );
       return one === undefined
         ? null

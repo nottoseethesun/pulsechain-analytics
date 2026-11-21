@@ -291,6 +291,15 @@ describe("pulse-token-ratio.js, its command line", () => {
     );
   });
 
+  it("refuses a DexTools address that is not an http or https url, naming --host, asking nothing", () => {
+    const run = runChart([TOKEN_A, TOKEN_B, "--host=notaurl"], {
+      answers: [],
+    });
+    assert.equal(run.status, 1);
+    assert.match(run.stderr, /'--host <url>'.*Not an http or https url\./);
+    assert.deepEqual(run.requests, []);
+  });
+
   it("refuses an option it does not know, naming it without what follows its =", () => {
     const run = runChart([TOKEN_A, TOKEN_B, `--api-key=${DEXTOOLS_KEY}`], {
       answers: [],
