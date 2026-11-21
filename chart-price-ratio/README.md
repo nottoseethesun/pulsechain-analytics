@@ -39,7 +39,8 @@ gives the details.
 
 ## Pre-requisites
 
-Node 22 or later (on Debian or Ubuntu Linux, the package `nodejs`).
+Node 24 or later, from nodejs.org or a version manager (a Linux
+distribution's own `nodejs` package can be older).
 
 ## Installation
 

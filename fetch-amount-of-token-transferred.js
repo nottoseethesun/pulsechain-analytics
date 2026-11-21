@@ -8,7 +8,7 @@
  * that transaction's events alone, so another transaction in the same block never counts, and it needs no archive node,
  * since no past balance is read.
  *
- * @requires Node 22 or later, as the repo's package.json says
+ * @requires Node 24 or later, as the repo's package.json says
  * @requires ethers.js (install via: npm install ethers)
  *
  * How to use:

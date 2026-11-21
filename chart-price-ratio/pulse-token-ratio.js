@@ -30,7 +30,7 @@
  * prices and works out the ratios; `ratio-output.js` prints them.
  *
  * Installation:
- *   1. Ensure Node.js v22+ is installed.
+ *   1. Ensure Node.js v24+ is installed.
  *   2. Run: npm install
  *   3. (Optional) Edit config.json
  *   4. (Optional) For the DexTools fallback, save a DexTools api key, in the
@@ -45,7 +45,7 @@
  *     node pulse-token-ratio.js --help lists them, each with its default.
  *
  * Requirements:
- *   Node.js v22+ (native fetch, ESM support)
+ *   Node.js v24+ (native fetch, ESM support)
  *   npm install, for asciichart, commander and crypto-price-fetchers' key store
  *
  * Usage Examples:

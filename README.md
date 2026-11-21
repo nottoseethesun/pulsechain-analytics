@@ -3,7 +3,7 @@
 ![PulseChain Gandalf, in grey robes and a pointed hat, stands in the stone vaulted archives of Minas Tirith holding an unrolled parchment scroll covered in glowing ancient runes mixed with streams of digital 0s and 1s in blue, cyan, and magenta. Tall shelves of books and scrolls line the hall, lit by torches and cool moonlight from high windows.](./assets/images/pulsechain-gandalf-at-the-archives-of-minas-tirith_1280-640.jpeg "PulseChain Analytics")
 
 [![Lint (JS+Apps Script+MD)](https://img.shields.io/github/actions/workflow/status/nottoseethesun/pulsechain-analytics/ci.yml?branch=main&label=lint)](https://github.com/nottoseethesun/pulsechain-analytics/actions/workflows/ci.yml)
-[![Tests (Node 22/24)](https://img.shields.io/github/actions/workflow/status/nottoseethesun/pulsechain-analytics/ci.yml?branch=main&label=tests)](https://github.com/nottoseethesun/pulsechain-analytics/actions/workflows/ci.yml)
+[![Tests (Node 24/26)](https://img.shields.io/github/actions/workflow/status/nottoseethesun/pulsechain-analytics/ci.yml?branch=main&label=tests)](https://github.com/nottoseethesun/pulsechain-analytics/actions/workflows/ci.yml)
 [![Security Audit](https://img.shields.io/github/actions/workflow/status/nottoseethesun/pulsechain-analytics/security-audit.yml?branch=main&label=security)](https://github.com/nottoseethesun/pulsechain-analytics/actions/workflows/security-audit.yml)
 
 ## Overview
@@ -39,7 +39,7 @@ what changed: <https://developers.google.com/apps-script/release-notes>
 
 ### Node
 
-Node 22 or later.
+Node 24 or later.
 
 ## Installation
 

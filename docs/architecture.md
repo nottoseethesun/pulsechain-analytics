@@ -513,7 +513,7 @@ makes each lockfile again from a fresh `node_modules`, and puts every
 
 ## Technology Choices
 
-- **Node 22 or later**, ES modules, and Node's own test runner.
+- **Node 24 or later**, ES modules, and Node's own test runner.
 - **ethers** for the chain, where a program reads it in Node.
 - **Apps Script's own services** in the Sheets script, which can import no
   package.
