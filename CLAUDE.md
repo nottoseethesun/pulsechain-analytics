@@ -279,7 +279,10 @@ beside it shows the shape.
 
 ## Known bugs
 
-None is known. When one is found, it gets a test in
+One is known: the balance checker's `--date` reads at the block whose time
+is nearest the start of the day, which can be the day's first block, so
+its transactions are counted in a balance the help calls the day's start.
+When one is found, it gets a test in
 `test/known-bugs.test.js`, declared with `knownBug`, so the test passes while
 the bug is present. The bug's fix makes its test fail; declare that test with
 `it` instead, in the same change, among the tests of the code it is about.
