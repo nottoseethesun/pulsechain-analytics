@@ -254,7 +254,9 @@ beside it shows the shape.
 
 ## Known bugs
 
-None is known. When one is found, it gets a test in
+Two are known: the balance checker takes a block that is no whole number,
+and a date no calendar has, such as 2026-02-30, which it reads as 2 March,
+and asks the chain with them. When one is found, it gets a test in
 `test/known-bugs.test.js`, declared with `knownBug`, so the test passes while
 the bug is present. The bug's fix makes its test fail; declare that test with
 `it` instead, in the same change, among the tests of the code it is about.
