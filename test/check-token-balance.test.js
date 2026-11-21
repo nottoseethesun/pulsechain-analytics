@@ -10,7 +10,9 @@
  * prints, or a stand-in PulseChain endpoint served on this computer. The
  * stand-in's block n has a time 10 seconds after block n - 1, and at block
  * n the wallet holds n PLS and 3n of a token with 8 decimals, so each
- * balance printed shows the block it was read at.
+ * balance printed shows the block it was read at. A test may shift the
+ * blocks' times, so the first block of a day is nearer its start than the
+ * last block of the day before.
  */
 
 import { after, before, describe, it } from "node:test";
@@ -65,14 +67,15 @@ function hex(value, digits = 0) {
  * The stand-in's block, as eth_getBlockByNumber gives it.
  *
  * @param {number} number - The block's number
+ * @param {number} firstBlockTime - Block 0's time, in seconds since 1970
  * @returns {Object} The block
  */
-function blockAt(number) {
+function blockAt(number, firstBlockTime) {
   return {
     hash: hex(number + 1, 64),
     parentHash: hex(number, 64),
     number: hex(number),
-    timestamp: hex(FIRST_BLOCK_TIME + 10 * number),
+    timestamp: hex(firstBlockTime + 10 * number),
     nonce: hex(0, 16),
     difficulty: "0x0",
     gasLimit: hex(30_000_000),
@@ -103,16 +106,17 @@ function contractAnswer(call, block) {
  * The stand-in's answer to one json-rpc request.
  *
  * @param {{method: string, params: Array}} request - The request
+ * @param {number} firstBlockTime - Block 0's time, in seconds since 1970
  * @returns {{result: *}|{error: Object}} The answer
  */
-function answerOf({ method, params }) {
+function answerOf({ method, params }, firstBlockTime) {
   switch (method) {
     case "eth_chainId":
       return { result: hex(369) };
     case "eth_blockNumber":
       return { result: hex(LATEST_BLOCK) };
     case "eth_getBlockByNumber":
-      return { result: blockAt(Number(params[0])) };
+      return { result: blockAt(Number(params[0]), firstBlockTime) };
     case "eth_getBalance": {
       const amount =
         params[0].toLowerCase() === WALLET
@@ -130,9 +134,10 @@ function answerOf({ method, params }) {
 /**
  * Serves the stand-in endpoint on this computer.
  *
+ * @param {number} [firstBlockTime=FIRST_BLOCK_TIME] - Block 0's time, in seconds since 1970
  * @returns {Promise<{url: string, requests: string[], close: function(): Promise<void>}>} Its url, the methods asked of it, in order, and a way to stop it
  */
-async function startStandInEndpoint() {
+async function startStandInEndpoint(firstBlockTime = FIRST_BLOCK_TIME) {
   const requests = [];
   const server = http.createServer((request, response) => {
     let body = "";
@@ -143,7 +148,7 @@ async function startStandInEndpoint() {
       const parsed = JSON.parse(body);
       const reply = (one) => {
         requests.push(one.method);
-        return { jsonrpc: "2.0", id: one.id, ...answerOf(one) };
+        return { jsonrpc: "2.0", id: one.id, ...answerOf(one, firstBlockTime) };
       };
       response.writeHead(200, { "content-type": "application/json" });
       response.end(
@@ -372,7 +377,7 @@ describe("check-token-balance/index.js, against a stand-in endpoint", () => {
     assert.equal(asked("eth_call"), 2);
   });
 
-  it("reads at the block whose time is nearest the start of the date given", async () => {
+  it("reads at the last block made before the start of the date given", async () => {
     const run = await runChecker([
       ...NEEDED,
       "--date",
@@ -383,6 +388,42 @@ describe("check-token-balance/index.js, against a stand-in endpoint", () => {
     assert.equal(run.status, 0, run.stderr);
     assert.match(run.stdout, /^Querying balances at block: 5000\n/);
     assert.ok(run.stdout.includes(`${NATIVE_TOKEN}: 5,000.0\n`), run.stdout);
+  });
+
+  it("reads at the last block made before the start of the date given, even when the day's first block is nearer that start", async () => {
+    // Block 5000 is made 7 seconds before the start of 1 November 2026,
+    // UTC, and block 5001 3 seconds after it
+    const shifted = await startStandInEndpoint(FIRST_BLOCK_TIME - 4);
+    try {
+      const run = await runChecker([
+        ...NEEDED,
+        "--date",
+        "2026-11-01",
+        "--rpc",
+        shifted.url,
+      ]);
+      assert.equal(run.status, 0, run.stderr);
+      assert.match(run.stdout, /^Querying balances at block: 5000\n/);
+    } finally {
+      await shifted.close();
+    }
+  });
+
+  it("refuses a date whose start the chain has not reached, or that comes before its first block, with exit code 1", async () => {
+    for (const date of ["2099-01-01", "2026-01-01"]) {
+      const run = await runChecker([
+        ...NEEDED,
+        "--date",
+        date,
+        "--rpc",
+        endpoint.url,
+      ]);
+      assert.equal(run.status, 1, date);
+      assert.match(
+        run.stderr,
+        /^Error: The chain('s newest block, 20000, was made before| made no block before) /m,
+      );
+    }
   });
 
   it("stops with exit code 1, saying why, when a read fails", async () => {

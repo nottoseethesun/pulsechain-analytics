@@ -14,10 +14,11 @@
  *
  * - `balance-command.js` declares the command line and checks each option
  *   as it is parsed, before the chain is asked anything.
- * - With --date, the block is the one whose time is nearest the start of
- *   that day in UTC, found by a binary search over the block numbers,
- *   which holds because each block's time is later than the time of the
- *   block before it.
+ * - With --date, the block is the last one made before the start of that
+ *   day in UTC, whose state is the chain's when the day starts: a block
+ *   made at midnight or after holds the day's transactions. A binary
+ *   search over the block numbers finds it, which holds because each
+ *   block's time is later than the time of the block before it.
  * - A balance at a past block needs an rpc endpoint, the json-rpc api of a
  *   PulseChain node, that keeps past state. The default endpoint is
  *   `defaultRpc` in config.json in the folder the command runs in, else
@@ -66,40 +67,51 @@ function defaultRpc() {
 }
 
 /**
- * Finds the block whose time is nearest a time, by a binary search over the
- * block numbers.
+ * The time of a block.
+ *
+ * @param {ethers.JsonRpcProvider} provider - The provider of the rpc endpoint
+ * @param {number} number - The block's number
+ * @returns {Promise<number>} Its time, in seconds since 1970
+ * @throws {Error} When the block cannot be read
+ */
+async function blockTime(provider, number) {
+  const block = await provider.getBlock(number);
+  if (block === null) throw new Error(`Failed to fetch block ${number}`);
+  return block.timestamp;
+}
+
+/**
+ * Finds the last block made before a time, whose state is the chain's at
+ * that time: a block made at the time itself, or after, holds transactions
+ * made then, so its state is the chain's after them. A binary search over
+ * the block numbers keeps one block made before the time and one made at
+ * it or after, and narrows the two until they are neighbours.
  *
  * @param {ethers.JsonRpcProvider} provider - The provider of the rpc endpoint
  * @param {number} targetTimestamp - The time, in seconds since 1970
  * @returns {Promise<number>} The block's number
- * @throws {Error} When a block cannot be read
+ * @throws {Error} When a block cannot be read, when the newest block was made before the time, so the chain has not reached it, or when no block was made before it
  */
-async function findBlockByTimestamp(provider, targetTimestamp) {
-  let low = 1;
-  let high = await provider.getBlockNumber();
-  let closestBlock = low;
-  let closestDiff = Infinity;
-
-  while (low <= high) {
-    const mid = Math.floor((low + high) / 2);
-    const block = await provider.getBlock(mid);
-    if (block === null) {
-      throw new Error(`Failed to fetch block ${mid}`);
-    }
-    const diff = Math.abs(block.timestamp - targetTimestamp);
-    if (diff < closestDiff) {
-      closestDiff = diff;
-      closestBlock = mid;
-    }
-    if (block.timestamp < targetTimestamp) {
-      low = mid + 1;
-    } else if (block.timestamp > targetTimestamp) {
-      high = mid - 1;
-    } else {
-      return mid;
-    }
+async function lastBlockBefore(provider, targetTimestamp) {
+  const latest = await provider.getBlockNumber();
+  if ((await blockTime(provider, latest)) < targetTimestamp) {
+    throw new Error(
+      `The chain's newest block, ${latest}, was made before ${new Date(targetTimestamp * 1000).toISOString()}, so its state then is not known yet`,
+    );
   }
-  return closestBlock;
+  if ((await blockTime(provider, 0)) >= targetTimestamp) {
+    throw new Error(
+      `The chain made no block before ${new Date(targetTimestamp * 1000).toISOString()}`,
+    );
+  }
+  let before = 0;
+  let notBefore = latest;
+  while (notBefore - before > 1) {
+    const middle = Math.floor((before + notBefore) / 2);
+    if ((await blockTime(provider, middle)) < targetTimestamp) before = middle;
+    else notBefore = middle;
+  }
+  return before;
 }
 
 /**
@@ -137,7 +149,7 @@ async function printBalances(options) {
   const provider = new ethers.JsonRpcProvider(options.rpc);
   try {
     const blockNumber =
-      options.block ?? (await findBlockByTimestamp(provider, options.date));
+      options.block ?? (await lastBlockBefore(provider, options.date));
     console.log(`Querying balances at block: ${blockNumber}`);
     const balances = [];
     for (const token of options.tokens) {
