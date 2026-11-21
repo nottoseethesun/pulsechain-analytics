@@ -171,8 +171,10 @@ npm run check
 ```
 
 They cover `fetch-amount-of-token-transferred.js`, its Sheets twin, which
-runs unchanged under Node, the twin's Node version, how the balance checker
-writes a balance, the ratio chart, its command line (declared with
+runs unchanged under Node, the twin's Node version, the balance checker
+(its command line, declared in `check-token-balance/balance-command.js`,
+its reads against a stand-in endpoint, and how it writes a balance), the
+ratio chart, its command line (declared with
 commander, the package that reads a command line's options, in
 `chart-price-ratio/ratio-command.js`) included, the api keys, a wallet's
 history read from the chain alone (`wallet-history/`, below), and the
@@ -254,9 +256,7 @@ beside it shows the shape.
 
 ## Known bugs
 
-Two are known: the balance checker takes a block that is no whole number,
-and a date no calendar has, such as 2026-02-30, which it reads as 2 March,
-and asks the chain with them. When one is found, it gets a test in
+None is known. When one is found, it gets a test in
 `test/known-bugs.test.js`, declared with `knownBug`, so the test passes while
 the bug is present. The bug's fix makes its test fail; declare that test with
 `it` instead, in the same change, among the tests of the code it is about.

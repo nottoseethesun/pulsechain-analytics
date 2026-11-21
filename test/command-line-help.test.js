@@ -63,6 +63,7 @@ const COMMAND_MODULES = Object.freeze({
   "summ-sweep/command-line.js": "summ-sweep.js",
   "chart-price-ratio/ratio-command.js":
     "chart-price-ratio/pulse-token-ratio.js",
+  "check-token-balance/balance-command.js": "check-token-balance/index.js",
 });
 
 describe("every command line's help", () => {

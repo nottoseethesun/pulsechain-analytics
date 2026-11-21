@@ -137,7 +137,7 @@ owner's key file or password.
 | `fetch-amount-of-token-transferred-gs.test.js` | The Sheets script, run unchanged under Node. |
 | `fetch-amount-of-token-transferred-node-version.test.js` | The Sheets script's Node version, its command line included. |
 | `format-balance.test.js` | How the balance checker writes a balance. |
-| `known-bugs.test.js` | The known bugs, each declared with `knownBug`, which passes while its bug is present: the balance checker's command line taking a block that is no whole number and a date no calendar has. |
+| `check-token-balance.test.js` | The balance checker: its command line, each option checked as it is parsed, and a mistake refused, naming its option, before the chain is asked anything; and the real program, run against a stand-in PulseChain endpoint served on the computer: each balance read once at the block given, or at the block nearest the start of the date given, then written with commas and plain, and a failed read's exit code. |
 | `pulse-token-ratio.test.js` | The ratio chart, run as its owner runs it, against a stand-in GeckoTerminal and DexTools, with the DexTools key from a key file of the test's own: its prices, a token's own prices when it is its pool's quote token, its fallback, its command line, its exit codes, and the fewest points it charts. |
 | `command-line-help.test.js` | Every command line's help, `--help` and `-h`: the Summ sweep's, the ratio chart's, the balance checker's, the Sheets script's Node version's, the key manager's and crypto-price-fetchers' versions tool's, each with its options, examples and exit codes, by crypto-price-fetchers' checks (`crypto-price-fetchers/lib/command-line-help`); and that its list holds every command line the repo runs. |
 | `api-keys.test.js` | The keys `config.json` lists, the key manager, which saves and lists the api keys, and the copy of `unlock-api-keys.sh`, the script that keeps the password for a terminal. |
@@ -277,10 +277,7 @@ deleted. The steps from a branch to `main` are LP Ranger's eight, in its
 
 ## Known Bugs
 
-Two are known, both in the balance checker's command line: it takes a
-block that is no whole number, and a date no calendar has, such as
-2026-02-30, which it reads as 2 March, and asks the chain with them. A bug
-found gets a test in `test/known-bugs.test.js`,
+None is known. A bug found gets a test in `test/known-bugs.test.js`,
 declared with `knownBug` (`test/helpers/known-bug.js`), so the test passes
 while the bug is present. The bug's fix makes its test fail; the same change
 declares the test with `it`, among the tests of the code it is about.
