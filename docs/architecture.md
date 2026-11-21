@@ -500,9 +500,12 @@ which keeps within a budget of requests and sends a request refused as too
 many again after its waits, the Summ csv utility the Summ sweep writes its
 csv through (`crypto-price-fetchers/summ-csv`), `messageOf`, which gives
 the Summ sweep's command line the message of what it catches
-(`crypto-price-fetchers/lib/message-of`), and the security lint's rule
+(`crypto-price-fetchers/lib/message-of`), the security lint's rule
 against printing a secret
-(`crypto-price-fetchers/eslint-rules/no-secret-logging`).
+(`crypto-price-fetchers/eslint-rules/no-secret-logging`), and the bin
+`run-actionlint`, which runs actionlint, the checker of GitHub Actions
+workflow files, from its official release, refused unless its SHA-256 is
+the one crypto-price-fetchers pins.
 
 Both `package.json` files name its main branch (`#main`), the same ref (a
 test holds them equal), and each `package-lock.json` keeps the commit
