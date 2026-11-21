@@ -1,12 +1,18 @@
 # pulsechain-analytics — Engineering Reference
 
 The files the programs read and write, the gates every change passes, the
-tests, and CI. The programs are this repo's tools for questions about
-PulseChain: the amount a transaction sent (a Node program and a Sheets
-script), the balance checker, the ratio chart, a wallet's history, and
-the Summ sweep, which compares a wallet's history with its records in
-Summ, the owner's crypto tax calculator. For how the tools work, see
-[`docs/architecture.md`](architecture.md); for every npm command, see
+tests, and CI: the same gates, run at each push by GitHub Actions, the
+service of GitHub, the website that hosts the repo. The programs are this
+repo's tools for questions about PulseChain: the amount a transaction sent
+(a module for Node programs and a script for Google Sheets, Google's
+spreadsheet app), the balance checker, which prints a wallet's balances of
+tokens at a block or a day, the ratio chart, which charts the ratio of two
+tokens' prices over time, a wallet's history, and the Summ sweep, which
+compares a wallet's history with its records in Summ, the owner's crypto tax
+calculator. For how the tools work, see
+[`docs/architecture.md`](architecture.md); for every command the repo's
+`package.json` gives npm, the package manager of Node, the program that runs
+JavaScript outside a browser, to run, see
 [`docs/npm-project-commands.md`](npm-project-commands.md).
 
 The repo follows the coding standards of LP Ranger, the owner's bot that
@@ -34,8 +40,9 @@ manages his 9mm V3 liquidity positions: its `CLAUDE.md` and
 ## Quick Start
 
 A working copy needs Node 22 or later, the packages of the repo and of its
-two tools that have packages of their own, and the DexTools key, which
-the ratio chart sends. The key is kept by the key store of
+two tools that have packages of their own, and the key of DexTools, a
+service that prices tokens from the pools of decentralized exchanges,
+which the ratio chart sends. The key is kept by the key store of
 crypto-price-fetchers, the owner's repo of code his projects share, which
 `npm ci` installs from GitHub, at the commit `package-lock.json` keeps: no
 other step installs it. This repo's `npm run api-keys` runs the key
@@ -54,8 +61,9 @@ npm run check        # the gate
 
 ## Files on Disk
 
-The programs and their tests read and write these files. Git keeps only
-the ones that hold no key and none of the owner's own settings.
+The programs and their tests read and write these files. Git, the
+version-control program that keeps the repo's history, keeps only the ones
+that hold no key and none of the owner's own settings.
 
 | File | In git | What it holds |
 | ---- | ------ | ------------- |
@@ -63,7 +71,7 @@ the ones that hold no key and none of the owner's own settings.
 | `summ-sweep/config.json` | no | The owner's settings for the Summ sweep: the path of his Summ template and of his LP Ranger checkout, his own wallets with their names, his spam and income tokens, and each token's symbols in Summ and in a csv. `summ-sweep/config-example.json` beside it shows the shape, with made-up addresses. |
 | `api-keys.json` | no | The keys, each encrypted with the owner's password. `api-keys.json.tmp` is the file it is written through. `API_KEYS_FILE_PATH` names another, as the tests do. |
 | `chart-price-ratio/config.json` | yes | The ratio chart's settings: network, DexTools' plan, the interval, the CSV's name. No key. |
-| `check-token-balance/config.json` | yes | The balance checker's rpc endpoint. |
+| `check-token-balance/config.json` | yes | The balance checker's rpc endpoint, the json-rpc api of a PulseChain node it reads balances from. |
 | `for-google-apps/check-token-balance/config.json` | no | The Node version's rpc endpoint; `config-example.json` beside it shows the shape. |
 | `coverage/` | no | A test run's coverage report. |
 
@@ -86,17 +94,18 @@ Node 24.
 
 The lint checks each file's form before any test runs: the rules the code
 follows, its formatting, the workflows, and files nothing uses.
-`npm run lint` runs five tools:
+`npm run lint` runs five tools, each an npm package:
 
-| Tool | Configured in | What it holds the repo to |
-| ---- | ------------- | ------------------------- |
-| ESLint | `eslint.config.js` | LP Ranger's rules, with no warning allowed: cyclomatic complexity ≤ 17, ≤ 500 lines of code a file (blank lines and comments not counted), lines ≤ 80 characters but strings, urls and comments, `===`, no unused name, no `var`, `const` where nothing is reassigned, no `Math.random`, no comment that tells Prettier to skip code, and every import resolved. It reads the Sheets scripts too, as the paragraph below the table says. |
-| markdownlint | `.markdownlint-cli2.jsonc` | LP Ranger's settings, over every Markdown file. |
-| Prettier | `.prettierrc`, `.prettierignore` | Its formatting, in check mode, over every JavaScript, Sheets script, JSON and YAML file. |
-| actionlint | — | The GitHub workflows. |
-| knip | `knip.json` | No file nothing reaches. See [Dead Code Detection](#dead-code-detection). |
+| Tool | Configured in | What it does, and what it holds the repo to |
+| ---- | ------------- | ------------------------------------------- |
+| ESLint | `eslint.config.js` | Checks JavaScript against rules: LP Ranger's, with no warning allowed: cyclomatic complexity ≤ 17, ≤ 500 lines of code a file (blank lines and comments not counted), lines ≤ 80 characters but strings, urls and comments, `===`, no unused name, no `var`, `const` where nothing is reassigned, no `Math.random`, no comment that tells Prettier, the formatter in the row below, to skip code, and every import resolved. It reads the Sheets scripts too, as the paragraph below the table says. |
+| markdownlint | `.markdownlint-cli2.jsonc` | Checks the form of Markdown files, with LP Ranger's settings, over every Markdown file. |
+| Prettier | `.prettierrc`, `.prettierignore` | Formats code; in check mode, it fails when its formatting would change any JavaScript, Sheets script, JSON or YAML file. |
+| actionlint | — | Checks the GitHub Actions workflow files, in `.github/workflows/`, for mistakes in their syntax and expressions. |
+| knip | `knip.json` | Finds files nothing imports or runs, and fails on any. See [Dead Code Detection](#dead-code-detection). |
 
-The Sheets scripts are plain scripts, not modules: Apps Script loads them
+The Sheets scripts are plain scripts, not modules: Apps Script, Google's
+platform for scripts that run inside its apps, loads them
 without imports, with its services as globals. ESLint reads them the same
 way. `wrapper.gs` calls the deployed library by the name Apps Script gives
 it, which no import declares, so a `/* global */` comment declares it.
@@ -114,19 +123,22 @@ over 500 lines is split, not excused.
 
 ## Tests
 
-The tests are in `test/`, on Node's test runner. They run the tools
-against stand-ins for PulseChain, GeckoTerminal, DexTools and LP Ranger's
-tool, so they ask nothing outside the computer. They never read the owner's key file or
-password.
+The tests are in `test/`, on Node's test runner. They run the tools against
+stand-ins for PulseChain; GeckoTerminal, a service that lists the pools of
+decentralized exchanges with their prices and candles; DexTools; and LP
+Ranger's bookkeeping tool, which prints what one transaction moved for a
+wallet; so they ask nothing outside the computer. They never read the
+owner's key file or password.
 
 | Test | What it covers |
 | ---- | -------------- |
-| `fetch-amount-of-token-transferred.test.js` | The ethers tool, against a stand-in chain. |
+| `fetch-amount-of-token-transferred.test.js` | The module on ethers, a library for talking to Ethereum-style chains, against a stand-in chain. |
 | `fetch-amount-of-token-transferred-gs.test.js` | The Sheets script, run unchanged under Node. |
 | `fetch-amount-of-token-transferred-node-version.test.js` | The Sheets script's Node version, its command line included. |
 | `format-balance.test.js` | How the balance checker writes a balance. |
 | `pulse-token-ratio.test.js` | The ratio chart, run as its owner runs it, against a stand-in GeckoTerminal and DexTools, with the DexTools key from a key file of the test's own: its prices, a token's own prices when it is its pool's quote token, its fallback, its command line, its exit codes, and the fewest points it charts. |
-| `api-keys.test.js` | The keys `config.json` lists, the key manager, and the copy of `unlock-api-keys.sh`. |
+| `command-line-help.test.js` | Every command line's help, `--help` and `-h`: the Summ sweep's, the ratio chart's, the balance checker's, the Sheets script's Node version's, the key manager's and crypto-price-fetchers' versions tool's, each with its options, examples and exit codes, by crypto-price-fetchers' checks (`crypto-price-fetchers/lib/command-line-help`); and that its list holds every command line the repo runs. |
+| `api-keys.test.js` | The keys `config.json` lists, the key manager, which saves and lists the api keys, and the copy of `unlock-api-keys.sh`, the script that keeps the password for a terminal. |
 | `dependencies.test.js` | crypto-price-fetchers installed from GitHub, following its main branch or its latest release, by the ratio chart too, and `npm run github-project-deps` running its versions tool. |
 | `wallet-history.test.js` | The paced provider, the blocks of a range, the logs that name a wallet, the transactions it sent, their receipts and its tokens' facts, against a stand-in chain. |
 | `wallet-history-coin.test.js` | The PLS a wallet moved: the calls of a trace that pay it, the flows of its own transactions, and the payments from elsewhere its balance reveals, against a stand-in chain whose balances are worked out apart from the code tested. |
@@ -193,7 +205,8 @@ chain, in two ways:
   Script file under Node. In Apps Script,
   `UrlFetchApp.fetch` holds the script until the response arrives, while
   Node's `fetch` returns a promise. So the runner runs the script in a
-  worker thread, which waits on each request while the main thread does it
+  worker thread, a second thread of JavaScript that Node runs beside the
+  main one, which waits on each request while the main thread does it
   ([why](https://github.com/nottoseethesun/crypto-price-fetchers/blob/main/docs/engineering.md#the-node-tests)).
 
 `transfer-cases.js` holds the cases that both the ethers tool and the
@@ -211,7 +224,10 @@ in the repo, so no Node test runs it.
 ## Security Audits
 
 Three audits look for security problems: in the packages the repo and its
-tools install, in the code, and in the text of every file.
+tools install, through npm audit, npm's check of installed packages against
+known vulnerabilities; in the code, through ESLint with security rules; and
+in the text of every file, through secretlint, which looks for keys and
+credentials.
 
 | Command | What it runs | What it catches |
 | ------- | ------------ | --------------- |

@@ -72,9 +72,30 @@ try {
   );
 }
 
+/** What the help says after the options: examples and exit codes. */
+const HELP_AFTER = `
+The rpc endpoint's default comes from config.json in the folder the
+command runs in.
+
+Examples:
+  A wallet's PLS and HEX at the start of 1 November 2026, UTC:
+    $ node index.js --address <wallet> --date 2026-11-01 --tokens Pulse_Native_Gas_Token,0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39
+  The same wallet's PLS at one block, from another rpc endpoint that keeps
+  past state:
+    $ node index.js --address <wallet> --block 22000000 --tokens Pulse_Native_Gas_Token --rpc https://rpc.pulsechain.com
+
+Exit codes:
+  0  each balance was printed
+  1  an option was wrong or missing, neither --block nor --date was given,
+     or a read from the chain failed`;
+
 const program = new Command();
 
 program
+  .name("check-token-balance")
+  .description(
+    "Prints a PulseChain wallet's balances of tokens, PLS among them, at a block or at the start of a day, in UTC.",
+  )
   .requiredOption("-a, --address <address>", "PulseChain wallet address")
   .option("-b, --block <block>", "PulseChain block number")
   .option("-d, --date <date>", "UTC date in YYYY-MM-DD format (00:00:00 UTC)")
@@ -87,6 +108,7 @@ program
     "RPC URL (use an archive node for historical queries)",
     defaultRpc,
   )
+  .addHelpText("after", HELP_AFTER)
   .parse(process.argv);
 
 const options = program.opts();

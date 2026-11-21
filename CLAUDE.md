@@ -8,14 +8,21 @@ Follow the coding standards of LP Ranger, the owner's bot that manages his
 or the local clone at `~/code/lp-ranger/github-repo/lp-ranger/`. Read them, and
 never change anything in LP Ranger.
 
+The repo's programs run on Node, the program that runs JavaScript outside a
+browser; npm, Node's package manager, installs their packages and runs the
+commands `package.json` names; git, the version-control program, keeps the
+repo's history, on GitHub, the website that hosts it.
+
 Work in this repo, never in a copy of it. Code written to check something goes
 into the tests, so that later sessions reuse it instead of writing it again.
 
 **Never show any character of an api key once it is entered**: not in a
 reply, a log line, an error message, a test's output, or a listing.
 
-The Sheets scripts in `for-google-apps/` change only here. The owner pastes
-them into Apps Script and deploys them as a library. The deployed library has
+The Sheets scripts in `for-google-apps/`, scripts for Google Sheets,
+Google's spreadsheet app, written in Apps Script, Google's platform for
+scripts that run inside its apps, change only here. The owner pastes them
+into Apps Script and deploys them as a library. The deployed library has
 a function this repo's copy lacks, `getTokenTransferredUseCache`, which
 `wrapper.gs` calls.
 
@@ -32,18 +39,22 @@ logic, since LP Ranger's rules forbid a second copy. A fix belongs in the
 because a sheet reaches a library's functions through a wrapper.
 
 A change to the runner reaches this repo once its lockfiles are made again
-(see crypto-price-fetchers, below). The Node version reads its rpc endpoint
-from `config.json` beside it, which git ignores; `config-example.json`
+(see crypto-price-fetchers, below). The Node version reads its rpc
+endpoint, the json-rpc api of the PulseChain node it asks, from
+`config.json` beside it, which git ignores; `config-example.json`
 shows the shape.
 
-The script of the same name at the repo's top folder,
-`fetch-amount-of-token-transferred.js`, is a separate tool, on ethers, with
-code of its own.
+The module of the same name at the repo's top folder,
+`fetch-amount-of-token-transferred.js`, works out the same amount with
+ethers, a library for talking to Ethereum-style chains, in code of its own;
+other code imports its `getTokenTransferred`, and running it does nothing.
 
 ## Keys
 
-No api key is committed. The keys the programs send (DexTools', for the
-ratio chart's fallback, as the top `config.json` lists them under
+No api key is committed. The keys the programs send (that of DexTools, a
+service that prices tokens from the pools of decentralized exchanges, for
+the fallback of the ratio chart, which charts the ratio of two tokens'
+prices in the terminal, as the top `config.json` lists them under
 `apiKeys`) are kept in `api-keys.json` at the repo's top, which git
 ignores, encrypted with one password the owner types, by
 crypto-price-fetchers' key store (`crypto-price-fetchers/api-key-store`).
@@ -67,11 +78,14 @@ versions tool, which this repo runs as
 `#main` or `#semver:*` (the latest release) and makes both lockfiles
 again; the tool lives there, and this repo keeps no copy.
 
-The Summ sweep's command line writes what it catches through
+The Summ sweep, which compares a wallet's history with its records in
+Summ (below), writes what its command line catches through
 crypto-price-fetchers' `messageOf` (`crypto-price-fetchers/lib/message-of`);
 this repo keeps no copy of it.
 
-The ratio chart asks GeckoTerminal through crypto-price-fetchers' client
+The ratio chart asks GeckoTerminal, a service that lists the pools of
+decentralized exchanges with their prices and candles, through
+crypto-price-fetchers' client
 (`crypto-price-fetchers/dex-prices/geckoterminal`), which
 `chart-price-ratio/gecko-terminal.js` shapes for the chart; this repo keeps
 no GeckoTerminal client of its own.
@@ -79,7 +93,8 @@ no GeckoTerminal client of its own.
 ## Docs
 
 `docs/architecture.md` says how the tools work, `docs/engineering.md`
-covers the files, the gates, the tests and CI, and
+covers the files, the gates, the tests and CI (the gates, run by GitHub
+Actions at each push), and
 `docs/npm-project-commands.md` lists every npm command, as LP Ranger's
 `docs/` does. A change keeps them true.
 
@@ -109,14 +124,18 @@ example. LP Ranger's rules do not yet ask for the examples; this repo does.
 
 ## Gates and CI
 
-`npm run check` is the one gate, LP Ranger's: the lint (ESLint with LP
-Ranger's rules, markdownlint, Prettier, actionlint, knip's unused files),
-the tests with at least 80% of lines covered, and the security audits (npm
-audit for the three packages, the security lint in
+`npm run check` is the one gate, LP Ranger's: the lint (ESLint, which checks
+JavaScript against rules, here LP Ranger's; markdownlint, which checks the
+form of Markdown files; Prettier, which formats code; actionlint, which
+checks the GitHub Actions workflow files; and knip, which finds files
+nothing uses), the tests with at least 80% of lines covered, and the
+security audits (npm audit, npm's check of the installed packages against
+known vulnerabilities, for the three packages; the security lint in
 `eslint-security.config.js` with crypto-price-fetchers' `no-secret-logging`,
-secretlint). It must pass before a commit and a push; husky, the package
-that runs scripts at git's hooks, runs `npm run lint` before each commit.
-CI runs `npm run check` on Node 22 and 24
+a rule that refuses printing a name that may hold a secret; and secretlint,
+which looks for keys and credentials in files). It must pass before a commit
+and a push; husky, the package that runs scripts at git's hooks, runs
+`npm run lint` before each commit. CI runs `npm run check` on Node 22 and 24
 (`ci.yml`) and each audit as a job of its own (`security-audit.yml`), after
 installing the three packages. `main` is protected: those five checks must
 pass on a pull request, never squashed, and no branch is deleted. LP
@@ -139,7 +158,8 @@ runs unchanged under Node, the twin's Node version, how the balance checker
 writes a balance, the ratio chart, its command line (declared with
 commander, the package that reads a command line's options, in
 `chart-price-ratio/ratio-command.js`) included, the api keys, a wallet's
-history (`wallet-history/`), and the Summ sweep (`summ-sweep/`). The
+history read from the chain alone (`wallet-history/`, below), and the
+Summ sweep (`summ-sweep/`). The
 Sheets script also has test functions that the owner runs by hand in Apps
 Script; `docs/engineering.md` sets the two kinds apart. `test/helpers/`
 holds the stand-ins:
@@ -174,12 +194,14 @@ holds the stand-ins:
 
 `wallet-history/` reads what a wallet moved from the chain alone: tokens
 from the logs, its transactions from its nonce, PLS from receipts, traces
-and its balance. The explorer is never asked: its lists are a copy its own
+and its balance. The explorer, the website that shows PulseChain's blocks
+and transactions, is never asked: its lists are a copy its own
 indexer makes, which nothing holds to the chain. Its nonce search and request
 pacing are second copies of LP Ranger's wallet report's, since those files
 load LP Ranger's settings as they load and LP Ranger is never changed.
 Counts and balances at past blocks need an endpoint that keeps past state,
-and traces one that offers the debug methods, as g4mm4's does.
+and traces one that offers the debug methods, as that of g4mm4, a
+PulseChain node operator that serves public endpoints, does.
 
 ## The Summ sweep
 

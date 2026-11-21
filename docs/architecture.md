@@ -5,15 +5,20 @@ of a token one transaction sent a wallet, what a wallet held at a past
 block or date, how two tokens' prices compare over time, what a wallet
 moved over a range of blocks, and what of those moves Summ, the crypto
 tax calculator the owner keeps his books in, lacks or holds wrongly.
-Every answer comes from a Node program, and the first, the amount a
-transaction sent, also comes as a Google Sheets function, in Apps Script.
+Every answer comes from a program on Node, the program that runs
+JavaScript outside a browser, and the first, the amount a transaction
+sent, also comes as a function for Google Sheets, Google's spreadsheet
+app, in Apps Script, Google's platform for scripts that run inside its
+apps.
 
 Two companion references sit alongside this one:
 
 - [`docs/engineering.md`](engineering.md): the files on disk, the gates,
-  the tests and CI.
-- [`docs/npm-project-commands.md`](npm-project-commands.md): every npm
-  command and its flags.
+  the tests and CI, the checks GitHub, the website that hosts the repo,
+  runs at each push.
+- [`docs/npm-project-commands.md`](npm-project-commands.md): every command
+  the repo's `package.json` files give npm, Node's package manager, to run,
+  and its flags.
 
 ---
 
@@ -42,7 +47,11 @@ Two companion references sit alongside this one:
 ## The Tools
 
 Six tools answer the five questions. Two of them work out the same
-amount, one with ethers and one as a Sheets script.
+amount, one with ethers, a library for talking to Ethereum-style chains
+such as PulseChain, and one as a Sheets script. Each command line is
+declared with commander, the package that parses a command line, and
+answers `--help` with its options, examples of its common uses and its
+exit codes.
 
 | Tool | Where | What it answers |
 | ---- | ----- | --------------- |
@@ -145,8 +154,9 @@ chart asks DexTools, so a run that never falls back asks for no password.
 
 ## A Wallet's History
 
-Bookkeeping needs everything a wallet moved. An explorer's list of a
-wallet's transactions is a copy its own indexer makes, which nothing holds
+Bookkeeping needs everything a wallet moved. An explorer, a website that
+shows a chain's blocks and transactions, keeps its list of a wallet's
+transactions as a copy its own indexer makes, which nothing holds
 to the chain, so `wallet-history/` reads the history from the chain alone,
 through an rpc endpoint, in four parts, each a different record the chain
 keeps:
@@ -188,7 +198,9 @@ whose coding standards this repo follows, paces its own; requests made
 together in one turn go as one
 json-rpc batch. The counts and balances at past blocks need an endpoint
 that keeps past state, and the traces one that offers the debug methods:
-g4mm4's does both; rpc.pulsechain.com keeps past state but does not trace.
+the endpoint of g4mm4, a PulseChain node operator that serves public
+endpoints, does both; rpc.pulsechain.com, PulseChain's own public endpoint,
+keeps past state but does not trace.
 LP Ranger's wallet report has its own nonce search and pacing, but its
 files load LP Ranger's settings as they load, and LP Ranger cannot change,
 so `wallet-history/` holds a second copy of each rather than importing
@@ -234,7 +246,8 @@ day to the last block of the last.
 The chain's facts are in the top `config.json`, under `pulsechain`: the
 endpoint, the chain's id, the position manager, WPLS, the widest span of
 a log search, and the spacing and size of requests. The owner's own
-settings are in `summ-sweep/config.json`, which git ignores, since the
+settings are in `summ-sweep/config.json`, which git, the version-control
+program that keeps the repo's history, ignores, since the
 repo is public: the path of his Summ template and of his LP Ranger
 checkout; his own wallets, each with its name; the tokens he counts as
 spam, and those he receives as income; and each token's symbols in Summ
@@ -504,5 +517,6 @@ makes each lockfile again from a fresh `node_modules`, and puts every
 - **ethers** for the chain, where a program reads it in Node.
 - **Apps Script's own services** in the Sheets script, which can import no
   package.
-- **asciichart** for the ratio chart; **commander** for the command lines
+- **asciichart**, a package that draws a line chart in text, for the ratio
+  chart; **commander** for the command lines
   of the balance checker, the ratio chart and the Summ sweep.
