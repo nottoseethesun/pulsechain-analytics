@@ -175,7 +175,7 @@ export function buildBalanceCommand(defaultRpc) {
     .addOption(
       new Option(
         "-d, --date <date>",
-        "UTC date in YYYY-MM-DD format (00:00:00 UTC)",
+        "UTC date in YYYY-MM-DD format: the balance when it starts, 00:00:00 UTC, after the last block made before then",
       ).argParser(utcDayStart),
     )
     .requiredOption(

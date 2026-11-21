@@ -98,8 +98,10 @@ Script's services. The tests hold the two copies to the same answers
 ## The Balance Checker
 
 `check-token-balance/index.js` reads a wallet's balance of each token named,
-PLS or ERC-20, at a block, or at the block closest to the start of a UTC
-date, which it finds by a binary search over the blocks' times. Its command
+PLS or ERC-20, at a block, or at the start of a UTC date: after the last
+block made before that midnight, whose state is the chain's when the day
+starts, since a block made at midnight or after holds the day's
+transactions. A binary search over the blocks' times finds that block. Its command
 line, declared in `balance-command.js`, checks each option as it is parsed,
 so a block that is no whole number, a date no calendar has, an address that
 is not 0x and 40 hex digits, or an endpoint that is not an http or https
