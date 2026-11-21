@@ -1,25 +1,35 @@
 /**
  * pulse-token-ratio.js
  *
- * A flexible Node.js script to display the price ratio of any two PulseChain tokens
- * (Token A / Token B) in a single ASCII chart, even when no direct liquidity pool exists between them.
+ * Charts the ratio of two PulseChain tokens' prices (Token A / Token B) over
+ * time, in one ASCII chart in the terminal, whether or not a pool pairs the
+ * two tokens.
  *
  * How it works:
- *  - Primarily uses GeckoTerminal API (free, no key), through crypto-price-fetchers'
- *    GeckoTerminal client (gecko-terminal.js), to discover pools and fetch historical OHLCV data.
- *  - Smart pool selection via pool-selector.js module.
- *  - Fetches each token's own candles in its pool, named by its address, whichever side
- *    of the pool it is on, priced in USD.
- *  - Computes the ratio: price_A_in_USD / price_B_in_USD → direct comparable ratio.
- *  - Supports hourly, daily, and weekly timeframes.
- *  - Improved ASCII chart:
- *    • Y-scale uses data min/max with smart tick spacing for unique, readable values.
- *    • Uses sufficient precision to avoid repeated tick labels.
- *    • Switches to scientific notation for values < 0.0001.
- *    • All y-tick labels are right-padded for perfect visual alignment.
- *    • X-scale with perfectly aligned sparse date/hour labels — chronological (oldest left → newest right).
- *  - Optional CSV export.
- *  - Optional --useDexToolsOnly flag (and config option) to force current-price mode for testing.
+ *  - It asks GeckoTerminal, whose api is free and takes no key, through
+ *    crypto-price-fetchers' GeckoTerminal client (gecko-terminal.js), for
+ *    each token's pools and their candles: the open, high, low and close
+ *    prices and the volume of each interval.
+ *  - pool-selector.js picks each token's pool: the one with the most
+ *    liquidity, unless it has less than half the history of the deepest of
+ *    the five that hold the most value, as that file's header explains.
+ *  - It fetches each token's own candles in its pool, named by its address,
+ *    whichever side of the pool it is on, priced in USD.
+ *  - Each point's ratio is price_A_in_USD / price_B_in_USD.
+ *  - The intervals are hourly, daily and weekly.
+ *  - The chart (ratio-output.js):
+ *    • The y-axis' labels are the multiples of a step of 1, 2 or 5 times a
+ *      power of ten that span the lowest ratio to the highest
+ *      (generateNiceTicks.js), each rounded to 6, 8, 10 or 12 decimals,
+ *      more for a narrower range, with trailing zeros dropped; the labels
+ *      of a range under 0.00001 are written in scientific notation.
+ *    • Each y-axis label is padded with spaces to the length of the
+ *      longest, so the axis lines up.
+ *    • The x-axis carries up to 10 dates, with the hour for the hourly
+ *      interval, each under its column, the oldest at the left.
+ *  - --csv also writes the ratios to a CSV file.
+ *  - --useDexToolsOnly, or useDexToolsOnly in config.json, asks DexTools
+ *    alone, for the current prices, as the fallback below does.
  *
  * Fallback: If GeckoTerminal fails, uses current USD prices via DexTools v2 API,
  * with the DexTools api key saved, encrypted, in the repo's key store
@@ -50,7 +60,7 @@
  *
  * Usage Examples:
  *   # Basic: weekly ratio (default) for two tokens
- *   node pulse-token-ratio.js 0x50f1ca62e6fb8adf438ca1f50067ab83670094a6 0x94534eeee131840b1c0f61847c572228bdfdde93
+ *   node pulse-token-ratio.js 0x50F1ca62e6Fb8Adf438ca1F50067AB83670094A6 0x94534EeEe131840b1c0F61847c572228bdfDDE93
  *
  *   # Specify interval
  *   node pulse-token-ratio.js <tokenA> <tokenB> daily

@@ -113,7 +113,7 @@ printing anything; a shorter interval gives more points.
 
 ### Example with $808 and $pTGC
 
-`node pulse-token-ratio.js 0x50f1ca62e6fb8adf438ca1f50067ab83670094a6 0x94534eeee131840b1c0f61847c572228bdfdde93`
+`node pulse-token-ratio.js 0x50F1ca62e6Fb8Adf438ca1F50067AB83670094A6 0x94534EeEe131840b1c0F61847c572228bdfDDE93`
 
 ### Specify Interval
 

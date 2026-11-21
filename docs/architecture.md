@@ -99,8 +99,13 @@ Script's services. The tests hold the two copies to the same answers
 
 `check-token-balance/index.js` reads a wallet's balance of each token named,
 PLS or ERC-20, at a block, or at the block closest to the start of a UTC
-date, which it finds by a binary search over the blocks' times. It writes
-each balance twice: with commas between the thousands, and again as plain
+date, which it finds by a binary search over the blocks' times. Its command
+line, declared in `balance-command.js`, checks each option as it is parsed,
+so a block that is no whole number, a date no calendar has, an address that
+is not 0x and 40 hex digits, or an endpoint that is not an http or https
+url stops the run, naming the option, before the chain is asked anything.
+It holds addresses in EIP-55's mixed case. It reads each balance once and
+writes it twice: with commas between the thousands, and again as plain
 digits (`format-balance.js`). A balance at a past block needs an archive
 node, since other nodes keep only the chain's recent state.
 
@@ -495,9 +500,12 @@ which keeps within a budget of requests and sends a request refused as too
 many again after its waits, the Summ csv utility the Summ sweep writes its
 csv through (`crypto-price-fetchers/summ-csv`), `messageOf`, which gives
 the Summ sweep's command line the message of what it catches
-(`crypto-price-fetchers/lib/message-of`), and the security lint's rule
+(`crypto-price-fetchers/lib/message-of`), the security lint's rule
 against printing a secret
-(`crypto-price-fetchers/eslint-rules/no-secret-logging`).
+(`crypto-price-fetchers/eslint-rules/no-secret-logging`), and the bin
+`run-actionlint`, which runs actionlint, the checker of GitHub Actions
+workflow files, from its official release, refused unless its SHA-256 is
+the one crypto-price-fetchers pins.
 
 Both `package.json` files name its main branch (`#main`), the same ref (a
 test holds them equal), and each `package-lock.json` keeps the commit

@@ -20,8 +20,8 @@
 import { getClosesGecko, getTokenPools } from "./gecko-terminal.js";
 
 /**
- * Fetches the best liquidity pool for a token using GeckoTerminal,
- * prioritizing history depth when the top pool is shallow.
+ * Picks the pool a token's prices are read from, from GeckoTerminal's
+ * list of its pools, by the rule the module's header gives.
  *
  * @param {string} tokenAddress - Token contract address (lowercase)
  * @param {string} network - Network name for GeckoTerminal API (e.g., 'pulsechain')

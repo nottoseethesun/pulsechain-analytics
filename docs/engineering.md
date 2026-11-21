@@ -95,14 +95,16 @@ supports.
 
 The lint checks each file's form before any test runs: the rules the code
 follows, its formatting, the workflows, and files nothing uses.
-`npm run lint` runs five tools, each an npm package:
+`npm run lint` runs five tools: four npm packages, and actionlint, a
+program its author publishes for each system, which the table's fourth
+row explains:
 
 | Tool | Configured in | What it does, and what it holds the repo to |
 | ---- | ------------- | ------------------------------------------- |
 | ESLint | `eslint.config.js` | Checks JavaScript against rules: LP Ranger's, with no warning allowed: cyclomatic complexity ≤ 17, ≤ 500 lines of code a file (blank lines and comments not counted), lines ≤ 80 characters but strings, urls and comments, `===`, no unused name, no `var`, `const` where nothing is reassigned, no `Math.random`, no comment that tells Prettier, the formatter in the row below, to skip code, and every import resolved. It reads the Sheets scripts too, as the paragraph below the table says. |
 | markdownlint | `.markdownlint-cli2.jsonc` | Checks the form of Markdown files, with LP Ranger's settings, over every Markdown file. |
 | Prettier | `.prettierrc`, `.prettierignore` | Formats code; in check mode, it fails when its formatting would change any JavaScript, Sheets script, JSON or YAML file. |
-| actionlint | — | Checks the GitHub Actions workflow files, in `.github/workflows/`, for mistakes in their syntax and expressions. |
+| actionlint | crypto-price-fetchers' `actionlint/release.js` | Checks the GitHub Actions workflow files, in `.github/workflows/`, for mistakes in their syntax, their expressions and the shell scripts their steps run. The lint runs the official release of actionlint, rhysd's program, through `run-actionlint`, a bin of crypto-price-fetchers: the first run downloads the archive for its system, refuses it unless its SHA-256 is the one crypto-price-fetchers pins, and keeps the program in `node_modules/.cache/actionlint/`, which later runs use. |
 | knip | `knip.json` | Finds files nothing imports or runs, and fails on any. See [Dead Code Detection](#dead-code-detection). |
 
 The Sheets scripts are plain scripts, not modules: Apps Script, Google's
@@ -137,8 +139,9 @@ owner's key file or password.
 | `fetch-amount-of-token-transferred-gs.test.js` | The Sheets script, run unchanged under Node. |
 | `fetch-amount-of-token-transferred-node-version.test.js` | The Sheets script's Node version, its command line included. |
 | `format-balance.test.js` | How the balance checker writes a balance. |
+| `check-token-balance.test.js` | The balance checker: its command line, each option checked as it is parsed, and a mistake refused, naming its option, before the chain is asked anything; and the real program, run against a stand-in PulseChain endpoint served on the computer: each balance read once at the block given, or at the block nearest the start of the date given, then written with commas and plain, and a failed read's exit code. |
 | `pulse-token-ratio.test.js` | The ratio chart, run as its owner runs it, against a stand-in GeckoTerminal and DexTools, with the DexTools key from a key file of the test's own: its prices, a token's own prices when it is its pool's quote token, its fallback, its command line, its exit codes, and the fewest points it charts. |
-| `command-line-help.test.js` | Every command line's help, `--help` and `-h`: the Summ sweep's, the ratio chart's, the balance checker's, the Sheets script's Node version's, the key manager's and crypto-price-fetchers' versions tool's, each with its options, examples and exit codes, by crypto-price-fetchers' checks (`crypto-price-fetchers/lib/command-line-help`); and that its list holds every command line the repo runs. |
+| `command-line-help.test.js` | Every command line's help, `--help` and `-h`: the Summ sweep's, the ratio chart's, the balance checker's, the Sheets script's Node version's, the key manager's, and those of the bins of crypto-price-fetchers the npm targets run, its versions tool and `run-actionlint`, each with its options, examples and exit codes, by crypto-price-fetchers' checks (`crypto-price-fetchers/lib/command-line-help`); and that its list holds every command line the repo runs, every bin of crypto-price-fetchers among them. |
 | `api-keys.test.js` | The keys `config.json` lists, the key manager, which saves and lists the api keys, and the copy of `unlock-api-keys.sh`, the script that keeps the password for a terminal. |
 | `dependencies.test.js` | crypto-price-fetchers installed from GitHub, following its main branch or its latest release, by the ratio chart too, and `npm run github-project-deps` running its versions tool. |
 | `wallet-history.test.js` | The paced provider, the blocks of a range, the logs that name a wallet, the transactions it sent, their receipts and its tokens' facts, against a stand-in chain. |
@@ -224,15 +227,16 @@ in the repo, so no Node test runs it.
 
 ## Security Audits
 
-Three audits look for security problems: in the packages the repo and its
+Four audits look for security problems: in the packages the repo and its
 tools install, through npm audit, npm's check of installed packages against
-known vulnerabilities; in the code, through ESLint with security rules; and
-in the text of every file, through secretlint, which looks for keys and
-credentials.
+known vulnerabilities; in the release of actionlint the lint runs; in the
+code, through ESLint with security rules; and in the text of every file,
+through secretlint, which looks for keys and credentials.
 
 | Command | What it runs | What it catches |
 | ------- | ------------ | --------------- |
-| `npm run audit:deps` | `npm audit --audit-level=high --omit=dev`, for the repo, the ratio chart and the balance checker | Known vulnerabilities, of high severity or worse, in the packages that ship. |
+| `npm run audit:deps` | `npm audit --audit-level=high --omit=dev`, for the repo, the ratio chart and the balance checker, then `npm run audit:actionlint` | Known vulnerabilities, of high severity or worse, in the packages that ship; then what the next row says. |
+| `npm run audit:actionlint` | `run-actionlint --check`: downloads every archive of the actionlint release crypto-price-fetchers pins | An archive that cannot be downloaded, or whose SHA-256 differs from the one pinned. npm audit does not cover actionlint, which is no npm package; the lint makes the same check on the one archive it runs. |
 | `npm run audit:security` | ESLint with `eslint-security.config.js` | Code open to attack (eslint-plugin-security), strings that look like keys (eslint-plugin-no-secrets), and printing a name that may hold a secret (`no-secret-logging`, from crypto-price-fetchers). |
 | `npm run audit:secrets` | secretlint, with `.secretlintrc.json` and `.secretlintignore` | Keys and credentials in any file. |
 
@@ -261,7 +265,7 @@ request to `main`, and by hand:
 | Workflow | Job | Runs |
 | -------- | --- | ---- |
 | `ci.yml` | check-latest-nodejs-lts (Node 26), check-oldest-nodejs-supported (Node 24) | `npm run check`, after installing the repo's packages and the two tools'. |
-| `security-audit.yml` | Dependency Audit, Security Lint, Secret Scan | Each audit as a job of its own. |
+| `security-audit.yml` | Dependency Audit, Security Lint, Secret Scan | Each audit as a job of its own; Dependency Audit runs `npm run audit:deps`, so the check of actionlint's archives with it. |
 
 The two checks of `ci.yml` are named for their roles, not their Node
 versions, so moving to newer versions renames no check.

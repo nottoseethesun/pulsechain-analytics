@@ -5,7 +5,10 @@
  */
 
 /**
- * Generate nice tick values for y-axis (unique, human-readable numbers).
+ * Works out the y-axis' tick values: the multiples of a step of 1, 2 or 5
+ * times a power of ten that span the lowest value to the highest, with an
+ * end added when no multiple lies within a tenth of a step of it, each
+ * value once, in order.
  * The ratio chart (`pulse-token-ratio.js`) labels its y-axis with them.
  * @param {number} min
  * @param {number} max
