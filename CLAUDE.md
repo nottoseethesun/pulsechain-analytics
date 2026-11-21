@@ -93,8 +93,9 @@ line whose output is piped into a program that stops reading, such as
 that of each command line, and `test/repo-checks.test.js` holds the
 tracked files to its repo checks (`crypto-price-fetchers/lib/repo-checks`):
 every EVM address in EIP-55's form, every npm target named in
-`docs/npm-project-commands.md`, and every test file and helper named in
-the docs.
+`docs/npm-project-commands.md`, every test file and helper named in the
+docs, and every link and path in a doc pointing at a file, folder or
+heading the repo keeps.
 
 The Summ sweep, which compares a wallet's history with its records in
 Summ (below), writes what its command line catches through
@@ -278,9 +279,7 @@ beside it shows the shape.
 
 ## Known bugs
 
-One is known: the ratio chart asks DexTools with no time limit, so a
-DexTools that does not answer holds the chart with no end. When one is
-found, it gets a test in
+None is known. When one is found, it gets a test in
 `test/known-bugs.test.js`, declared with `knownBug`, so the test passes while
 the bug is present. The bug's fix makes its test fail; declare that test with
 `it` instead, in the same change, among the tests of the code it is about.

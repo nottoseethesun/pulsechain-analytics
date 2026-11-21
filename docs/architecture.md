@@ -132,7 +132,9 @@ prices, even when no pool holds both:
    priced in USD, so the ratio of the two is the ratio of the tokens.
 3. When GeckoTerminal has no candles, it falls back to each token's current
    USD price from DexTools, a second such service, which takes an api key
-   (`dextools.js`): one point.
+   (`dextools.js`): one point. DexTools has 30 seconds to answer each
+   request in full, as GeckoTerminal has through crypto-price-fetchers'
+   client, or the chart stops with the error.
 4. It prints the chart, with labels on both axes (`generateNiceTicks.js`
    picks the y-axis' values), the last ten ratios and the current one, and
    writes a CSV when asked.

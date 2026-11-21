@@ -16,4 +16,4 @@ examples of its common uses and its exit codes. The file header in
 
 ## Contributing
 
-See the info on Contributing at `../../README.md`.
+See the info on Contributing at `../README.md`.
