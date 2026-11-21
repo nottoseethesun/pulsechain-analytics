@@ -6,15 +6,22 @@
  *
  * The DexTools key comes from the repo's key store, never from a setting or
  * the command line: a test that needs one saves it in a key file of its own,
- * in a temp folder, removed afterwards. No output may hold it.
+ * in a temp folder, removed afterwards. No output may hold it. The DexTools
+ * client's time limit is tested on its own, against a stand-in DexTools
+ * served on this computer that answers nothing.
  */
 
 import { after, before, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
+import http from "node:http";
 import os from "node:os";
 import path from "node:path";
 import { saveEncryptedKey } from "crypto-price-fetchers/api-key-store";
+import {
+  DEXTOOLS_TIMEOUT_MS,
+  getCurrentUsdPriceDexTools,
+} from "../chart-price-ratio/dextools.js";
 import {
   DEXTOOLS_CHECK_URL,
   dexToolsPriceUrl,
@@ -308,5 +315,44 @@ describe("pulse-token-ratio.js, its command line", () => {
     assert.equal(run.stderr, "error: unknown option '--api-key'\n");
     assert.deepEqual(run.requests, []);
     assertKeyNotShown(run);
+  });
+});
+
+describe("the DexTools client, against a DexTools that gives no answer", () => {
+  it("gives up after the time limit, 30 seconds unless the caller sets another, saying so", async () => {
+    assert.equal(DEXTOOLS_TIMEOUT_MS, 30000);
+    const server = http.createServer(() => {});
+    await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+    try {
+      const asked = getCurrentUsdPriceDexTools(
+        {
+          host: `http://127.0.0.1:${server.address().port}`,
+          subscription: "standard",
+          version: "v2",
+          chain: "pulse",
+          timeoutMs: 300,
+        },
+        DEXTOOLS_KEY,
+        "0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39",
+      ).then(
+        () => "a price",
+        (error) => error,
+      );
+      const stalled = new Promise((resolve) => {
+        setTimeout(
+          () => resolve("still waiting after 5 seconds"),
+          5000,
+        ).unref();
+      });
+      const outcome = await Promise.race([asked, stalled]);
+      assert.ok(outcome instanceof Error, String(outcome));
+      assert.equal(
+        outcome.message,
+        "DexTools gave no answer within 0.3 seconds",
+      );
+    } finally {
+      server.closeAllConnections();
+      await new Promise((resolve) => server.close(resolve));
+    }
   });
 });

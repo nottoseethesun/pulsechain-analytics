@@ -93,8 +93,9 @@ line whose output is piped into a program that stops reading, such as
 that of each command line, and `test/repo-checks.test.js` holds the
 tracked files to its repo checks (`crypto-price-fetchers/lib/repo-checks`):
 every EVM address in EIP-55's form, every npm target named in
-`docs/npm-project-commands.md`, and every test file and helper named in
-the docs.
+`docs/npm-project-commands.md`, every test file and helper named in the
+docs, and every link and path in a doc pointing at a file, folder or
+heading the repo keeps.
 
 The Summ sweep, which compares a wallet's history with its records in
 Summ (below), writes what its command line catches through
