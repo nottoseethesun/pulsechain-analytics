@@ -1,11 +1,13 @@
 /**
- * Due to limitations of Google Apps Script with importing libraries,
- * it is (at least sometimes) necessary to call a Wrapper Function from
- * the actual Google Sheet, instead of calling the library function directly.
- * This code should go in the default "Code.gs" editor for your Google
- * Sheet: Access it via the menu option, "Extensions" -> "Apps Script" and
- * paste it in, and then click cntrl-s or cmd-s (on Mac) to save it.
- * Next, just use the `getTokensTransferred` function below.  
+ * A cell of Google Sheets, Google's spreadsheet app, calls a function of
+ * its own spreadsheet's project in Apps Script, Google's platform for
+ * scripts that run inside its apps, but not a function of a library that
+ * project adds. So a sheet that uses the library pastes this file into its
+ * project, and its cells call the wrapper functions below, each of which
+ * calls the library's. This code goes in the default "Code.gs" file of
+ * your spreadsheet's project: open it with the menu option
+ * "Extensions" -> "Apps Script", paste it in, and press Ctrl+S (Cmd+S on
+ * a Mac) to save it. Then call `getTokenTransferred` from a cell.
  *
  * Note: You can optionally add as many wrapper functions as you want.
  * Also, if you suspect a problem with the caching, just use

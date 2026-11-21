@@ -2,7 +2,8 @@
  * Module: PulseChain Token Transfer Fetcher for Google Sheets
  *
  * Description:
- * This Apps Script module provides a custom function for Google Sheets to fetch the total amount of a specified ERC20 token
+ * This module, written in Apps Script, Google's platform for scripts that run inside its apps, provides a custom
+ * function for Google Sheets, Google's spreadsheet app, to fetch the total amount of a specified ERC20 token
  * transferred to a given wallet address in a specific transaction on the PulseChain blockchain. The transaction ID is provided
  * as an input parameter (typically from column L in the sheet). The function reads the transaction's own receipt and adds up
  * the token's Transfer events to the wallet in it. The receipt holds that transaction's events alone, so another transaction
@@ -12,10 +13,11 @@
  * transaction transferred none of the token to the wallet, it returns 0. If a read fails, or the transaction is not
  * found, it throws, so the cell shows an error, never a number that could be mistaken for an amount.
  *
- * Configurable values (e.g., RPC URL) are defined as a JSON object within the script.
+ * Configurable values, such as the URL of the rpc endpoint, the json-rpc api of the PulseChain node the script
+ * asks, are defined as a JSON object within the script.
  *
  * Dependencies:
- * - Uses UrlFetchApp for JSON-RPC calls to the PulseChain RPC.
+ * - Uses UrlFetchApp, Apps Script's service for web requests, for the JSON-RPC calls to the rpc endpoint.
  * - Assumes the token is an ERC20-compatible token with the standard decimals function and Transfer event.
  *
  * Limitations:

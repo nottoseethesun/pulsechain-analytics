@@ -1,12 +1,16 @@
 # pulsechain-analytics — `npm` Project Commands
 
-Every npm command of pulsechain-analytics, the owner's tools for
-questions about PulseChain: those its top `package.json` defines, which
-run from the repo's top folder, and those of the packages of
-`chart-price-ratio/` and `check-token-balance/`, with what each does and
-what to type. Two of the top folder's commands run tools of
+Every command of pulsechain-analytics, the owner's tools for questions about
+PulseChain, that npm, the package manager of Node, the program that runs
+JavaScript outside a browser, runs from a `package.json`: those its top
+`package.json` defines, which run from the repo's top folder, and those of
+the packages of `chart-price-ratio/` and `check-token-balance/`, with what
+each does and what to type. Two of the top folder's commands run tools of
 crypto-price-fetchers, the owner's repo of code his projects share, which
-this repo installs from GitHub: `api-keys` and `github-project-deps`.
+this repo installs from GitHub, the website that hosts his code: `api-keys`,
+its key manager, which saves and lists the api keys, and
+`github-project-deps`, its versions tool, which moves crypto-price-fetchers
+to its newest main or its latest release.
 
 Companion to [`docs/engineering.md`](engineering.md), which covers how the
 gates work. This file covers how to drive them.
@@ -31,7 +35,8 @@ gates work. This file covers how to drive them.
 
 Run with `npm run <name>`; `test` also works without `run`. Flags go after
 a `--` separator, which tells npm the rest belongs to the script, as in
-these two commands: the first replaces the saved DexTools key
+these two commands: the first replaces the saved key of DexTools, a
+service that prices tokens from the pools of decentralized exchanges,
 ([Api Keys](#api-keys)), and the second runs the ratio chart's tests
 alone ([Test](#test)):
 
@@ -39,6 +44,10 @@ alone ([Test](#test)):
 npm run api-keys -- set dextools
 npm test -- --test-name-pattern="pulse-token-ratio"
 ```
+
+A command that runs one of the repo's command lines passes `--help` on to
+it, which then lists its options, examples of its common uses and its exit
+codes: `npm run summ-sweep -- --help`.
 
 ---
 
@@ -50,7 +59,7 @@ command runs the store's key manager.
 
 | Command | Flags | Description | Example |
 | ------- | ----- | ----------- | ------- |
-| `api-keys` | `set <service>`, `check-password`, `--help` | The key manager, crypto-price-fetchers'. Lists each key the top `config.json` names, saved or not, never showing a key's characters, and asks for each one not saved: the key, then the password. Each key is saved, encrypted, once its service takes it. `set <service>` replaces one key. `check-password` says, by its exit code, whether the password in `API_KEYS_PASSWORD` opens every key saved; `unlock-api-keys.sh` runs it. | `npm run api-keys` · `npm run api-keys -- set dextools` |
+| `api-keys` | `set <service>`, `check-password`, `--help` | The key manager, crypto-price-fetchers'. Lists each key the top `config.json` names, saved or not, never showing a key's characters, and asks for each one not saved: the key, then the password. Each key is saved, encrypted, once its service takes it. `set <service>` replaces one key. `check-password` says, by its exit code, whether the password in `API_KEYS_PASSWORD` opens every key saved; `unlock-api-keys.sh`, the script that keeps the password for a terminal, runs it. | `npm run api-keys` · `npm run api-keys -- set dextools` |
 
 `source ./unlock-api-keys.sh`, which is no npm command, keeps the password
 for a terminal: see [the README](../README.md#api-keys).
@@ -77,7 +86,7 @@ command, entirely optional, moves both.
 
 | Command | Flags | Description | Example |
 | ------- | ----- | ----------- | ------- |
-| `github-project-deps` | `main` or `release`; `--help` | crypto-price-fetchers' versions tool. Sets every dependency installed from GitHub, in each `package.json` git keeps, to its project's main branch (`#main`) or latest release (`#semver:*`), then makes each of those folders' `package-lock.json` again from a fresh `node_modules`, so the newest commit of main, or the newest release, is installed. When an install fails, it puts every `package.json` and `package-lock.json` back and installs `node_modules` again from them. | `npm run github-project-deps -- main` |
+| `github-project-deps` | `main` or `release`; `--help` | crypto-price-fetchers' versions tool. Sets every dependency installed from GitHub, in each `package.json` git, the version-control program, keeps, to its project's main branch (`#main`) or latest release (`#semver:*`), then makes each of those folders' `package-lock.json` again from a fresh `node_modules`, so the newest commit of main, or the newest release, is installed. When an install fails, it puts every `package.json` and `package-lock.json` back and installs `node_modules` again from them. | `npm run github-project-deps -- main` |
 
 ---
 
@@ -88,9 +97,9 @@ and `format` and `lint:fix` make the fixes the tools can make.
 
 | Command | Flags | Description | Example |
 | ------- | ----- | ----------- | ------- |
-| `format` | — | Prettier's write pass over every JavaScript, Sheets script, JSON and YAML file. | `npm run format` |
+| `format` | — | The write pass of Prettier, the package that formats code, over every JavaScript, Sheets script, JSON and YAML file. | `npm run format` |
 | `knip:files` | — | The dead-code check: fails on any file nothing reaches. `lint` runs it. | `npm run knip:files` |
-| `lint` | — | The linters: ESLint, markdownlint, Prettier in check mode, actionlint, and knip's unused files. husky, the package that runs scripts at git's hooks, runs it before each commit. | `npm run lint` |
+| `lint` | — | The linters: ESLint, which checks JavaScript against rules; markdownlint, which checks the form of Markdown files; Prettier in check mode; actionlint, which checks the GitHub Actions workflow files; and knip's check for files nothing uses. husky, the package that runs scripts at the hooks of git, the version-control program, runs it before each commit. | `npm run lint` |
 | `lint:fix` | — | ESLint and markdownlint with their fixes, then `format`. | `npm run lint:fix` |
 
 ---
@@ -102,9 +111,9 @@ them, after the lint, and must pass before a commit and a push.
 
 | Command | Flags | Description | Example |
 | ------- | ----- | ----------- | ------- |
-| `audit:deps` | — | `npm audit` at the `high` threshold over the packages that ship (`--omit=dev`): the repo's, the ratio chart's and the balance checker's. | `npm run audit:deps` |
-| `audit:secrets` | — | secretlint across the repo. | `npm run audit:secrets` |
-| `audit:security` | — | The security lint, `eslint-security.config.js`: eslint-plugin-security, eslint-plugin-no-secrets and `no-secret-logging`. | `npm run audit:security` |
+| `audit:deps` | — | `npm audit`, npm's check of the installed packages against known vulnerabilities, at the `high` threshold over the packages that ship (`--omit=dev`): the repo's, the ratio chart's and the balance checker's. | `npm run audit:deps` |
+| `audit:secrets` | — | secretlint, which looks for keys and credentials in files, across the repo. | `npm run audit:secrets` |
+| `audit:security` | — | The security lint, `eslint-security.config.js`: the rules of eslint-plugin-security, against code open to attack, of eslint-plugin-no-secrets, against strings that look like keys, and crypto-price-fetchers' `no-secret-logging`, against printing a name that may hold a secret. | `npm run audit:security` |
 | `check` | — | The full gate: `lint`, `test:coverage` and the three audits, in that order, stopping at the first that fails. | `npm run check` |
 | `format:check` | — | Prettier in check mode; fails rather than rewriting. | `npm run format:check` |
 | `test` | any `node --test` flag | The tests, on Node's test runner. | `npm test -- --test-name-pattern="api keys"` |
@@ -129,16 +138,19 @@ their own: run `npm install` in the folder before using the tool there.
 
 | Folder | Command | Description | Example |
 | ------ | ------- | ----------- | ------- |
-| `chart-price-ratio/` | `start`, `ratio` | Run the ratio chart. `npm start -- --help` lists its options, each with its default from `config.json`, and its exit codes. | `npm start -- <tokenA> <tokenB> daily` |
+| `chart-price-ratio/` | `start`, `ratio` | Run the ratio chart. `npm start -- --help` lists its options, each with its default from `config.json`, examples of its common uses, and its exit codes. | `npm start -- <tokenA> <tokenB> daily` |
 
 The balance checker has no npm command: `node index.js --help`, in its
-folder, lists its options.
+folder, lists its options, with examples of its common uses and its exit
+codes.
 
 ---
 
 ## See Also
 
-- [`docs/engineering.md`](engineering.md) — the gates, the tests and CI.
+- [`docs/engineering.md`](engineering.md) — the gates, the tests and CI,
+  the checks GitHub Actions runs at each push.
 - [`docs/architecture.md`](architecture.md) — how the tools work.
 - [LP Ranger's `docs/claude/CLAUDE-CI.md`](https://github.com/nottoseethesun/lp-ranger/blob/main/docs/claude/CLAUDE-CI.md)
-  — the merge protocol these gates feed.
+  — the merge protocol of LP Ranger, the owner's bot that manages his 9mm V3
+  liquidity positions, which these gates feed.

@@ -69,6 +69,12 @@ The chain's facts come from the top config.json, and the owner's settings
 from summ-sweep/config.json, which git ignores; summ-sweep/config-example.json
 shows its shape.
 
+Examples:
+  Sweep a wallet's November 2026 against two saved pages of Summ's results:
+    $ npm run summ-sweep -- --wallet <address> --start-date 2026-11-01 --end-date 2026-11-30 --summ-synced-to "2026-11-30 23:59:59" --summ-results summ-results-1.json summ-results-2.json --out missing.csv --report report.json
+  Run it again after fixing a leg in Summ, writing over the last run's files:
+    $ npm run summ-sweep -- --wallet <address> --start-date 2026-11-01 --end-date 2026-11-30 --summ-synced-to "2026-11-30 23:59:59" --summ-results summ-results-1.json summ-results-2.json --out missing.csv --report report.json --replace
+
 Exit codes: 0 when the report was written, and the csv with it when there
 were rows; 1 when they were not.
 `;

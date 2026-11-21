@@ -2,8 +2,10 @@
 
 ## Overview
 
-`fetch-amount-of-token-transferred.gs` gives, in a sheet's cell, how much
-of a token one PulseChain transaction sent a wallet:
+`fetch-amount-of-token-transferred.gs`, a script for Google Sheets,
+Google's spreadsheet app, written in Apps Script, Google's platform for
+scripts that run inside its apps, gives, in a sheet's cell, how much of a
+token one PulseChain transaction sent a wallet:
 `getTokenTransferred(transaction, token, wallet)`. It reads the
 transaction's receipt and adds up the token's transfers to the wallet in
 it. `wrapper.gs` is what a sheet pastes into its own project to call it.
@@ -35,9 +37,11 @@ Library URL:  https://script.google.com/macros/library/d/1HFXEAhRh3-fSqNLzi9i-oM
 ## The Node Version
 
 `fetch-amount-of-token-transferred.js`, beside the script, runs
-`fetch-amount-of-token-transferred.gs` itself, unchanged, under Node, so it
-answers as `getTokenTransferred` does in a sheet, from a Node program or the
-command line. It needs no wrapper: a Node program imports it directly.
+`fetch-amount-of-token-transferred.gs` itself, unchanged, under Node, the
+program that runs JavaScript outside a browser, so it answers as
+`getTokenTransferred` does in a sheet, from a Node program or the command
+line. It needs no wrapper: a Node program imports it directly. npm, Node's
+package manager, installs the repo's packages.
 
 From the repo's top folder, after `npm ci` (Node 22 or later):
 
@@ -45,8 +49,10 @@ From the repo's top folder, after `npm ci` (Node 22 or later):
 node for-google-apps/check-token-balance/fetch-amount-of-token-transferred.js <transaction> <token> <wallet>
 ```
 
-It prints the amount. `--help` lists the options. The PulseChain rpc
-endpoint can go in `config.json` here, which git ignores;
+It prints the amount. `--help` lists the options, with examples and the
+exit codes. The PulseChain rpc endpoint, the json-rpc api of the node it
+asks, can go in `config.json` here, which git, the version-control
+program, ignores;
 `config-example.json` shows the shape. From Node:
 
 ```js
@@ -76,8 +82,9 @@ the chain, so a cached answer stays right. The wrapper's
 `getTokenTransferredNoCache` calls the function without the cache.
 
 The caching function is in the deployed library only, not in the repo's
-copy of the script. The repo's copy, its Node version and the ethers tool
-at the repo's top folder keep no cache.
+copy of the script. The repo's copy, its Node version and the module at
+the repo's top folder that works out the same amount with ethers, a
+library for talking to Ethereum-style chains, keep no cache.
 
 ## Contributing
 

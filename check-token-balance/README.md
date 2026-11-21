@@ -8,8 +8,11 @@ only the chain's recent state.
 
 IMPORTANT: Use at your own risk as defined in the included file, `../LICENSE`.
 
-The file header in `index.js` gives the details, and `node index.js --help`
-lists the options.
+The checker runs on Node, the program that runs JavaScript outside a
+browser. In this folder, `npm install` (npm is Node's package manager)
+installs its packages, and `node index.js --help` lists its options, with
+examples of its common uses and its exit codes. The file header in
+`index.js` gives the details.
 
 ## Contributing
 

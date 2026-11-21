@@ -110,6 +110,14 @@ function address(value) {
   return value;
 }
 
+/** The examples of the help; the runner adds the exit codes after them. */
+const EXAMPLES_HELP = `
+Examples:
+  How much HEX one transaction sent a wallet:
+    $ node fetch-amount-of-token-transferred.js <transaction-hash> 0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39 <wallet>
+  The same, with the script's log on stderr, to see each step it took:
+    $ node fetch-amount-of-token-transferred.js --verbose <transaction-hash> 0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39 <wallet>`;
+
 /**
  * Describes the command line.
  *
@@ -127,6 +135,7 @@ function describeCommandLine(program, runCall) {
     .argument("<transaction>", "the transaction's hash", transactionHash)
     .argument("<token>", "the token's contract address", address)
     .argument("<wallet>", "the wallet's address", address)
+    .addHelpText("after", EXAMPLES_HELP)
     .action((transaction, token, wallet, _options, command) =>
       runCall("getTokenTransferred", [transaction, token, wallet], command),
     );

@@ -1,7 +1,8 @@
 # PulseChain Token Ratio Chart
 
-A Node tool that charts the ratio of two PulseChain tokens' prices (token A
-/ token B) in the terminal, even when no pool trades one for the other. It
+A tool, on Node, the program that runs JavaScript outside a browser, that
+charts the ratio of two PulseChain tokens' prices (token A / token B) in
+the terminal, even when no pool trades one for the other. It
 prices each token in USD, from a pool of its own, whichever side of the
 pool the token is on, so the ratio of the two prices needs no pool between
 them.
@@ -38,9 +39,13 @@ gives the details.
 
 ## Pre-requisites
 
-NodeJs (package name `nodejs`) version 22 or above.
+Node 22 or later (on Debian or Ubuntu Linux, the package `nodejs`).
 
 ## Installation
+
+git, the version-control program, copies the repo from GitHub, the website
+that hosts it, and npm, Node's package manager, installs the tool's
+packages:
 
 ```bash
 git clone https://github.com/nottoseethesun/pulsechain-analytics.git

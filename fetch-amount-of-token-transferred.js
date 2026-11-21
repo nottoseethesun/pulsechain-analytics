@@ -1,12 +1,14 @@
 /**
  * @fileoverview
- * This is a Node.js program that interacts with the Pulsechain blockchain (a fork of Ethereum) using the ethers.js library.
+ * This is a module for programs on Node, the program that runs JavaScript outside a browser: it reads the Pulsechain
+ * blockchain (a fork of Ethereum) with ethers.js, a library for talking to Ethereum-style chains. Running this file
+ * alone does nothing; other code imports its function.
  * It provides a function to read how much of a specific ERC-20 token one transaction transferred to a given wallet address.
  * It reads the transaction's own receipt and adds up the token's Transfer events to the wallet in it. The receipt holds
  * that transaction's events alone, so another transaction in the same block never counts, and it needs no archive node,
  * since no past balance is read.
  *
- * @requires Node.js (version 18 or higher recommended for async/await support)
+ * @requires Node 22 or later, as the repo's package.json says
  * @requires ethers.js (install via: npm install ethers)
  *
  * How to use:
@@ -15,7 +17,7 @@
  *    `getTokenTransferred(txId, tokenAddress, walletAddress)` in an async context, awaiting the result.
  * 3. The tests in `test/` check it against a stand-in chain: `npm test`.
  *
- * Note: This program connects to a public Pulsechain RPC endpoint ('https://rpc-pulsechain.g4mm4.io'). Ensure the endpoint is reliable;
+ * Note: This module connects to a public Pulsechain RPC endpoint ('https://rpc-pulsechain.g4mm4.io'). Ensure the endpoint is reliable;
  *       you may replace it with another RPC provider if needed (e.g., for rate limiting or privacy).
  *
  * Limitations:

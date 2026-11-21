@@ -15,13 +15,19 @@ transaction sent a wallet, what a wallet held at a past block or date, how
 two tokens' prices compare over time, what a wallet moved over a range of
 blocks, read from the chain alone (`wallet-history/`), and what of those
 moves the crypto tax calculator Summ lacks or holds wrongly
-(`summ-sweep/`, run by `npm run summ-sweep`).
+(`summ-sweep/`, run by `npm run summ-sweep`; npm, the package manager of
+Node, the program that runs JavaScript outside a browser, runs the commands
+a `package.json` names).
 
-The first tool, the amount a transaction sent, also comes as a Google Apps
-Script, so that a Google Sheet's cell can call it. Apps Script cannot
-import npm packages such as ethers. So the Apps Script version does by
-hand, with `UrlFetchApp` and json-rpc, what the Node version does with
-ethers, and its code is longer and looks different.
+The first tool, the amount a transaction sent, also comes as a script for
+Google Sheets, Google's spreadsheet app, written in Apps Script, Google's
+platform for scripts that run inside its apps, so that a sheet's cell can
+call it. Apps Script cannot import npm packages, such as ethers, a library
+for talking to Ethereum-style chains such as PulseChain. So the Apps
+Script version does by hand, with `UrlFetchApp`, Apps Script's service for
+web requests, and json-rpc, the protocol a chain's rpc endpoint answers,
+what the ethers version, a module for programs on Node, does with ethers;
+its code is longer and looks different.
 
 ## Prerequisites
 
@@ -76,7 +82,8 @@ Instead of adding a library, a script can be pasted into the sheet's own
 project. The sheet then runs that copy, which does not change when the
 repo does.
 
-1. On GitHub, open the file, and copy it with the **Copy raw file** button.
+1. On GitHub, the website that hosts the repo, open the file, and copy it
+   with the **Copy raw file** button.
 2. In the sheet, choose **Extensions → Apps Script**.
 3. Select all the code in the editor (Ctrl+A, or Cmd+A on a Mac), and paste
    over it (Ctrl+V, or Cmd+V).
@@ -94,7 +101,9 @@ npm install
 It installs everything the top folder's tools need, among them
 crypto-price-fetchers, the owner's repo of code his projects share, from
 GitHub: it runs the Sheets script under Node, keeps the api keys, asks
-GeckoTerminal for the ratio chart, and writes the Summ sweep's csv.
+GeckoTerminal, a service that lists the pools of decentralized exchanges
+with their prices and candles, for the ratio chart, and writes the Summ
+sweep's csv.
 `chart-price-ratio/` and `check-token-balance/` each have a package of
 their own: run `npm install` in the folder of the tool you use too.
 
@@ -131,13 +140,14 @@ does for a release whose top folder has no package.json, every
 
 ### Api keys
 
-The ratio chart, `chart-price-ratio/`, can fall back to DexTools, which
-takes an api key. The key is kept in `api-keys.json` in the repo's top
-folder, which git ignores, encrypted with a password you choose, by
-crypto-price-fetchers' key store, which keeps keys as LP Ranger, the
-owner's bot that manages his 9mm V3 liquidity positions, keeps its own.
-This repo's `npm run api-keys` runs the store's key manager. To save the
-key, from the repo's top folder:
+The ratio chart, `chart-price-ratio/`, can fall back to DexTools, a service
+that prices tokens from the pools of decentralized exchanges, which takes an
+api key. The key is kept in `api-keys.json` in the repo's top folder, which
+git, the version-control program that keeps the repo's history, ignores,
+encrypted with a password you choose, by crypto-price-fetchers' key store,
+which keeps keys as LP Ranger, the owner's bot that manages his 9mm V3
+liquidity positions, keeps its own. This repo's `npm run api-keys` runs the
+store's key manager. To save the key, from the repo's top folder:
 
 ```bash
 npm run api-keys
@@ -186,7 +196,8 @@ contract's.
 It also needs Summ's rows of the wallet, saved to files a page at a time
 from Summ's connector for Claude, and the time up to which Summ's sync has
 read the wallet's transactions, which `--summ-synced-to` takes.
-`npm run summ-sweep -- --help` lists its options;
+`npm run summ-sweep -- --help` lists its options, with examples of its
+common uses and its exit codes, as each tool's `--help` does;
 [`docs/npm-project-commands.md`](docs/npm-project-commands.md#bookkeeping)
 gives an example.
 
@@ -216,7 +227,8 @@ The `docs/` folder holds three references:
 
 - [`docs/architecture.md`](docs/architecture.md): how the tools work.
 - [`docs/engineering.md`](docs/engineering.md): the files, the gates, the
-  tests and CI.
+  tests and CI, the checks GitHub Actions, GitHub's service for running
+  them, runs at each push.
 - [`docs/npm-project-commands.md`](docs/npm-project-commands.md): every npm
   command.
 
