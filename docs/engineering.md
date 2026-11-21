@@ -1,11 +1,16 @@
 # pulsechain-analytics — Engineering Reference
 
 The files the programs read and write, the gates every change passes, the
-tests, and CI. For how the tools work, see
+tests, and CI. The programs are this repo's tools for questions about
+PulseChain: the amount a transaction sent (a Node program and a Sheets
+script), the balance checker, the ratio chart, a wallet's history, and
+the Summ sweep, which compares a wallet's history with its records in
+Summ, the owner's crypto tax calculator. For how the tools work, see
 [`docs/architecture.md`](architecture.md); for every npm command, see
 [`docs/npm-project-commands.md`](npm-project-commands.md).
 
-The repo follows LP Ranger's coding standards: its `CLAUDE.md` and
+The repo follows the coding standards of LP Ranger, the owner's bot that
+manages his 9mm V3 liquidity positions: its `CLAUDE.md` and
 `docs/claude/`, in
 [nottoseethesun/lp-ranger](https://github.com/nottoseethesun/lp-ranger).
 
@@ -29,7 +34,13 @@ The repo follows LP Ranger's coding standards: its `CLAUDE.md` and
 ## Quick Start
 
 A working copy needs Node 22 or later, the packages of the repo and of its
-two tools, and the DexTools key. From the repo's top folder:
+two tools that have packages of their own, and the DexTools key, which
+the ratio chart sends. The key is kept by the key store of
+crypto-price-fetchers, the owner's repo of code his projects share, which
+`npm ci` installs from GitHub, at the commit `package-lock.json` keeps: no
+other step installs it. This repo's `npm run api-keys` runs the key
+store's manager, and `npm run check` runs the gate below. From the repo's
+top folder:
 
 ```bash
 npm ci
@@ -38,9 +49,6 @@ npm ci --prefix check-token-balance
 npm run api-keys     # save the DexTools key, once, for the ratio chart
 npm run check        # the gate
 ```
-
-`npm ci` installs crypto-price-fetchers too, from GitHub, at the commit
-`package.json` pins: no other step installs it.
 
 ---
 
@@ -51,12 +59,17 @@ the ones that hold no key and none of the owner's own settings.
 
 | File | In git | What it holds |
 | ---- | ------ | ------------- |
-| `config.json` | yes | The services whose keys the programs send, under `apiKeys`. No key. |
+| `config.json` | yes | The services whose keys the programs send, under `apiKeys`, and the chain's facts the Summ sweep reads, under `pulsechain`. No key. |
+| `summ-sweep/config.json` | no | The owner's settings for the Summ sweep: the path of his Summ template and of his LP Ranger checkout, his own wallets with their names, his spam and income tokens, and each token's symbols in Summ and in a csv. `summ-sweep/config-example.json` beside it shows the shape, with made-up addresses. |
 | `api-keys.json` | no | The keys, each encrypted with the owner's password. `api-keys.json.tmp` is the file it is written through. `API_KEYS_FILE_PATH` names another, as the tests do. |
 | `chart-price-ratio/config.json` | yes | The ratio chart's settings: network, DexTools' plan, the interval, the CSV's name. No key. |
 | `check-token-balance/config.json` | yes | The balance checker's rpc endpoint. |
 | `for-google-apps/check-token-balance/config.json` | no | The Node version's rpc endpoint; `config-example.json` beside it shows the shape. |
 | `coverage/` | no | A test run's coverage report. |
+
+The Summ sweep writes its csv and its report at the paths its command line
+names, outside the repo, and never over a file already there without
+`--replace`. It checks both paths before it writes either.
 
 ---
 
@@ -89,10 +102,11 @@ way. `wrapper.gs` calls the deployed library by the name Apps Script gives
 it, which no import declares, so a `/* global */` comment declares it.
 
 The lint covers the tools in `chart-price-ratio/` and `check-token-balance/`,
-whose imports resolve once their own packages are installed. The husky
-pre-commit hook (`.husky/pre-commit`), which `prepare` installs at
-`npm install`, runs `npm run lint`; `npm run format` or `npm run lint:fix`
-fixes formatting. No rule
+whose imports resolve once their own packages are installed. husky, a
+package that runs scripts at git's hooks, runs `npm run lint` before each
+commit (`.husky/pre-commit`); this repo's `prepare` script installs the
+hook at `npm install`. `npm run format` or `npm run lint:fix` fixes
+formatting. No rule
 is ever switched off in a file, no file is left out of the lint, and a file
 over 500 lines is split, not excused.
 
@@ -101,8 +115,8 @@ over 500 lines is split, not excused.
 ## Tests
 
 The tests are in `test/`, on Node's test runner. They run the tools
-against stand-ins for PulseChain, GeckoTerminal and DexTools, so they ask
-nothing outside the computer. They never read the owner's key file or
+against stand-ins for PulseChain, GeckoTerminal, DexTools and LP Ranger's
+tool, so they ask nothing outside the computer. They never read the owner's key file or
 password.
 
 | Test | What it covers |
@@ -116,6 +130,12 @@ password.
 | `dependencies.test.js` | crypto-price-fetchers installed from GitHub, following its main branch or its latest release, by the ratio chart too, and `npm run github-project-deps` running its versions tool. |
 | `wallet-history.test.js` | The paced provider, the blocks of a range, the logs that name a wallet, the transactions it sent, their receipts and its tokens' facts, against a stand-in chain. |
 | `wallet-history-coin.test.js` | The PLS a wallet moved: the calls of a trace that pay it, the flows of its own transactions, and the payments from elsewhere its balance reveals, against a stand-in chain whose balances are worked out apart from the code tested. |
+| `summ-sweep.test.js` | The Summ sweep's reading of Summ's saved pages, its match of amounts in both forms Summ prints, the legs of a wallet's logs, and the match of the chain's legs with Summ's, a later match leaving out the Summ legs an earlier one used. |
+| `summ-sweep-splits.test.js` | The split of withdrawals from positions into principal and fees, a pool's coins ordered by their addresses as numbers, the collects it refuses to split, LP Ranger's records of another shape refused, and LP Ranger's tool run through a stand-in and as a real program. |
+| `summ-sweep-run.test.js` | The whole sweep, `sweepWallet`, against a stand-in chain: a split Summ holds whole and one it holds in parts, the gaps booked, a question's amount in whole tokens, no block read for its time that the search for the wallet's transactions already read, a withdrawal paid as PLS, and a change of balance no payment explains. |
+| `summ-sweep-command.test.js` | The sweep's command line: the csv written through crypto-price-fetchers' Summ csv utility, with addresses in lower case, and the report in EIP-55's mixed case; neither file written when one path is taken; a mistake in an option refused as it is parsed, before anything is read; and its help, with its exit codes. |
+| `summ-sweep-gap-rules.test.js` | The rules that book the legs Summ lacks outside a swap (a position's deposits, with the position's number and the PLS a deposit paid, NFTs, withdrawals and fees; wraps; spam; the owner's wallets; income tokens), and the question for each leg no rule books. |
+| `summ-sweep-gaps.test.js` | The rows of swaps, of tokens and of PLS, with only what Summ lacks; how much of a transaction Summ holds; where its gas goes; a transaction later than the time given as reached by Summ's sync; and the Fee rows and questions of transactions that moved no token. |
 
 `test/helpers/` holds the stand-ins:
 
@@ -136,12 +156,20 @@ password.
   pool whose base token is not the chart's token (`quoteSideAnswers`).
 - `known-bug.js`: declares a known-bug test.
 - `stand-in-wallet-chain.js`: a PulseChain endpoint held in memory for
-  `wallet-history/`, built from a few blocks a test describes: their
+  `wallet-history/`, built from the blocks a test describes: their
   transactions, logs, payments inside them, withdrawals and fee
   recipient. It answers block, log, count, balance, receipt, trace and
-  contract requests, refuses a log search wider than its limit, and counts
-  every request. Its balances come from the description, not from the code
-  tested.
+  contract requests, takes an address in any case, refuses a log search
+  wider than its limit, and counts every request. Its balances come from
+  the description, not from the code tested.
+- `summ-pages.js`: writes pages of Summ's results in the form Summ's
+  connector returns them, for the Summ sweep to read.
+- `summ-sweep-case.js`: the made-up wallet history the Summ sweep's tests
+  sweep: its stand-in chain, LP Ranger's records of its withdrawals,
+  Summ's rows of it, the time given as reached by Summ's sync, the header
+  of Summ's csv template, and the temp folders the tests make and remove.
+- `summ-gaps.js`: builds the legs, transactions and Summ rows the tests
+  of the gap rules book, and runs `rowsForGaps` on them.
 
 `npm run test:coverage` fails below 80% of lines covered. Code written to
 check something goes into the tests, so it is kept and run again rather
@@ -161,7 +189,8 @@ chain, in two ways:
   thread (`test/helpers/sheets-script.js`). Its `UrlFetchApp.fetch` answers
   at once from the stand-in chain, so nothing waits.
 - `fetch-amount-of-token-transferred-node-version.test.js` runs it through
-  its Node version, in crypto-price-fetchers' runner. In Apps Script,
+  its Node version, in crypto-price-fetchers' runner, which runs an Apps
+  Script file under Node. In Apps Script,
   `UrlFetchApp.fetch` holds the script until the response arrives, while
   Node's `fetch` returns a promise. So the runner runs the script in a
   worker thread, which waits on each request while the main thread does it

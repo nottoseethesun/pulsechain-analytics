@@ -22,7 +22,7 @@
  * wallet writes each token's amount with its decimals.
  */
 
-import { AbiCoder } from "ethers";
+import { AbiCoder, getAddress } from "ethers";
 
 /** The selector of `symbol()`. */
 const SYMBOL_SELECTOR = "0x95d89b41";
@@ -113,13 +113,11 @@ function symbolOf(answer) {
  * @param {string[]} addresses - The tokens' contracts, in any case, once
  *   or more each
  * @returns {Promise<Map<string, {symbol: (string|null),
- *   decimals: (number|null)}>>} Each token's facts, by contract in lower
- *   case; `null` where the contract refuses the call
+ *   decimals: (number|null)}>>} Each token's facts, by contract in EIP-55's
+ *   mixed case; `null` where the contract refuses the call
  */
 export async function tokenFacts(paced, addresses) {
-  const unique = [
-    ...new Set(addresses.map((address) => address.toLowerCase())),
-  ];
+  const unique = [...new Set(addresses.map((address) => getAddress(address)))];
   const facts = new Map();
   for (const address of unique) {
     const symbol = await answerOf(paced, address, SYMBOL_SELECTOR);

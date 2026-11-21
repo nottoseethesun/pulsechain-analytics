@@ -1,8 +1,12 @@
 # pulsechain-analytics — `npm` Project Commands
 
-Every command defined in `package.json`, and in the packages of
-`chart-price-ratio/` and `check-token-balance/`, what it does, and what to
-type.
+Every npm command of pulsechain-analytics, the owner's tools for
+questions about PulseChain: those its top `package.json` defines, which
+run from the repo's top folder, and those of the packages of
+`chart-price-ratio/` and `check-token-balance/`, with what each does and
+what to type. Two of the top folder's commands run tools of
+crypto-price-fetchers, the owner's repo of code his projects share, which
+this repo installs from GitHub: `api-keys` and `github-project-deps`.
 
 Companion to [`docs/engineering.md`](engineering.md), which covers how the
 gates work. This file covers how to drive them.
@@ -13,6 +17,7 @@ gates work. This file covers how to drive them.
 
 - [Passing Flags](#passing-flags)
 - [Api Keys](#api-keys)
+- [Bookkeeping](#bookkeeping)
 - [Dependency Versions](#dependency-versions)
 - [Developer Tools](#developer-tools)
 - [Test](#test)
@@ -25,7 +30,10 @@ gates work. This file covers how to drive them.
 ## Passing Flags
 
 Run with `npm run <name>`; `test` also works without `run`. Flags go after
-a `--` separator, which tells npm the rest belongs to the script:
+a `--` separator, which tells npm the rest belongs to the script, as in
+these two commands: the first replaces the saved DexTools key
+([Api Keys](#api-keys)), and the second runs the ratio chart's tests
+alone ([Test](#test)):
 
 ```sh
 npm run api-keys -- set dextools
@@ -36,8 +44,9 @@ npm test -- --test-name-pattern="pulse-token-ratio"
 
 ## Api Keys
 
-The api keys the programs send are kept encrypted in `api-keys.json`. One
-command manages them.
+The api keys the programs send, DexTools' for the ratio chart, are kept
+encrypted in `api-keys.json` by crypto-price-fetchers' key store. One
+command runs the store's key manager.
 
 | Command | Flags | Description | Example |
 | ------- | ----- | ----------- | ------- |
@@ -45,6 +54,18 @@ command manages them.
 
 `source ./unlock-api-keys.sh`, which is no npm command, keeps the password
 for a terminal: see [the README](../README.md#api-keys).
+
+---
+
+## Bookkeeping
+
+The owner keeps his crypto taxes in Summ. One command compares a wallet's
+history on PulseChain with Summ's rows of it; `docs/architecture.md`
+says [how](architecture.md#the-summ-sweep).
+
+| Command | Flags | Description | Example |
+| ------- | ----- | ----------- | ------- |
+| `summ-sweep` | `--wallet <address>`, `--start-date <day>`, `--end-date <day>`, `--summ-synced-to <time>`, `--summ-results <files...>`, `--out <file>`, `--report <file>`, all required; `--replace`; `--help` | Sweeps the wallet's history from the first day to the last, each `YYYY-MM-DD` in UTC, against the pages of Summ's results saved to the files named. `--summ-synced-to` is the time, as `"YYYY-MM-DD HH:MM:SS"` in UTC, up to which Summ's sync has read the wallet's transactions: a transaction after it gets no gas, for that sync to bring. Each option is checked as it is parsed, and a mistake stops the run before it reads anything. Writes the csv through crypto-price-fetchers' Summ csv utility: the income rows of the withdrawals to fix in Summ, and the rows for what Summ lacks. Writes a report, as json, of the withdrawals to fix, the legs Summ lacks, the questions about the legs no rule books, Summ's legs no chain leg matched, and the problems found. Checks both paths and the rows before writing either file, and writes over neither without `--replace`. Reads the chain's facts from the top `config.json` and the owner's settings from `summ-sweep/config.json`. Exits with 0 when the report was written, and the csv with it when there were rows; 1 when they were not. | `npm run summ-sweep -- --wallet 0x… --start-date 2026-01-01 --end-date 2026-11-20 --summ-synced-to "2026-11-20 06:00:00" --summ-results page-1.txt page-2.txt --out rows.csv --report report.json` |
 
 ---
 
@@ -69,7 +90,7 @@ and `format` and `lint:fix` make the fixes the tools can make.
 | ------- | ----- | ----------- | ------- |
 | `format` | — | Prettier's write pass over every JavaScript, Sheets script, JSON and YAML file. | `npm run format` |
 | `knip:files` | — | The dead-code check: fails on any file nothing reaches. `lint` runs it. | `npm run knip:files` |
-| `lint` | — | The linters: ESLint, markdownlint, Prettier in check mode, actionlint, and knip's unused files. The husky pre-commit hook runs it. | `npm run lint` |
+| `lint` | — | The linters: ESLint, markdownlint, Prettier in check mode, actionlint, and knip's unused files. husky, the package that runs scripts at git's hooks, runs it before each commit. | `npm run lint` |
 | `lint:fix` | — | ESLint and markdownlint with their fixes, then `format`. | `npm run lint:fix` |
 
 ---

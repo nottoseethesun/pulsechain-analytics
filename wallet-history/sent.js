@@ -6,11 +6,11 @@
  * What: a wallet's count of transactions sent, its nonce, rises by one
  * with each transaction it sends, whatever the transaction does: one that
  * moved no token, one that reverted and only paid gas, one that cancelled
- * another by sending nothing to the wallet itself. None of those may leave
- * a log naming the wallet, so a search of the logs misses them, and an
- * explorer's list missed some of them for the wallet this was built for.
- * The count misses none: the endpoint answers it for the end of any past
- * block, from the chain's state.
+ * another by sending nothing to the wallet itself. None of those logs a
+ * Transfer naming the wallet, so a search of the Transfer logs does not
+ * find them; an approval logs an Approval, which that search does not
+ * read. The count finds every one: the endpoint answers it for the end
+ * of any past block, from the chain's state.
  *
  * How: a span of blocks whose two ends show the same count holds no
  * transaction of the wallet's, so the search halves each span whose ends

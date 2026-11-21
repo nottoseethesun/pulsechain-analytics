@@ -14,7 +14,7 @@
  * How: a turn is booked from the moment the request before it went out,
  * rather than from when that one was due, so a timer that fired late does
  * not let the next request follow sooner than the spacing. `ask` sends one
- * request in its turn. `askAll` sends several in one turn, at once: ethers
+ * request in its turn. `askAll` sends a list of them in one turn: ethers
  * gathers requests made together into one http request, a json-rpc batch,
  * so a set of receipts or traces costs one turn rather than one each.
  * LP Ranger has the same pacing in its wallet report, but that file loads

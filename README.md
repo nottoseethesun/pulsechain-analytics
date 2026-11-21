@@ -12,14 +12,16 @@ USE AT YOUR OWN RISK: SEE LICENSE FILE, INCLUDED.
 
 Tools that answer questions about PulseChain: how much of a token one
 transaction sent a wallet, what a wallet held at a past block or date, how
-two tokens' prices compare over time, and what a wallet moved over a range
-of blocks, read from the chain alone (`wallet-history/`).
+two tokens' prices compare over time, what a wallet moved over a range of
+blocks, read from the chain alone (`wallet-history/`), and what of those
+moves the crypto tax calculator Summ lacks or holds wrongly
+(`summ-sweep/`, run by `npm run summ-sweep`).
 
-Some tools also come as Google Apps Script, so that a Google Sheet's cell
-can call them. Apps Script cannot import npm packages such as ethers. So an
-Apps Script version does by hand, with `UrlFetchApp` and json-rpc, what a
-Node version does with a package, and its code is longer and looks
-different.
+The first tool, the amount a transaction sent, also comes as a Google Apps
+Script, so that a Google Sheet's cell can call it. Apps Script cannot
+import npm packages such as ethers. So the Apps Script version does by
+hand, with `UrlFetchApp` and json-rpc, what the Node version does with
+ethers, and its code is longer and looks different.
 
 ## Prerequisites
 
@@ -89,10 +91,12 @@ The Node tools need the repo's packages. From the repo's top folder:
 npm install
 ```
 
-It installs everything the top folder's tools need, crypto-price-fetchers
-among them, from GitHub. `chart-price-ratio/` and `check-token-balance/`
-each have a package of their own: run `npm install` in the folder of the
-tool you use too.
+It installs everything the top folder's tools need, among them
+crypto-price-fetchers, the owner's repo of code his projects share, from
+GitHub: it runs the Sheets script under Node, keeps the api keys, asks
+GeckoTerminal for the ratio chart, and writes the Summ sweep's csv.
+`chart-price-ratio/` and `check-token-balance/` each have a package of
+their own: run `npm install` in the folder of the tool you use too.
 
 ### Choosing Versions of Dependencies that are Raw Github Projects
 
@@ -107,8 +111,10 @@ release, its highest version tag. Each `package-lock.json` keeps the commit
 the ref named when the lockfile was made, and `npm ci` installs that
 commit.
 
-To move both to the newest commit of main, or to switch both to the latest
-release, from the repo's top folder:
+crypto-price-fetchers also holds the tool that moves both: its versions
+tool, which this repo runs as `npm run github-project-deps`. To move both
+to the newest commit of main, or to switch both to the latest release,
+from the repo's top folder:
 
 ```bash
 npm run github-project-deps -- main
@@ -127,8 +133,11 @@ does for a release whose top folder has no package.json, every
 
 The ratio chart, `chart-price-ratio/`, can fall back to DexTools, which
 takes an api key. The key is kept in `api-keys.json` in the repo's top
-folder, which git ignores, encrypted with a password you choose, as LP
-Ranger keeps its keys. To save it, from the repo's top folder:
+folder, which git ignores, encrypted with a password you choose, by
+crypto-price-fetchers' key store, which keeps keys as LP Ranger, the
+owner's bot that manages his 9mm V3 liquidity positions, keeps its own.
+This repo's `npm run api-keys` runs the store's key manager. To save the
+key, from the repo's top folder:
 
 ```bash
 npm run api-keys
@@ -140,7 +149,8 @@ password, twice the first time, showing nothing of what is typed. Each key
 is saved only once its service takes it.
 
 To keep the password for a terminal, so the tools open their keys without
-asking:
+asking, run `unlock-api-keys.sh`, a script in the repo's top folder, a
+copy of crypto-price-fetchers':
 
 ```bash
 source ./unlock-api-keys.sh
@@ -157,6 +167,28 @@ in a file, nor a command-line argument.
 Each tool's file header says how to use it. A Sheets script also has
 functions whose names start with "test". Each calls the script's functions
 with sample arguments, which show how to call them.
+
+### The Summ Sweep
+
+The Summ sweep (`summ-sweep/`), this repo's bookkeeping tool, compares a
+wallet's history on PulseChain with its records in Summ, the crypto tax
+calculator, and writes a csv of rows for what Summ lacks and a report of
+what to fix; `npm run summ-sweep` runs it.
+
+The sweep needs the owner's settings in `summ-sweep/config.json`, which git
+ignores: copy `summ-sweep/config-example.json` to it, and set the path of
+the Summ csv template, the path of an LP Ranger checkout, whose
+bookkeeping tool reads each withdrawal from a position, the owner's other
+wallets with their names, the tokens to book as spam and as income, and
+the symbols Summ and a csv give each token whose symbol differs from its
+contract's.
+
+It also needs Summ's rows of the wallet, saved to files a page at a time
+from Summ's connector for Claude, and the time up to which Summ's sync has
+read the wallet's transactions, which `--summ-synced-to` takes.
+`npm run summ-sweep -- --help` lists its options;
+[`docs/npm-project-commands.md`](docs/npm-project-commands.md#bookkeeping)
+gives an example.
 
 ## Node Versions of the Sheets Scripts
 

@@ -6,10 +6,13 @@ prices each token in USD, from a pool of its own, whichever side of the
 pool the token is on, so the ratio of the two prices needs no pool between
 them.
 
-The prices come from **GeckoTerminal**, which needs no api key, asked
-through crypto-price-fetchers' GeckoTerminal client. When GeckoTerminal
-has no candles, the chart falls back to each token's current price from
-**DexTools**: one point.
+The prices come from **GeckoTerminal**, a service that lists the pools of
+decentralized exchanges with their prices and candles, and needs no api
+key. The chart asks it through the GeckoTerminal client of
+crypto-price-fetchers, the owner's repo of code his projects share. When
+GeckoTerminal has no candles, the chart falls back to each token's current
+price from **DexTools**, a second such service, which takes an api key:
+one point.
 
 IMPORTANT: Use at your own risk as defined in the included file, `../LICENSE`.
 
@@ -74,7 +77,8 @@ Edit `config.json` to set defaults:
 
 A DexTools API key enables the current-price fallback when GeckoTerminal
 data is unavailable. It is no setting and no command-line argument: save it
-encrypted, with a password you choose, in the repo's top folder:
+encrypted, with a password you choose, in the repo's top folder, whose
+`npm run api-keys` runs crypto-price-fetchers' key manager:
 
 ```bash
 cd ..

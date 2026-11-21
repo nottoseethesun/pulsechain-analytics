@@ -10,7 +10,9 @@
  * date rather than at the chain's first block, which LP Ranger's rules
  * forbid. `spansOf` cuts a range of blocks into spans no wider than an
  * endpoint takes in one log search: g4mm4's endpoint refuses a span wider
- * than 10,000 blocks, and LP Ranger asks for 9,000 at most.
+ * than 10,000 blocks, and LP Ranger asks for 9,000 at most. A log names
+ * its block but not the block's time, which a row for Summ needs, so
+ * `blockTimes` reads the time of each block the logs fall in, once each.
  *
  * How: `blockAtOrAfter` halves the range from block 0 to the latest
  * block, reading the time of the block at the middle each time, about 22
@@ -68,4 +70,27 @@ export function spansOf(fromBlock, toBlock, width) {
       toBlock: Math.min(start + width - 1, toBlock),
     });
   return spans;
+}
+
+/**
+ * The time of each of a set of blocks, each block read once, in sets.
+ *
+ * @param {{askAll: function}} paced - The paced provider
+ * @param {number[]} numbers - The blocks, once or more each
+ * @param {number} batchSize - The most blocks one turn asks for
+ * @returns {Promise<Map<number, number>>} Each block's time, in seconds
+ *   since 1970, by number
+ */
+export async function blockTimes(paced, numbers, batchSize) {
+  const unique = [...new Set(numbers)];
+  const times = new Map();
+  for (let start = 0; start < unique.length; start += batchSize) {
+    const batch = unique.slice(start, start + batchSize);
+    const blocks = await paced.askAll(
+      "getBlock",
+      batch.map((number) => [number]),
+    );
+    blocks.forEach((block, at) => times.set(batch[at], block.timestamp));
+  }
+  return times;
 }

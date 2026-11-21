@@ -1,0 +1,19 @@
+{
+  "templatePath": "/home/you/summ/summ-template.csv",
+  "lpRangerDir": "/home/you/code/lp-ranger/github-repo/lp-ranger",
+  "ownWallets": {
+    "0x1111111111111111111111111111111111111111": "Your other wallet's name in Summ"
+  },
+  "spamTokens": ["0x2222222222222222222222222222222222222222"],
+  "incomeTokens": ["0x3333333333333333333333333333333333333333"],
+  "summSymbols": {
+    "0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39": ["HEX"],
+    "0x57fde0a71132198BBeC939B98976993d8D89D225": ["HEX"],
+    "0xA0b73E1Ff0B80914AB6fe0444E65848C4C34450b": ["CRO", "CRONOS"]
+  },
+  "csvSymbols": {
+    "0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39": "HEX",
+    "0x57fde0a71132198BBeC939B98976993d8D89D225": "eHEX",
+    "0xCC05bf158202b4F461Ede8843d76dcd7Bbad07f2": "9mm-V3-POS"
+  }
+}

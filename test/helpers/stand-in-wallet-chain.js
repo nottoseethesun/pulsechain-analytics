@@ -101,18 +101,27 @@ function topicsMatch(topics, wanted) {
  *   `status`, `gasUsed`, `gasPrice`, `logs` and `pays`), and optionally
  *   `miner`, `baseFee` and `withdrawals` (`address`, `amount` in gwei)
  * @param {Object<string, bigint>} [description.balances] - Balances at
- *   block 0, by address in lower case
+ *   block 0, by address, in any case
  * @param {Array<{address: string, block: number, amount: bigint}>}
  *   [description.unaccounted] - Changes of balance no transaction,
  *   withdrawal or tip makes, for the tests of what cannot be explained
  * @param {Object<string, object>} [description.contracts] - Contracts by
- *   address in lower case: `symbol` (an answer's hex), `decimals` (hex),
+ *   address, in any case: `symbol` (an answer's hex), `decimals` (hex),
  *   or `refuses`, a list of the selectors it refuses
  * @param {number} [description.spanLimit] - The widest log search taken
  * @returns {object} The stand-in, with an ethers provider's methods, and
  *   `requests`, a count of the requests by method
  */
 export function standInWalletChain(description) {
+  const byLowerCase = (object) =>
+    Object.fromEntries(
+      Object.entries(object ?? {}).map(([address, value]) => [
+        address.toLowerCase(),
+        value,
+      ]),
+    );
+  const balances = byLowerCase(description.balances);
+  const contracts = byLowerCase(description.contracts);
   const requests = {};
   const count = (method) => {
     requests[method] = (requests[method] ?? 0) + 1;
@@ -243,7 +252,7 @@ export function standInWalletChain(description) {
     },
     async getBalance(address, number) {
       count("getBalance");
-      let balance = description.balances?.[address.toLowerCase()] ?? 0n;
+      let balance = balances[address.toLowerCase()] ?? 0n;
       for (const at of numbers())
         if (at <= number) balance += changeIn(at, address);
       for (const extra of description.unaccounted ?? [])
@@ -273,7 +282,7 @@ export function standInWalletChain(description) {
     },
     async call({ to, data }) {
       count("call");
-      const contract = description.contracts?.[to.toLowerCase()];
+      const contract = contracts[to.toLowerCase()];
       if (contract === undefined) return "0x";
       if ((contract.refuses ?? []).includes(data))
         throw Object.assign(new Error("execution reverted"), {
