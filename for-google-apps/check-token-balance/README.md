@@ -43,7 +43,7 @@ program that runs JavaScript outside a browser, so it answers as
 line. It needs no wrapper: a Node program imports it directly. npm, Node's
 package manager, installs the repo's packages.
 
-From the repo's top folder, after `npm ci` (Node 22 or later):
+From the repo's top folder, after `npm ci` (Node 24 or later):
 
 ```bash
 node for-google-apps/check-token-balance/fetch-amount-of-token-transferred.js <transaction> <token> <wallet>

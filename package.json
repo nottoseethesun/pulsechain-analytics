@@ -43,6 +43,6 @@
   "author": "",
   "license": "ISC",
   "engines": {
-    "node": ">=22"
+    "node": ">=24"
   }
 }
