@@ -47,7 +47,8 @@ import { blockAtOrAfter } from "../wallet-history/blocks.js";
 import { parseSummResults } from "./summ-results.js";
 import { readThroughLpRanger } from "./lp-ranger.js";
 import { sweepWallet } from "./sweep.js";
-import { secondsOfDay, secondsOfTime } from "./times.js";
+import { dayStartSeconds } from "crypto-price-fetchers/lib/calendar-day";
+import { secondsOfTime } from "./times.js";
 
 /** One day, in seconds. */
 const DAY = 86400;
@@ -102,7 +103,7 @@ function walletArgument(value) {
  * @throws {InvalidArgumentError} When it is no real day
  */
 function dayArgument(value) {
-  const seconds = secondsOfDay(value);
+  const seconds = dayStartSeconds(value);
   if (seconds === null)
     throw new InvalidArgumentError(
       `"${value}" is not a day written as YYYY-MM-DD.`,

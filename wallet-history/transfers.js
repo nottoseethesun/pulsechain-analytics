@@ -109,7 +109,8 @@ export async function walletTransferLogs(
     for (const log of answers.flat())
       found.set(`${log.transactionHash} ${log.index}`, log);
   }
-  return [...found.values()].sort(
-    (a, b) => a.blockNumber - b.blockNumber || a.index - b.index,
-  );
+  return [...found.values()].sort((a, b) => {
+    const byBlock = a.blockNumber - b.blockNumber;
+    return byBlock !== 0 ? byBlock : a.index - b.index;
+  });
 }

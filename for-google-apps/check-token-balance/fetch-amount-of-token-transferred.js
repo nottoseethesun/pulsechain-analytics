@@ -45,6 +45,7 @@ import {
   openScriptFunctions,
   runScriptCommandLine,
 } from "crypto-price-fetchers/apps-script-runner";
+import { endQuietlyWhenOutputCloses } from "crypto-price-fetchers/lib/closed-output";
 
 /** The Sheets script this runs. */
 export const SHEETS_SCRIPT = new URL(
@@ -161,5 +162,6 @@ export function runCommandLine(argv, deps = {}) {
 }
 
 if (isEntryPoint(import.meta.url)) {
+  endQuietlyWhenOutputCloses();
   process.exitCode = await runCommandLine(process.argv);
 }

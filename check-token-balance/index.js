@@ -32,6 +32,7 @@ import {
   formatBalancePlain,
   formatBalanceWithCommas,
 } from "./format-balance.js";
+import { endQuietlyWhenOutputCloses } from "crypto-price-fetchers/lib/closed-output";
 
 /** The rpc endpoint when config.json names none: g4mm4's public PulseChain endpoint. */
 const FALLBACK_RPC = "https://rpc-pulsechain.g4mm4.io";
@@ -161,6 +162,7 @@ async function printBalances(options) {
   }
 }
 
+endQuietlyWhenOutputCloses();
 await buildBalanceCommand(defaultRpc())
   .action(async (options, command) => {
     if (options.block === undefined && options.date === undefined) {

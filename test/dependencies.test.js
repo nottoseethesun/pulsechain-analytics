@@ -1,8 +1,9 @@
 /**
  * Tests of how pulsechain-analytics installs crypto-price-fetchers: from
- * GitHub, following its main branch or its latest release, at the top and
- * in `chart-price-ratio/` alike, with the versions tool,
- * `npm run github-project-deps`, that switches between the two.
+ * GitHub, following its main branch or its latest release, at the top, in
+ * `chart-price-ratio/` and in `check-token-balance/` alike, with the
+ * versions tool, `npm run github-project-deps`, that switches between the
+ * two.
  * @module test/dependencies.test
  */
 
@@ -38,6 +39,13 @@ describe("crypto-price-fetchers", () => {
   it("is installed the same way by the ratio chart, which opens the DexTools key with it", () => {
     assert.equal(
       readPackage("chart-price-ratio").dependencies["crypto-price-fetchers"],
+      readPackage().dependencies["crypto-price-fetchers"],
+    );
+  });
+
+  it("is installed the same way by the balance checker, which checks its days and url with it", () => {
+    assert.equal(
+      readPackage("check-token-balance").dependencies["crypto-price-fetchers"],
       readPackage().dependencies["crypto-price-fetchers"],
     );
   });

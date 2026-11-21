@@ -491,8 +491,8 @@ argument, which the shell's history would keep.
 ## crypto-price-fetchers
 
 This repo installs [crypto-price-fetchers](https://github.com/nottoseethesun/crypto-price-fetchers)
-from GitHub, as a dependency that `npm install` installs, at the top and in
-`chart-price-ratio/`. It gives the runner that runs the Sheets script under
+from GitHub, as a dependency that `npm install` installs, at the top, in
+`chart-price-ratio/` and in `check-token-balance/`. It gives the runner that runs the Sheets script under
 Node (`crypto-price-fetchers/apps-script-runner`), the key store
 (`crypto-price-fetchers/api-key-store`), the GeckoTerminal client the ratio
 chart asks through (`crypto-price-fetchers/dex-prices/geckoterminal`),
@@ -500,19 +500,25 @@ which keeps within a budget of requests and sends a request refused as too
 many again after its waits, the Summ csv utility the Summ sweep writes its
 csv through (`crypto-price-fetchers/summ-csv`), `messageOf`, which gives
 the Summ sweep's command line the message of what it catches
-(`crypto-price-fetchers/lib/message-of`), the security lint's rule
-against printing a secret
-(`crypto-price-fetchers/eslint-rules/no-secret-logging`), and the bin
+(`crypto-price-fetchers/lib/message-of`), the lint rules against printing
+a secret (`crypto-price-fetchers/eslint-rules/no-secret-logging`) and
+against a default made with `||`
+(`crypto-price-fetchers/eslint-rules/no-or-default`), the bin
 `run-actionlint`, which runs actionlint, the checker of GitHub Actions
-workflow files, from its official release, refused unless its SHA-256 is
-the one crypto-price-fetchers pins.
+workflow files, from its official release, refused unless its SHA-256 and
+its program's are the ones crypto-price-fetchers pins, the helpers the
+command lines check a day and an url with and end quietly with when their
+output closes (`crypto-price-fetchers/lib/calendar-day`, `…/lib/http-url`,
+`…/lib/closed-output`), and the checks the tests make of each command
+line's help and of the repo's tracked files
+(`crypto-price-fetchers/lib/command-line-help`, `…/lib/repo-checks`).
 
-Both `package.json` files name its main branch (`#main`), the same ref (a
-test holds them equal), and each `package-lock.json` keeps the commit
+The three `package.json` files name its main branch (`#main`), the same ref
+(a test holds them equal), and each `package-lock.json` keeps the commit
 installed, which `npm ci` installs. A change there reaches this repo once
 the lockfiles are made again. crypto-price-fetchers' versions tool does
 that, and this repo runs it as `npm run github-project-deps`: `-- main`
-takes main's newest commit, and `-- release` switches both to the latest
+takes main's newest commit, and `-- release` switches all three to the latest
 release (`#semver:*`), its highest version tag. The tool sets the ref,
 makes each lockfile again from a fresh `node_modules`, and puts every
 `package.json` and lockfile back if an install fails.

@@ -113,6 +113,7 @@ import {
   tooFewPointsMessage,
 } from "./ratio-output.js";
 import { fetchSeries, ratioRows, tokenNames } from "./ratio-series.js";
+import { endQuietlyWhenOutputCloses } from "crypto-price-fetchers/lib/closed-output";
 
 /**
  * Reads config.json, beside this file, or stops the run when it cannot.
@@ -194,6 +195,7 @@ async function chartRatio(settings) {
 
 const config = readConfig();
 
+endQuietlyWhenOutputCloses();
 await buildRatioCommand(config)
   .action(async (tokenA, tokenB, interval, options, command) => {
     const settings = ratioSettings(tokenA, tokenB, interval, options);

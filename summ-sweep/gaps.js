@@ -172,9 +172,10 @@ function finish(found, { categories, flow, later }) {
  * @returns {object[]} The rows, sorted
  */
 export function sortRows(rows) {
-  return [...rows].sort(
-    (a, b) => a.timestamp - b.timestamp || a.id.localeCompare(b.id),
-  );
+  return [...rows].sort((a, b) => {
+    const byTime = a.timestamp - b.timestamp;
+    return byTime !== 0 ? byTime : a.id.localeCompare(b.id);
+  });
 }
 
 /**
