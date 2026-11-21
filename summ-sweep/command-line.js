@@ -41,6 +41,7 @@ import {
   summCsvText,
   writeSummCsv,
 } from "crypto-price-fetchers/summ-csv";
+import { messageOf } from "crypto-price-fetchers/lib/message-of";
 import { pacedProvider } from "../wallet-history/paced-provider.js";
 import { blockAtOrAfter } from "../wallet-history/blocks.js";
 import { parseSummResults } from "./summ-results.js";
@@ -363,9 +364,7 @@ export async function runSummSweep(argv, deps = {}) {
     });
   } catch (thrown) {
     if (thrown instanceof CommanderError) return thrown.exitCode;
-    stderr.write(
-      `${thrown instanceof Error ? thrown.message : String(thrown)}\n`,
-    );
+    stderr.write(`${messageOf(thrown)}\n`);
     return 1;
   }
   return 0;
