@@ -54,7 +54,7 @@ function yLabelFormat(range) {
     let formatted = value.toFixed(precision);
     formatted = formatted.replace(/0+$/, "");
     if (formatted.endsWith(".")) formatted = formatted.slice(0, -1);
-    return formatted || "0";
+    return formatted;
   };
 }
 
