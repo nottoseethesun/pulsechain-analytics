@@ -67,6 +67,10 @@ versions tool, which this repo runs as
 `#main` or `#semver:*` (the latest release) and makes both lockfiles
 again; the tool lives there, and this repo keeps no copy.
 
+The Summ sweep's command line writes what it catches through
+crypto-price-fetchers' `messageOf` (`crypto-price-fetchers/lib/message-of`);
+this repo keeps no copy of it.
+
 The ratio chart asks GeckoTerminal through crypto-price-fetchers' client
 (`crypto-price-fetchers/dex-prices/geckoterminal`), which
 `chart-price-ratio/gecko-terminal.js` shapes for the chart; this repo keeps

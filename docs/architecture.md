@@ -480,8 +480,10 @@ Node (`crypto-price-fetchers/apps-script-runner`), the key store
 chart asks through (`crypto-price-fetchers/dex-prices/geckoterminal`),
 which keeps within a budget of requests and sends a request refused as too
 many again after its waits, the Summ csv utility the Summ sweep writes its
-csv through (`crypto-price-fetchers/summ-csv`), and the security lint's
-rule against printing a secret
+csv through (`crypto-price-fetchers/summ-csv`), `messageOf`, which gives
+the Summ sweep's command line the message of what it catches
+(`crypto-price-fetchers/lib/message-of`), and the security lint's rule
+against printing a secret
 (`crypto-price-fetchers/eslint-rules/no-secret-logging`).
 
 Both `package.json` files name its main branch (`#main`), the same ref (a
