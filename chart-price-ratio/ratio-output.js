@@ -3,35 +3,53 @@
  * the last ten ratios and the current one, and the CSV.
  * @module chart-price-ratio/ratio-output
  *
- * The chart needs `MIN_CHART_POINTS` points or more: its x-axis spaces four
- * to ten dates under its columns, each date ten characters wide, or
- * sixteen with its hour, so fewer points leave the dates no room. A run
- * with more than one point and fewer than that stops before it prints,
- * with `tooFewPointsMessage`; a run of one point, a current price, prints
- * no chart.
+ * The chart draws one column for each point, and spans at least
+ * `MIN_CHART_COLUMNS` columns: its x-axis spaces four to ten dates under
+ * its columns, each date ten characters wide, or sixteen with its hour, and
+ * fewer columns leave the dates no room. A series of fewer points is drawn
+ * wider: each point takes the same number of columns, and the columns
+ * between two points step from the one's ratio to the other's, so the line
+ * joins them straight. A run of one point, a current price, prints no
+ * chart.
  */
 
 import asciichart from "asciichart";
 import fs from "fs";
 import { generateNiceTicks } from "./generateNiceTicks.js";
 
-/** The fewest points the chart draws. */
-export const MIN_CHART_POINTS = 90;
+/** The fewest columns the chart is drawn across. */
+export const MIN_CHART_COLUMNS = 90;
 
 /**
- * Says why a run of too few points draws no chart, and what gives more.
- *
- * @param {number} count - The points the run has
- * @param {string} interval - The interval asked: hourly, daily or weekly
- * @returns {string} The message
+ * The days of daily candles GeckoTerminal's free api serves for a pool
+ * older than that: 184, as it gave on 2026-11-21. A weekly chart from it
+ * has at most this many days' worth of points.
  */
-export function tooFewPointsMessage(count, interval) {
-  const more = {
-    weekly: "A shorter interval, daily or hourly, gives more.",
-    daily: "The hourly interval gives more.",
-    hourly: "The pools have too little history for a chart.",
-  }[interval];
-  return `Only ${count} points could be worked out, too few to chart: the chart needs at least ${MIN_CHART_POINTS}. ${more}`;
+export const GECKOTERMINAL_FREE_DAYS = 184;
+
+/**
+ * The columns the chart draws a series across: the points themselves, or,
+ * for a series too short to span `MIN_CHART_COLUMNS`, each point widened to
+ * the same number of columns, with the columns between two points stepping
+ * from the one's ratio to the other's.
+ *
+ * @param {Array<number>} ratios - The ratios, oldest first, at least two
+ * @returns {{columns: Array<number>, width: number}} The columns' values, and the columns from one point to the next
+ */
+export function chartColumns(ratios) {
+  const width = Math.max(
+    1,
+    Math.ceil((MIN_CHART_COLUMNS - 1) / (ratios.length - 1)),
+  );
+  const columns = ratios.slice(0, -1).flatMap((ratio, i) => {
+    const next = ratios[i + 1];
+    return Array.from(
+      { length: width },
+      (_, step) => ratio + ((next - ratio) * step) / width,
+    );
+  });
+  columns.push(ratios[ratios.length - 1]);
+  return { columns, width };
 }
 
 /**
@@ -59,30 +77,30 @@ function yLabelFormat(range) {
 }
 
 /**
- * Builds the x-axis' line: sparse dates, or dates and hours, under the
- * chart's columns.
+ * Builds the x-axis' line: sparse dates, or dates and hours, each under the
+ * column of the point it names.
  *
  * @param {string} interval - The interval: hourly labels carry the hour
- * @param {Array<number>} chronologicalRatios - The ratios, oldest first
- * @param {Array<number>} chronologicalTimestamps - Their times, oldest first
+ * @param {Array<number>} chronologicalTimestamps - The points' times, oldest first
+ * @param {number} width - The columns from one point to the next (`chartColumns`)
  * @returns {string} The labels, spaced to their columns
  */
-function xAxisLine(interval, chronologicalRatios, chronologicalTimestamps) {
-  const maxLabels = 10;
-  const minLabels = 4;
-  const labelCount = Math.min(
-    maxLabels,
-    Math.max(minLabels, Math.ceil(chronologicalRatios.length / 30)),
-  );
-  const step = Math.floor((chronologicalRatios.length - 1) / (labelCount - 1));
+function xAxisLine(interval, chronologicalTimestamps, width) {
+  const points = chronologicalTimestamps.length;
+  const columns = (points - 1) * width + 1;
+  const labelCount = Math.min(points, 10, Math.max(4, Math.ceil(columns / 30)));
+  const step = Math.floor((points - 1) / (labelCount - 1));
 
   const labels = [];
   for (let i = 0; i < labelCount - 1; i++) {
-    labels.push({ idx: i * step, ts: chronologicalTimestamps[i * step] });
+    labels.push({
+      idx: i * step * width,
+      ts: chronologicalTimestamps[i * step],
+    });
   }
   labels.push({
-    idx: chronologicalRatios.length - 1,
-    ts: chronologicalTimestamps[chronologicalTimestamps.length - 1],
+    idx: (points - 1) * width,
+    ts: chronologicalTimestamps[points - 1],
   });
 
   const formatLabel = (ts) => {
@@ -100,8 +118,9 @@ function xAxisLine(interval, chronologicalRatios, chronologicalTimestamps) {
   for (let i = 0; i < labels.length; i++) {
     const { idx } = labels[i];
     const text = labelTexts[i];
-    const padding = idx - prevEnd;
-    xAxis += " ".repeat(padding) + text;
+    // A label that would run into the one before it is left out
+    if (idx < prevEnd + 1 && i > 0) continue;
+    xAxis += " ".repeat(idx - prevEnd) + text;
     prevEnd = idx + text.length;
   }
   return xAxis;
@@ -115,6 +134,7 @@ function xAxisLine(interval, chronologicalRatios, chronologicalTimestamps) {
  * @param {Array<number>} chronologicalTimestamps - Their times, oldest first
  */
 function printChart(interval, chronologicalRatios, chronologicalTimestamps) {
+  const { columns, width } = chartColumns(chronologicalRatios);
   const minRatio = Math.min(...chronologicalRatios);
   const maxRatio = Math.max(...chronologicalRatios);
   const formatYRaw = yLabelFormat(maxRatio - minRatio);
@@ -135,23 +155,18 @@ function printChart(interval, chronologicalRatios, chronologicalTimestamps) {
     format: formatY,
   };
 
-  const chartLines = asciichart
-    .plot(chronologicalRatios, chartConfig)
-    .split("\n");
+  const chartLines = asciichart.plot(columns, chartConfig).split("\n");
   chartLines.forEach((line) => console.log(line));
 
   const yTickWidth = maxLabelLength + 2;
-  const xAxis = xAxisLine(
-    interval,
-    chronologicalRatios,
-    chronologicalTimestamps,
-  );
+  const xAxis = xAxisLine(interval, chronologicalTimestamps, width);
   console.log(" ".repeat(yTickWidth) + xAxis);
 }
 
 /**
- * Prints the ratios: the title, the chart or a note that there is one
- * point, the last ten and the current one, and writes the CSV when asked.
+ * Prints the ratios: the title, for a weekly chart from GeckoTerminal the
+ * most points it can have, the chart or a note that there is one point, the
+ * last ten and the current one, and writes the CSV when asked.
  *
  * @param {Object} run - The run's settings
  * @param {Array<string>} names - Token A's name and token B's
@@ -168,6 +183,12 @@ export function printRatios(run, names, source, { rows, ratios, timestamps }) {
     `\n${tokenAName} / ${tokenBName} ratio (${intervalText}, ${pointsText}) - Source: ${source}`,
   );
   console.log(`C.A.: ${run.tokenA} / ${run.tokenB}\n`);
+  if (run.interval === "weekly" && source.startsWith("GeckoTerminal")) {
+    const most = Math.ceil(GECKOTERMINAL_FREE_DAYS / run.weeklyResampleDays);
+    console.log(
+      `GeckoTerminal's free api serves about the last ${GECKOTERMINAL_FREE_DAYS} days of candles, so the weekly chart shows at most ${most} points.\n`,
+    );
+  }
 
   if (ratios.length > 1) {
     printChart(run.interval, ratios, timestamps);

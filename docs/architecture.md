@@ -147,14 +147,15 @@ prices, even when no pool holds both:
    picks the y-axis' values), the last ten ratios and the current one, and
    writes a CSV when asked.
 
-The chart needs at least 90 points: its x-axis spaces four to ten dates
+The chart spans at least 90 columns: its x-axis spaces four to ten dates
 under its columns, each ten characters wide, or sixteen with the hour, and
-fewer points leave them no room. A run with more than one point and fewer
-than 90 stops before it prints anything, saying so, and naming the
-interval that gives more points; one point, a current price, prints no
-chart. GeckoTerminal's public api serves about the last 184 days of
-candles, which make 184 daily points but at most 27 weekly ones, so the
-weekly interval charts only from an api that serves more history.
+fewer columns leave them no room. A series of fewer points is drawn wider:
+each point takes the same number of columns, and the columns between two
+points step from the one's ratio to the other's, so the line joins them
+straight (`chartColumns`). One point, a current price, prints no chart.
+GeckoTerminal's free api serves about the last 184 days of candles, which
+make 184 daily points but at most 27 weekly ones; a weekly run from
+GeckoTerminal says so before its chart.
 
 `pulse-token-ratio.js` reads `config.json` and runs the command line, which
 `ratio-command.js` declares with commander, the package that reads a

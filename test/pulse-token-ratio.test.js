@@ -252,8 +252,8 @@ describe("pulse-token-ratio.js, reading GeckoTerminal's candles, which come newe
     const run = runChart([TOKEN_A, TOKEN_B, "weekly"], {
       answers: geckoAnswers(CLOSES_A, closesB),
     });
-    assert.equal(run.status, 1);
-    assert.match(run.stderr, /Only 15 points could be worked out/);
+    assert.equal(run.status, 0, run.stderr);
+    assert.match(run.stdout, /ratio \(weekly, 15 points\)/);
   });
 
   it("charts day by day when no interval is given, as config.json sets", () => {
@@ -265,7 +265,7 @@ describe("pulse-token-ratio.js, reading GeckoTerminal's candles, which come newe
   });
 });
 
-describe("pulse-token-ratio.js, with too few points to chart", () => {
+describe("pulse-token-ratio.js, with a series of few points", () => {
   /**
    * A number of days' closes for each token's pool.
    *
@@ -278,15 +278,29 @@ describe("pulse-token-ratio.js, with too few points to chart", () => {
     };
   }
 
-  it("stops before printing, with exit code 1, when the chart would have fewer than 90 points", () => {
+  it("draws three points with each widened across the chart, a date under each", () => {
+    const run = runChart([TOKEN_A, TOKEN_B, "daily"], daysOfCandles(3));
+    assert.equal(run.status, 0, run.stderr);
+    assert.match(run.stdout, /ratio \(daily, 3 points\)/);
+    const axis = run.stdout
+      .split("\n")
+      .find((line) => /^ +\d{4}-\d{2}-\d{2}/.test(line));
+    assert.deepEqual(axis.trim().split(/ +/), [
+      "2026-01-01",
+      "2026-01-02",
+      "2026-01-03",
+    ]);
+    // Two steps of 45 columns between the first point and the last: 91
+    // columns in all, with each date under its point's column
+    assert.equal(axis.indexOf("2026-01-03") - axis.indexOf("2026-01-01"), 90);
+    assert.equal(axis.indexOf("2026-01-02") - axis.indexOf("2026-01-01"), 45);
+  });
+
+  it("charts 89 points", () => {
     const run = runChart([TOKEN_A, TOKEN_B, "daily"], daysOfCandles(89));
-    assert.equal(run.status, 1);
-    assert.match(
-      run.stderr,
-      /Only 89 points could be worked out, too few to chart: the chart needs at least 90\. The hourly interval gives more\.\n/,
-    );
-    assert.doesNotMatch(run.stdout, /ratio \(|Current ratio/);
-    assert.doesNotMatch(run.stderr, /Fatal error/);
+    assert.equal(run.status, 0, run.stderr);
+    assert.match(run.stdout, /ratio \(daily, 89 points\)/);
+    assert.match(run.stdout, /Current ratio: /);
   });
 
   it("charts 90 points", () => {
@@ -296,14 +310,16 @@ describe("pulse-token-ratio.js, with too few points to chart", () => {
     assert.match(run.stdout, /Current ratio: /);
   });
 
-  it("says a shorter interval gives more points, when the weekly chart has too few", () => {
+  it("says a weekly chart from GeckoTerminal shows at most 27 points, and draws its points", () => {
     // A hundred days are fifteen weeks.
     const run = runChart([TOKEN_A, TOKEN_B, "weekly"], daysOfCandles(100));
-    assert.equal(run.status, 1);
+    assert.equal(run.status, 0, run.stderr);
+    assert.match(run.stdout, /ratio \(weekly, 15 points\)/);
     assert.match(
-      run.stderr,
-      /Only 15 points could be worked out, too few to chart: the chart needs at least 90\. A shorter interval, daily or hourly, gives more\.\n/,
+      run.stdout,
+      /GeckoTerminal's free api serves about the last 184 days of candles, so the weekly chart shows at most 27 points\.\n/,
     );
+    assert.match(run.stdout, /Current ratio: /);
   });
 });
 
@@ -333,8 +349,9 @@ describe("pulse-token-ratio.js, its command line", () => {
     const run = runChart([TOKEN_A, TOKEN_B, "weekly", "--weekly-days=14"], {
       answers: geckoAnswers(CLOSES_A, CLOSES_B),
     });
-    assert.equal(run.status, 1);
-    assert.match(run.stderr, /Only 8 points could be worked out/);
+    assert.equal(run.status, 0, run.stderr);
+    assert.match(run.stdout, /ratio \(weekly, 8 points\)/);
+    assert.match(run.stdout, /the weekly chart shows at most 14 points\./);
   });
 
   it("refuses an address that is not a contract's, naming the argument, asking nothing", () => {
