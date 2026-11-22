@@ -159,12 +159,19 @@ export function tokenAnswers(symbol) {
 /**
  * The chain of the history.
  *
+ * @param {Object<string, bigint[]>} [positions] - The coins each position
+ *   was owed before the history, by NFT id, which the position manager's
+ *   `positions` gives; without them, the position manager answers no call
  * @returns {object} A stand-in chain
  */
-export function sweepChain() {
+export function sweepChain(positions) {
   return standInWalletChain({
     latest: 1000,
-    contracts: { [HEX]: tokenAnswers("HEX"), [TKN]: tokenAnswers("TKN") },
+    contracts: {
+      [HEX]: tokenAnswers("HEX"),
+      [TKN]: tokenAnswers("TKN"),
+      ...(positions === undefined ? {} : { [PM]: { positions } }),
+    },
     blocks: {
       10: {
         transactions: [

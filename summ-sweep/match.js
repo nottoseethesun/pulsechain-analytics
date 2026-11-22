@@ -19,9 +19,10 @@
  * contract's own symbol in capitals; a token whose contract gave no
  * symbol, and that the list leaves out, matches nothing. A row's incoming
  * amounts are the wallet's when the row's receiver is the wallet, or it
- * names none, or the row is not a transfer, since a trade lists both its
- * sides; a transfer between two wallets lists both sides, and only the
- * wallet's side is its. Within a transaction and a direction, each leg is
+ * names none, and its outgoing amounts when its sender is, or it names
+ * none. Summ's trade rows name the wallet on both sides, so both their
+ * sides are the wallet's; a transfer between two wallets lists both sides,
+ * and only the wallet's side is its. Within a transaction and a direction, each leg is
  * matched to one of Summ's amounts first; then the legs of one token left
  * over are added up and matched to one amount, as Summ holds a swap
  * routed through more than one pool as one amount. Summ prints an NFT's

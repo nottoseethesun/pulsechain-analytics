@@ -118,7 +118,9 @@
  *    the two tokens' prices are paired by time.
  *  - Y-scale automatically computes unique tick values using a nice number algorithm.
  *  - X-scale shows sparse timestamps perfectly aligned with chart columns — chronological order (oldest left → newest right).
- *  - CSV includes columns: date, price_tokenA, price_tokenB, ratio.
+ *  - CSV includes columns: date, price_tokenA, price_tokenB, ratio. The date
+ *    is the day, YYYY-MM-DD in UTC, and for an hourly run the hour too,
+ *    YYYY-MM-DD HH:MM, as the chart's "Recent ratios" lines give it.
  *  - Edit config.json for persistent changes; use flags for one-off overrides.
  *  - Exit codes: 0 when the ratios were printed; 1 when none were, from a
  *    mistake in the arguments or in config.json, no source chosen, no
@@ -130,18 +132,18 @@ import { fileURLToPath } from "url";
 
 import { readSettingsFile } from "crypto-price-fetchers/lib/settings-file";
 import { keySaved, openKey, SAVE_KEY_HELP } from "./api-keys.js";
-import { buildRatioCommand, ratioSettings } from "./ratio-command.js";
+import { ratioCommandFrom, ratioSettings } from "./ratio-command.js";
 import { printRatios } from "./ratio-output.js";
 import { fetchSeries, ratioRows } from "./ratio-series.js";
 import { askAtTerminal, chooseSource } from "./ratio-source.js";
 import { endQuietlyWhenOutputCloses } from "crypto-price-fetchers/lib/closed-output";
 
 /**
- * Reads config.json, beside this file, with crypto-price-fetchers'
- * `readSettingsFile`, and builds the command line from it, which checks the
- * settings against their JSON Schema first (`ratio-command.js`); or stops
- * the run, with exit code 1 and every problem listed, when either cannot be
- * done.
+ * Builds the command line from config.json, beside this file, read with
+ * crypto-price-fetchers' `readSettingsFile` and checked against its JSON
+ * Schema (`ratio-command.js`). When the file is refused, `--help` still
+ * answers, and every other run stops, with exit code 1 and every problem
+ * listed.
  *
  * @returns {import('commander').Command} The command, without its action
  */
@@ -150,12 +152,9 @@ function ratioCommand() {
     path.dirname(fileURLToPath(import.meta.url)),
     "config.json",
   );
-  try {
-    return buildRatioCommand(readSettingsFile(configPath, { required: true }));
-  } catch (err) {
-    console.error(`Error: ${err.message}`);
-    process.exit(1);
-  }
+  return ratioCommandFrom(() =>
+    readSettingsFile(configPath, { required: true }),
+  );
 }
 
 /** Warns, as a run starts, when no DexTools api key is saved. */
@@ -203,7 +202,7 @@ async function chartRatio(settings) {
   const series = await fetchSeries(run);
   if (series === null) return false;
 
-  const ratioSeries = ratioRows(series.dataA, series.dataB);
+  const ratioSeries = ratioRows(series.dataA, series.dataB, run.interval);
   if (ratioSeries.ratios.length === 0) {
     console.error("No valid ratio data could be computed.");
     return false;

@@ -38,8 +38,11 @@ export const NATIVE_TOKEN = "Pulse_Native_Gas_Token";
 
 /** What the help says after the options: examples and exit codes. */
 const HELP_AFTER = `
-The rpc endpoint's default comes from config.json beside index.js. A
-balance at a past block needs an endpoint that keeps past state.
+The rpc endpoint's default comes from config.json beside index.js. When
+config.json is refused, the help shows g4mm4's endpoint, the default
+written in settings.js, and any other run stops: on a mistake in its
+options when it has one, else on the file's problems. A balance at a past
+block needs an endpoint that keeps past state.
 
 Examples:
   A wallet's PLS and HEX at the start of 1 November 2026, UTC:

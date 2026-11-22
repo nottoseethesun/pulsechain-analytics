@@ -2,8 +2,8 @@
  * Tests of the ratio chart's command line as it takes config.json's
  * settings (`chart-price-ratio/ratio-command.js`), parsed in the test's
  * thread: the settings' JSON Schema, the parsers made from its kinds of
- * value, and the conflict of `--source` with a `useDexToolsOnly` the file
- * sets.
+ * value, the conflict of `--source` with a `useDexToolsOnly` the file
+ * sets, and the command built when the settings are refused.
  * @module test/ratio-command.test
  *
  * The runs of the chart itself are in `pulse-token-ratio.test.js` and
@@ -13,7 +13,10 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import { buildRatioCommand } from "../chart-price-ratio/ratio-command.js";
+import {
+  buildRatioCommand,
+  ratioCommandFrom,
+} from "../chart-price-ratio/ratio-command.js";
 
 /** The two tokens of a ratio. */
 const TOKEN_A = `0x${"a".repeat(40)}`;
@@ -114,5 +117,74 @@ describe("buildRatioCommand, with config.json's settings", () => {
       "moralis",
     ]);
     assert.equal(options.source, "moralis");
+  });
+});
+
+describe("buildRatioCommand, with text options", () => {
+  for (const option of [
+    "--csv-filename",
+    "--network",
+    "--chain",
+    "--moralis-chain",
+    "--subscription",
+    "--version",
+  ]) {
+    it(`refuses an empty ${option}, naming it`, () => {
+      const refused = parse({}, [option, ""]);
+      assert.equal(refused.code, "commander.invalidArgument");
+      assert.ok(refused.error.includes(option), refused.error);
+    });
+  }
+});
+
+describe("ratioCommandFrom, when config.json is refused", () => {
+  /**
+   * Parses an argument list with the command `ratioCommandFrom` builds from
+   * settings that cannot be read.
+   *
+   * @param {string[]} args - The arguments
+   * @returns {{code: string, error: string, out: string}} How the parse ended, and what it wrote
+   */
+  function parseRefused(args) {
+    let error = "";
+    let out = "";
+    const command = ratioCommandFrom(() => {
+      throw new Error(
+        "config.json → maxCandles must be a whole number above 0; it is 0",
+      );
+    })
+      .exitOverride()
+      .configureOutput({
+        writeOut: (text) => {
+          out += text;
+        },
+        writeErr: (text) => {
+          error += text;
+        },
+      })
+      .action(() => {});
+    try {
+      command.parse(["node", "pulse-token-ratio.js", ...args]);
+    } catch (thrown) {
+      return { code: thrown.code, error, out };
+    }
+    return { code: "parsed", error, out };
+  }
+
+  it("answers --help with the help, its defaults those written in ratio-command.js", () => {
+    const run = parseRefused(["--help"]);
+    assert.equal(run.code, "commander.helpDisplayed");
+    assert.match(run.out, /default: 1000/);
+  });
+
+  it("stops a run before its action, on the file's problems", () => {
+    const run = parseRefused([TOKEN_A, TOKEN_B]);
+    assert.equal(run.code, "commander.error");
+    assert.match(run.error, /maxCandles must be a whole number above 0/);
+  });
+
+  it("names a mistake in the arguments first", () => {
+    const run = parseRefused([TOKEN_A]);
+    assert.equal(run.code, "commander.missingArgument");
   });
 });

@@ -19,11 +19,12 @@
  * How: the legs are first matched whole (`matchLegs`). A coin of a collect
  * with principal whose whole leg matched is a split to fix. A coin whose
  * leg did not match is put back as two parts, the principal and the fee,
- * which are matched against Summ's legs still unmatched. A coin the
- * position manager paid as PLS, unwrapping the pool's WPLS, has no token
- * leg, since the payment is a call inside the transaction rather than a
- * Transfer log, and Summ's legs of PLS are not matched; such a coin is
- * handed back apart.
+ * which are matched against Summ's legs still unmatched. A coin of a
+ * collect with no principal is all fees: its legs are matched and booked
+ * as any other leg. A coin the position manager paid as PLS, unwrapping
+ * the pool's WPLS, with principal or without, has no token leg, since the
+ * payment is a call inside the transaction rather than a Transfer log, and
+ * Summ's legs of PLS are not matched; such a coin is handed back apart.
  *
  * Fit: the sweep lists the splits to fix in its report, for Claude to make
  * in Summ, and writes their income rows to the csv with the gap rows.
@@ -74,7 +75,8 @@ function feeRow(split, leg, wallet, symbol) {
 }
 
 /**
- * Sorts each coin of each collect with principal into Summ's three cases.
+ * Sorts each coin of each collect with principal into Summ's three cases,
+ * and hands back apart each coin the position manager paid as PLS.
  *
  * @param {object} work - What to reconcile
  * @param {object[]} work.splits - Each coin of each collect, from
@@ -90,7 +92,7 @@ function feeRow(split, leg, wallet, symbol) {
  *   Summ, each with Summ's leg; the income rows of their fees; the parts of
  *   the coins Summ did not hold whole, to be matched again; every leg of a
  *   coin with principal, which the parts stand for where Summ did not hold
- *   it whole; and the coins with principal paid as PLS, which have no leg
+ *   it whole; and the coins paid as PLS, which have no leg
  */
 export function sortSplits({ splits, legs, matches, wallet, csvSymbolOf }) {
   const fixes = [];
@@ -99,12 +101,12 @@ export function sortSplits({ splits, legs, matches, wallet, csvSymbolOf }) {
   const splitLegs = new Set();
   const paidAsCoin = [];
   for (const split of splits) {
-    if (split.principal === 0n) continue;
     const coinLegs = legsOfSplit(legs, split);
     if (coinLegs.length === 0) {
       paidAsCoin.push(split);
       continue;
     }
+    if (split.principal === 0n) continue;
     for (const leg of coinLegs) splitLegs.add(leg);
     const [first] = coinLegs;
     const summLeg = matches.get(first);

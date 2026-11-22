@@ -51,8 +51,8 @@ of daily candles, Moralis's. DexTools and Moralis are services that price
 tokens from the pools of decentralized exchanges. The keys are kept by the
 key store of
 crypto-price-fetchers, the owner's repo of code his projects share, which
-`npm ci` installs from GitHub, at the commit `package-lock.json` keeps: no
-other step installs it. This repo's `npm run api-keys` runs the key
+each of the three `npm ci` below installs from GitHub, at the commit its
+folder's `package-lock.json` keeps. This repo's `npm run api-keys` runs the key
 store's manager, and `npm run check` runs the gate below. From the repo's
 top folder:
 
@@ -143,13 +143,14 @@ owner's key file or password.
 | Test | What it covers |
 | ---- | -------------- |
 | `fetch-amount-of-token-transferred.test.js` | The module on ethers, a library for talking to Ethereum-style chains, against a stand-in chain. |
-| `fetch-amount-of-token-transferred-gs.test.js` | The Sheets script, run unchanged under Node. |
+| `fetch-amount-of-token-transferred-gs.test.js` | The Sheets script, run unchanged under Node; and `wrapper.gs`, against a stand-in of the deployed library, giving its amount and letting its error through. |
 | `fetch-amount-of-token-transferred-node-version.test.js` | The Sheets script's Node version, its command line included; its schema of the script's config object held to the script by crypto-price-fetchers' `configSchemaProblems`, and a `config.json` it refuses. |
 | `format-balance.test.js` | How the balance checker writes a balance. |
 | `check-token-balance.test.js` | The balance checker: its command line, each option checked as it is parsed, and a mistake refused, naming its option, before the chain is asked anything; and the real program, run against a stand-in PulseChain endpoint served on the computer: each balance read once at the block given, or at the last block made before the start of the date given, even when the day's first block is nearer that start, then written with commas and plain, and a failed read's exit code. |
-| `check-token-balance-settings.test.js` | The balance checker's settings (`check-token-balance/settings.js`): the committed `config.json` held to its schema, g4mm4's endpoint for a file that names none and, with a notice, for no file, a key no setting has and an endpoint that is no url refused, listing every problem; and a copy of the checker's files in a temp folder, run with a `config.json` beside it that is not JSON or names no url, stopping with exit code 1, naming the file or the setting, and reading the `config.json` beside it, not the one of the folder it runs in. |
-| `ratio-command.test.js` | The ratio chart's command line as it takes `config.json`'s settings, parsed in the test's thread: the committed file held to its schema and taken as the options' defaults, a `maxCandles` of 0 and several problems at once, nested settings among them, refused, and `--source` refused beside a `useDexToolsOnly` the file sets, as beside a typed one. |
-| `pulse-token-ratio.test.js` | The ratio chart, run as its owner runs it, reading GeckoTerminal's candles, against a stand-in GeckoTerminal, which lists candles newest first and makes none for a day in which nothing traded, as GeckoTerminal does, and a stand-in DexTools, with the DexTools key from a key file of the test's own: its prices, read oldest first, its recent and current ratios, its weekly points, its pairing of the two tokens' prices by time, a token's own prices when it is its pool's quote token, its fallback, its command line, its default interval, its exit codes, a series of few points drawn with each point widened, and the most points a weekly chart from GeckoTerminal can have, which a weekly run says. |
+| `check-token-balance-settings.test.js` | The balance checker's settings (`check-token-balance/settings.js`): the committed `config.json` held to its schema, g4mm4's endpoint for a file that names none and, with a notice, for no file, a key no setting has and an endpoint that is no url refused, listing every problem; and a copy of the checker's files in a temp folder, run with a `config.json` beside it that is not JSON or names no url, stopping with exit code 1, naming the file or the setting, after naming a mistake in an option first, and reading the `config.json` beside it, not the one of the folder it runs in. |
+| `ratio-command.test.js` | The ratio chart's command line as it takes `config.json`'s settings, parsed in the test's thread: the committed file held to its schema and taken as the options' defaults, a `maxCandles` of 0 and several problems at once, nested settings among them, refused, `--source` refused beside a `useDexToolsOnly` the file sets, as beside a typed one, an empty value refused for each option that takes text, and the command `ratioCommandFrom` builds when the settings are refused: its help, a run stopped on the settings' problems, and a mistake in the arguments named first. |
+| `pulse-token-ratio.test.js` | The ratio chart, run as its owner runs it, reading GeckoTerminal's candles, against a stand-in GeckoTerminal, which lists candles newest first and makes none for a day in which nothing traded, as GeckoTerminal does, and a stand-in DexTools, with the DexTools key from a key file of the test's own: its prices, read oldest first, its recent and current ratios, its weekly points, its pairing of the two tokens' prices by time, a token's own prices when it is its pool's quote token, its fallback, its command line, its default interval, its exit codes, a series of few points drawn with each point widened, and the most points a weekly chart from GeckoTerminal can have, which a weekly run says; and the rows' dates, with the hour in an hourly run (`ratioRows`). |
+| `refused-settings.test.js` | The ratio chart and the balance checker, run whole with a refused `config.json` handed to them by `helpers/stand-in-settings-preload.js`: each answers `--help` with its help, and stops any other run, with exit code 1, on the file's problems. |
 | `pulse-token-ratio-moralis.test.js` | The ratio chart reading Moralis's candles, against a stand-in Moralis, GeckoTerminal and DexTools, with the Moralis and DexTools keys from key files of the test's own: the deepest active pair that lists each token first, the two years of daily candles it reads unless `--moralis-days` names another span, its hourly and weekly charts, its fallback to DexTools when Moralis's candles price another token, and its stop when no pair lists a token first; and the choice of the source (`ratio-source.js`): the question asked when a Moralis key is saved, Enter taking Moralis, an answer asked again, `--source` in its place, the stop with no terminal to ask at, and `--source` refused with `--useDexToolsOnly` or with no Moralis key saved; and the question answered in a pseudo-terminal, on Linux: Enter taking Moralis, then the password, which the terminal never shows, and 2 taking GeckoTerminal, opening no key. |
 | `command-line-help.test.js` | Every command line's help, `--help` and `-h`, and its help into a pipe closed before it is written, which must end with exit code 0 and nothing on stderr: the Summ sweep's, the ratio chart's, the balance checker's, the Sheets script's Node version's, the key manager's, and those of the bins of crypto-price-fetchers the npm targets run, its versions tool and `run-actionlint`, each with its options, examples and exit codes, by crypto-price-fetchers' checks (`crypto-price-fetchers/lib/command-line-help`); and that its list holds every command line the repo runs, every bin of crypto-price-fetchers among them. |
 | `api-keys.test.js` | The keys `config.json` lists, the key manager, which saves and lists the api keys, and the copy of `unlock-api-keys.sh`, the script that keeps the password for a terminal. |
@@ -158,8 +159,8 @@ owner's key file or password.
 | `wallet-history.test.js` | The paced provider, the blocks of a range, the logs that name a wallet, the transactions it sent, their receipts and its tokens' facts, against a stand-in chain. |
 | `wallet-history-coin.test.js` | The PLS a wallet moved: the calls of a trace that pay it, the flows of its own transactions, and the payments from elsewhere its balance reveals, against a stand-in chain whose balances are worked out apart from the code tested. |
 | `summ-sweep.test.js` | The Summ sweep's reading of Summ's saved pages, its match of amounts in both forms Summ prints, the legs of a wallet's logs, and the match of the chain's legs with Summ's, a later match leaving out the Summ legs an earlier one used. |
-| `summ-sweep-splits.test.js` | The split of withdrawals from positions into principal and fees, a pool's coins ordered by their addresses as numbers, the collects it refuses to split, LP Ranger's records of another shape refused, and LP Ranger's tool run through a stand-in and as a real program. |
-| `summ-sweep-run.test.js` | The whole sweep, `sweepWallet`, against a stand-in chain: a split Summ holds whole and one it holds in parts, the gaps booked, a question's amount in whole tokens, no block read for its time that the search for the wallet's transactions already read, a withdrawal paid as PLS, and a change of balance no payment explains. |
+| `summ-sweep-splits.test.js` | The split of withdrawals from positions into principal and fees, a pool's coins ordered by their addresses as numbers, the collects it refuses to split, LP Ranger's records of another shape refused, and LP Ranger's tool run through a stand-in and as a real program; the coins paid as PLS handed back apart, with principal or without, and a token coin with no principal left to the match (`sortSplits`); and the coins each position was owed when the range began (`owedWhenRangeBegan`). |
+| `summ-sweep-run.test.js` | The whole sweep, `sweepWallet`, against a stand-in chain: a split Summ holds whole and one it holds in parts, the gaps booked, a question's amount in whole tokens, no block read for its time that the search for the wallet's transactions already read, a withdrawal paid as PLS, a position's first collect in the range reported when the position was owed coins as the range began, its coins asked about rather than booked, and a change of balance no payment explains. |
 | `summ-sweep-command.test.js` | The sweep's command line: the csv written through crypto-price-fetchers' Summ csv utility, with addresses in lower case, and the report in EIP-55's mixed case; neither file written when one path is taken; a mistake in an option refused as it is parsed, before anything is read; the chain's facts of the wrong kind and an owner's address whose checksum is wrong refused, every problem listed, before the chain is read; the committed top `config.json` and `summ-sweep/config-example.json` held to their schemas; and its help, with its exit codes. |
 | `summ-sweep-gap-rules.test.js` | The rules that book the legs Summ lacks outside a swap (a position's deposits, with the position's number and the PLS a deposit paid, NFTs, withdrawals and fees; wraps; spam; the owner's wallets; income tokens), and the question for each leg no rule books. |
 | `summ-sweep-gaps.test.js` | The rows of swaps, of tokens and of PLS, with only what Summ lacks; how much of a transaction Summ holds; where its gas goes; a transaction later than the time given as reached by Summ's sync; and the Fee rows and questions of transactions that moved no token. |
@@ -186,13 +187,19 @@ owner's key file or password.
   second (`moralisAnswers`). `runChartInTerminal` runs the chart in a
   pseudo-terminal, through util-linux's `script`, a program that runs a
   command in one, and types each reply once its prompt shows.
+- `stand-in-settings-preload.js`: a preload for `node --import` that
+  hands the ratio chart or the balance checker, run in a child process, a
+  settings file of the test's own, from the environment variable
+  `STAND_IN_SETTINGS`, since each reads the `config.json` beside its own
+  files, a file git keeps.
 - `known-bug.js`: declares a known-bug test.
 - `stand-in-wallet-chain.js`: a PulseChain endpoint held in memory for
   `wallet-history/`, built from the blocks a test describes: their
   transactions, logs, payments inside them, withdrawals and fee
   recipient. It answers block, log, count, balance, receipt, trace and
-  contract requests, takes an address in any case, refuses a log search
-  wider than its limit, and counts every request. Its balances come from
+  contract requests, the position manager's `positions` among them, with
+  the coins owed a test gives, takes an address in any case, refuses a log
+  search wider than its limit, and counts every request. Its balances come from
   the description, not from the code tested.
 - `summ-pages.js`: writes pages of Summ's results in the form Summ's
   connector returns them, for the Summ sweep to read.
@@ -237,7 +244,9 @@ Apps Script editor, against the real rpc endpoint: `testGetTokenTransferred`
 in the script, and `testGetTokenTransferred` and
 `testGetTokenTransferredNoCache` in `wrapper.gs`. The wrapper's tests call
 the deployed library, its caching function included. That function is not
-in the repo, so no Node test runs it.
+in the repo, so no Node test runs it; a Node test runs the wrapper itself
+against a stand-in library, and checks that it lets the library's error
+through.
 
 ---
 

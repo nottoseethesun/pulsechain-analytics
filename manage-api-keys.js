@@ -3,9 +3,10 @@
  * @module manage-api-keys
  *
  * What: lists the api keys of the services this project's `config.json`
- * names under `apiKeys` (DexTools, for the ratio chart's fallback), each
- * saved or not, never showing their characters, and asks for each one not
- * saved, keeping it encrypted in `api-keys.json` here, which git ignores.
+ * names under `apiKeys` (DexTools, for the ratio chart's fallback to
+ * current prices, and Moralis, for its candles), each saved or not, never
+ * showing their characters, and asks for each one not saved, keeping it
+ * encrypted in `api-keys.json` here, which git ignores.
  * `npm run api-keys -- set <service>` replaces one, and `check-password`
  * is what `unlock-api-keys.sh` runs; `--help` gives the rest.
  *

@@ -12,6 +12,11 @@
  * Note: You can optionally add as many wrapper functions as you want.
  * Also, if you suspect a problem with the caching, just use
  * the wrapper function below, `getTokenTransferredNoCache`.
+ *
+ * A wrapper lets the library's error through, as the library throws it: a
+ * failed read, or a transaction the chain does not know, shows in the cell
+ * as an error, with the library's message, never as a number that could be
+ * mistaken for an amount.
  */
 
 // The identifier Apps Script gives the library these wrappers call, once it
@@ -26,19 +31,17 @@
  * @param {string} txId Transaction ID (e.g., from cell L200).
  * @param {string} tokenAddress ERC-20 token address.
  * @param {string} walletAddress Wallet address to check.
- * @return {number} Transferred amount or 0 on error.
+ * @return {number} The amount the transaction sent the wallet, or 0 when
+ *   it sent none.
+ * @throws {Error} The library's error, when a read fails or the chain does
+ *   not know the transaction.
  */
 function getTokenTransferred(txId, tokenAddress, walletAddress) {
-  try {
-    return FetchTokenAmountTransferredSA.getTokenTransferredUseCache(
-      txId,
-      tokenAddress,
-      walletAddress,
-    );
-  } catch (e) {
-    console.error("Error in wrapper: " + e);
-    return 0; // Or a custom error message like "#ERROR!"
-  }
+  return FetchTokenAmountTransferredSA.getTokenTransferredUseCache(
+    txId,
+    tokenAddress,
+    walletAddress,
+  );
 }
 
 /**
@@ -49,24 +52,22 @@ function getTokenTransferred(txId, tokenAddress, walletAddress) {
  * @param {string} txId Transaction ID (e.g., from cell L200).
  * @param {string} tokenAddress ERC-20 token address.
  * @param {string} walletAddress Wallet address to check.
- * @return {number} Transferred amount or 0 on error.
+ * @return {number} The amount the transaction sent the wallet, or 0 when
+ *   it sent none.
+ * @throws {Error} The library's error, when a read fails or the chain does
+ *   not know the transaction.
  */
 function getTokenTransferredNoCache(txId, tokenAddress, walletAddress) {
-  try {
-    return FetchTokenAmountTransferredSA.getTokenTransferred(
-      txId,
-      tokenAddress,
-      walletAddress,
-    );
-  } catch (e) {
-    console.error("Error in wrapper: " + e);
-    return 0; // Or a custom error message like "#ERROR!"
-  }
+  return FetchTokenAmountTransferredSA.getTokenTransferred(
+    txId,
+    tokenAddress,
+    walletAddress,
+  );
 }
 
 /**
- * Test function to verify getTokenTransferred with example values.
- * Logs the result to the console.
+ * Test function to verify getTokenTransferredNoCache with example values,
+ * which asks the chain without the cache. Logs the result to the console.
  */
 function testGetTokenTransferredNoCache() {
   const txId =
@@ -75,29 +76,30 @@ function testGetTokenTransferredNoCache() {
   const walletAddress = "0xbCB167f16A1aA3ca3F483CC922967e9aCdEC405D";
   const result = getTokenTransferredNoCache(txId, tokenAddress, walletAddress);
   console.log(
-    "Test result for example transaction using function testGetTokenTransferred: " +
+    "Test result for example transaction, by getTokenTransferredNoCache: " +
       result,
   );
 }
 
 /**
- * Test function to verify getTokenTransferred with example values.
- * Logs the result to the console.
+ * Test function to verify getTokenTransferred with example values: it
+ * calls it twice, the first call asking the chain and keeping the answer
+ * in the library's cache, the second answered from the cache. Logs both
+ * results to the console, which are the same.
  */
 function testGetTokenTransferred() {
   const txId =
     "0xab9c6162b16c9e26149720420cb73c7d445d31b150cf448f3e91da13125b1bd8";
   const tokenAddress = "0x8a7FDcA264e87b6da72D000f22186B4403081A2a";
   const walletAddress = "0xbCB167f16A1aA3ca3F483CC922967e9aCdEC405D";
-  const result = getTokenTransferred(txId, tokenAddress, walletAddress);
+  const first = getTokenTransferred(txId, tokenAddress, walletAddress);
   console.log(
-    "Test result for example transaction, first time using function" +
-      "testGetTokenTransferredUseCache: " +
-      result,
+    "Test result for example transaction, first call of getTokenTransferred, which asks the chain: " +
+      first,
   );
+  const second = getTokenTransferred(txId, tokenAddress, walletAddress);
   console.log(
-    "Test result for example transaction, second time using function" +
-      "testGetTokenTransferredUseCache: " +
-      result,
+    "Test result for example transaction, second call of getTokenTransferred, which the cache answers: " +
+      second,
   );
 }

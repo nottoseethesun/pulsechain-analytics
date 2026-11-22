@@ -157,6 +157,11 @@ schemas:
   holds the schema to the script: it names every field the script reads
   each time it is called, and none it reads as it loads.
 
+When its file is refused, the ratio chart (`ratioCommandFrom`) and the
+balance checker build their command lines from the defaults written in
+their code, so `--help` still answers, and a hook before the action stops
+any other run on the file's problems.
+
 A schema names only the keys its file is read for; a key is added to one
 with the owner's go-ahead.
 
@@ -191,7 +196,8 @@ declaration the program parses; the examples and exit codes go in the
 help's closing text (`addHelpText("after", …)`).
 `docs/project-commands.md` lists every npm target, including those
 that run other tools, such as `lint` and `check`, and every command line
-run with `node`, each with its flags and an example. LP Ranger's rules do not yet ask for the examples; this repo does.
+run with `node`, each with its flags and an example. LP Ranger's rules do
+not yet ask for the examples; this repo does.
 
 ## Gates and CI
 
@@ -273,11 +279,16 @@ holds the stand-ins:
   chart with it, against a stand-in GeckoTerminal, Moralis and DexTools,
   and in a pseudo-terminal, through util-linux's `script`, to answer its
   questions as at the owner's terminal.
+- `stand-in-settings-preload.js` hands the ratio chart or the balance
+  checker, run in a child process, a settings file of the test's own,
+  from an environment variable, since each reads the `config.json` beside
+  its own files and a test never writes a file git keeps.
 - `known-bug.js` declares a known-bug test, described below.
 - `stand-in-wallet-chain.js` is a PulseChain endpoint held in memory for
-  `wallet-history/`, built from blocks a test describes. It works out
-  balances from the description, never through the code tested, refuses a
-  log search wider than its limit, and counts every request.
+  `wallet-history/`, built from blocks a test describes, with the coins
+  each position was owed for the position manager's `positions`. It works
+  out balances from the description, never through the code tested,
+  refuses a log search wider than its limit, and counts every request.
 - `summ-pages.js` writes pages of Summ's results as Summ's connector
   returns them.
 - `summ-sweep-case.js` is the made-up wallet history the Summ sweep's tests
@@ -325,7 +336,11 @@ never by a script written for the occasion. The owner's rule.
 The sweep reads each withdrawal through LP Ranger's
 `util/bookkeeping/coins-in-transaction.js`, which prints what one
 transaction moved for a wallet, run as a program of its own in the
-owner's LP Ranger checkout, since LP Ranger is never changed. The
+owner's LP Ranger checkout, since LP Ranger is never changed. A position
+owed coins when the range began, as the position manager's `positions`
+shows at the block before it (`summ-sweep/owed.js`), may pay principal
+from before the range in its first collect within it: that collect is
+reported, never split, and its coins Summ lacks become questions. The
 chain's facts are in the top `config.json`, under `pulsechain`; the owner's
 settings (his template's path, his LP Ranger checkout, his own wallets,
 his spam and income tokens, each token's symbols in Summ and in a csv) are

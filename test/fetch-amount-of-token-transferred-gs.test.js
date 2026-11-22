@@ -9,11 +9,17 @@
  * `helpers/stand-in-chain.js`, so the tests ask nothing outside the
  * computer. The cases are the ones the Node script is held to too
  * (`helpers/transfer-cases.js`). A failure throws, which a sheet shows as an
- * error in the cell.
+ * error in the cell. The wrapper a sheet pastes into its own project,
+ * `wrapper.gs`, runs here too, against a stand-in of the deployed library.
  */
 
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import {
+  createAppsScriptServices,
+  loadAppsScript,
+} from "crypto-price-fetchers/apps-script-runner";
 import {
   TOKEN,
   WALLET,
@@ -53,6 +59,57 @@ describe("getTokenTransferred, the Sheets script", () => {
         ` ${WALLET.toUpperCase().replace("0X", "0x")}`,
       ),
       250,
+    );
+  });
+});
+
+describe("wrapper.gs, which a sheet's cells call", () => {
+  /**
+   * Loads the wrapper with a stand-in of the deployed library, whose two
+   * functions answer as `answer` does.
+   *
+   * @param {function(): number} answer - Gives each call's amount, or throws
+   * @returns {Object} The context holding the wrapper's functions
+   */
+  function loadWrapper(answer) {
+    const wrapper = new URL(
+      "../for-google-apps/check-token-balance/wrapper.gs",
+      import.meta.url,
+    );
+    return loadAppsScript(
+      [{ source: fs.readFileSync(wrapper, "utf8"), filename: "wrapper.gs" }],
+      {
+        ...createAppsScriptServices({
+          fetchSync: () => ({ status: 500, headers: {}, text: "" }),
+        }),
+        FetchTokenAmountTransferredSA: {
+          getTokenTransferred: answer,
+          getTokenTransferredUseCache: answer,
+        },
+      },
+    );
+  }
+
+  it("gives the library's amount, from the cached function and from the other", () => {
+    const script = loadWrapper(() => 250);
+    assert.equal(script.getTokenTransferred(TRANSACTION, TOKEN, WALLET), 250);
+    assert.equal(
+      script.getTokenTransferredNoCache(TRANSACTION, TOKEN, WALLET),
+      250,
+    );
+  });
+
+  it("lets the library's error through, so the cell shows an error rather than 0", () => {
+    const script = loadWrapper(() => {
+      throw new Error("Cannot read the transaction's receipt");
+    });
+    assert.throws(
+      () => script.getTokenTransferred(TRANSACTION, TOKEN, WALLET),
+      /Cannot read/,
+    );
+    assert.throws(
+      () => script.getTokenTransferredNoCache(TRANSACTION, TOKEN, WALLET),
+      /Cannot read/,
     );
   });
 });

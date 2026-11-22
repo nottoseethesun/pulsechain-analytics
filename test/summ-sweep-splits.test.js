@@ -17,6 +17,9 @@ import fs from "node:fs";
 import path from "node:path";
 import { splitCollects } from "../summ-sweep/positions.js";
 import { readThroughLpRanger } from "../summ-sweep/lp-ranger.js";
+import { sortSplits } from "../summ-sweep/splits.js";
+import { owedWhenRangeBegan } from "../summ-sweep/owed.js";
+import { pacedProvider } from "../wallet-history/paced-provider.js";
 import {
   HEX,
   ONE,
@@ -26,9 +29,11 @@ import {
   RECORDS,
   TKN,
   WALLET,
+  WPLS,
   event,
   hashOf,
   removeTempFolders,
+  sweepChain,
   tempFolder,
 } from "./helpers/summ-sweep-case.js";
 
@@ -267,5 +272,88 @@ describe("readThroughLpRanger", () => {
       readThroughLpRanger([hashOf(1)], reading),
       /no such receipt/,
     );
+  });
+});
+
+describe("sortSplits", () => {
+  const sort = (splits, legs = []) =>
+    sortSplits({
+      splits,
+      legs,
+      matches: new Map(),
+      wallet: WALLET,
+      csvSymbolOf: (token, symbol) => symbol,
+    });
+
+  it("hands back apart a coin the position manager paid as PLS, with principal or without", () => {
+    const withPrincipal = {
+      hash: hashOf(9),
+      nftId: "11",
+      token: WPLS,
+      received: 3n,
+      principal: 2n,
+      fee: 1n,
+    };
+    const feesAlone = { ...withPrincipal, principal: 0n, fee: 3n };
+
+    assert.deepEqual(sort([withPrincipal, feesAlone]).paidAsCoin, [
+      withPrincipal,
+      feesAlone,
+    ]);
+  });
+
+  it("leaves a token coin with no principal to the match, as any other leg", () => {
+    const leg = {
+      hash: hashOf(9),
+      direction: "in",
+      token: HEX,
+      amount: 3n,
+      decimals: 8,
+    };
+    const sorted = sort(
+      [
+        {
+          hash: hashOf(9),
+          nftId: "11",
+          token: HEX,
+          received: 3n,
+          principal: 0n,
+          fee: 3n,
+        },
+      ],
+      [leg],
+    );
+
+    assert.deepEqual(sorted.paidAsCoin, []);
+    assert.deepEqual(sorted.parts, []);
+    assert.equal(sorted.splitLegs.has(leg), false);
+  });
+});
+
+describe("owedWhenRangeBegan", () => {
+  it("gives the coins each position was owed at the block before the range, for those owed any", async () => {
+    const paced = pacedProvider(sweepChain({ 7: [0n, 0n], 9: [ONE, 0n] }), {
+      spacingMs: 0,
+    });
+
+    const owed = await owedWhenRangeBegan(paced, {
+      positionManager: PM,
+      nftIds: ["7", "9", "12"],
+      fromBlock: 1,
+    });
+
+    assert.deepEqual([...owed], [["9", [ONE, 0n]]]);
+  });
+
+  it("asks nothing for a range that starts at block 0", async () => {
+    const chain = sweepChain({ 9: [ONE, 0n] });
+
+    const owed = await owedWhenRangeBegan(
+      pacedProvider(chain, { spacingMs: 0 }),
+      { positionManager: PM, nftIds: ["9"], fromBlock: 0 },
+    );
+
+    assert.equal(owed.size, 0);
+    assert.equal(chain.requests.call, undefined);
   });
 });

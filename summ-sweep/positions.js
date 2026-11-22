@@ -11,7 +11,10 @@
  * of a collect are the coins it paid out, less every DecreaseLiquidity of
  * the same NFT since the NFT's last collect. A collect with no
  * DecreaseLiquidity before it is all fees. The owner books fees as income,
- * and principal as liquidity removed.
+ * and principal as liquidity removed. The sweep reads one range of blocks:
+ * a position owed coins when it began (`summ-sweep/owed.js`) may pay
+ * principal from a DecreaseLiquidity before the range in its first collect
+ * within it, so that collect is reported, never split.
  *
  * How: the transactions the wallet sent to the position manager are read
  * in the order sent, through LP Ranger's tool (`summ-sweep/lp-ranger.js`),
@@ -111,6 +114,24 @@ function collectsOf(hash, record, waiting) {
 }
 
 /**
+ * The NFT ids of the positions the transactions collect from, once each.
+ *
+ * @param {string[]} order - The transactions the wallet sent to the
+ *   position manager, by hash, in the order sent
+ * @param {Map<string, object>} records - LP Ranger's record of each, by
+ *   hash in lower case
+ * @returns {string[]} The NFT ids, as digits
+ * @throws {Error} When a record is missing, or of another shape
+ */
+export function collectedNftIds(order, records) {
+  const ids = new Set();
+  for (const hash of order)
+    for (const collect of collectsOf(hash, records.get(hash), new Map()))
+      ids.add(collect.nftId);
+  return [...ids];
+}
+
+/**
  * Splits each collect of the wallet's into principal and fees, coin by
  * coin.
  *
@@ -121,13 +142,21 @@ function collectsOf(hash, record, waiting) {
  *   each, by hash in lower case
  * @param {function(string): Map<string, bigint>} reading.receivedIn - The
  *   coins the wallet received in a transaction, by contract
+ * @param {Map<string, bigint[]>} [reading.owedAtStart] - The coins each
+ *   position was owed when the range began, by NFT id, for those owed any
  * @returns {{splits: Array<{hash: string, nftId: string, token: string,
  *   received: bigint, principal: bigint, fee: bigint}>,
  *   problems: Array<{hash: string, problem: string}>}} Each coin of each
  *   collect, and each collect that could not be split, with why
  */
-export function splitCollects({ order, records, receivedIn }) {
+export function splitCollects({
+  order,
+  records,
+  receivedIn,
+  owedAtStart = new Map(),
+}) {
   const waiting = new Map();
+  const collected = new Set();
   const splits = [];
   const problems = [];
   for (const hash of order) {
@@ -142,6 +171,15 @@ export function splitCollects({ order, records, receivedIn }) {
       continue;
     }
     const [collect] = collects;
+    const first = !collected.has(collect.nftId);
+    collected.add(collect.nftId);
+    if (first && owedAtStart.has(collect.nftId)) {
+      problems.push({
+        hash,
+        problem: `position #${collect.nftId} was owed coins when the swept range began, so this collect, its first in the range, may pay principal from a DecreaseLiquidity before the range, which the range does not show`,
+      });
+      continue;
+    }
     const received = receivedIn(hash);
     const sides = sidesOf([...received.keys()], collect.collected);
     if (sides === null) {

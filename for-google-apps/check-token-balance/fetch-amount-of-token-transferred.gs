@@ -9,7 +9,8 @@
  * the token's Transfer events to the wallet in it. The receipt holds that transaction's events alone, so another transaction
  * in the same block never counts, and it needs no archive node, since no past balance is read.
  *
- * The final amount is returned as a numeric value with exactly 7 decimal places, cut off rather than rounded. If the
+ * The final amount is cut off at 7 decimal places, rather than rounded, and returned as a number, which a cell shows
+ * without trailing zeros. If the
  * transaction transferred none of the token to the wallet, it returns 0. If a read fails, or the transaction is not
  * found, it throws, so the cell shows an error, never a number that could be mistaken for an amount.
  *
@@ -44,7 +45,7 @@
  *   - txId (string): The transaction ID (hash) from the PulseChain blockchain (e.g., from column L).
  *   - tokenAddress (string): The contract address of the ERC20 token.
  *   - walletAddress (string): The target wallet address to check transfers to.
- * - Returns: Number - The transferred amount with 7 decimal places, or 0 if none.
+ * - Returns: Number - The transferred amount, cut off at 7 decimal places, or 0 if none.
  * - Throws: When a read fails or the transaction is not found.
  *
  * Helper Function: rpcRequest(method, params, rpcUrl, what)
@@ -205,7 +206,7 @@ function formatAmount(rawAmount, decimals) {
  * @param {string} txId The transaction ID (hash) from the PulseChain blockchain (e.g., from column L).
  * @param {string} tokenAddress The contract address of the ERC20 token.
  * @param {string} walletAddress The target wallet address to check transfers to.
- * @return {number} The transferred amount with 7 decimal places, or 0 if none.
+ * @return {number} The transferred amount, cut off at 7 decimal places, or 0 if none.
  * @customfunction
  */
 function getTokenTransferred(txId, tokenAddress, walletAddress) {

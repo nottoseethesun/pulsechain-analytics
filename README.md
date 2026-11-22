@@ -437,8 +437,8 @@ A wallet's November 2026 swept against two saved pages of Summ's results:
 npm run summ-sweep -- --wallet <wallet> --start-date 2026-11-01 --end-date 2026-11-30 --summ-synced-to "2026-11-30 23:59:59" --summ-results summ-results-1.json summ-results-2.json --out missing.csv --report report.json
 ```
 
-The same sweep run again after fixing a leg in Summ, writing over the last
-run's files:
+The same sweep run again after fixing a leg in Summ and saving Summ's
+results again, writing over the last run's files:
 
 ```bash
 npm run summ-sweep -- --wallet <wallet> --start-date 2026-11-01 --end-date 2026-11-30 --summ-synced-to "2026-11-30 23:59:59" --summ-results summ-results-1.json summ-results-2.json --out missing.csv --report report.json --replace

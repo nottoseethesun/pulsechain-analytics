@@ -83,7 +83,9 @@ project. The deployed library also has a function the repo's copy lacks,
 `getTokenTransferredUseCache`, which caches each answer, so a sheet full of
 cells stays within the endpoint's rate limits. The wrapper's
 `getTokenTransferred` calls it; its `getTokenTransferredNoCache` calls the
-function without the cache.
+function without the cache. Neither catches the library's error, so a
+failed read shows in the cell as an error, as it does from the script
+itself.
 
 `for-google-apps/check-token-balance/fetch-amount-of-token-transferred.js`
 is the script's Node version: it runs the `.gs` unchanged, so a fix in
@@ -290,15 +292,18 @@ has read the wallet's transactions
 ([Summ's sync](#what-every-row-of-a-transaction-shares) says why). The
 command line checks each as it parses it: the wallet must be an address,
 each day a date written as YYYY-MM-DD, and the time one written as
-YYYY-MM-DD HH:MM:SS. `times.js` reads each with `Date.parse` and keeps
-it only when writing it back gives the same text, so a date that does not
-exist, such as 2026-02-30, is refused rather than moved to a nearby day.
+YYYY-MM-DD HH:MM:SS. crypto-price-fetchers' `dayStartSeconds`
+(`crypto-price-fetchers/lib/calendar-day`) reads each day, and `times.js`
+the time; each reads with `Date.parse` and keeps the value only when
+writing it back gives the same text, so a date that does not exist, such
+as 2026-02-30, is refused rather than moved to a nearby day.
 A mistake stops the run before it reads anything.
 
 Summ's connector for Claude, through which Claude reads and edits the
 owner's records in Summ, returns the rows a page at a time, and the pages
 are saved to files: `summ-results.js` reads them, and refuses a set with
-a page missing or given twice, or a page holding fewer rows than it says
+a page missing or given twice, or a page holding fewer or more rows than
+it says
 it returned. The range of blocks runs from the first block of the first
 day to the last block of the last.
 
@@ -406,12 +411,26 @@ last collect, and its fees are the rest of what the wallet received.
    the principal and the category Remove liquidity through Summ's
    connector, and the fee becomes an income row. Summ holds the principal
    and the fee as two legs: the coin is reconciled. Summ holds neither:
-   both parts are legs Summ lacks.
+   both parts are legs Summ lacks. A coin with no principal is all fees:
+   its legs are matched, and booked when Summ lacks them, as any other
+   leg ([Rows for What Summ Lacks](#rows-for-what-summ-lacks)).
+
+The sweep reads one range of blocks, so a DecreaseLiquidity before the
+range does not show in it. The position manager adds what a
+DecreaseLiquidity takes out to the coins the position is owed, and a
+Collect pays them out, so `owed.js` asks the position manager's
+`positions` of each position collected in the range, at the block before
+the range, unless the wallet got the position's NFT minted within it.
+The first collect in the range of a position owed coins then is reported
+as one the sweep cannot split, and its coins Summ lacks become questions,
+since part of what it paid may be principal from before the range, as
+the owner's skill asks of a collect whose principal is not known.
 
 When a pool holds WPLS, the position manager can unwrap it and pay the
 wallet PLS inside the transaction, which logs no Transfer. That PLS,
 counted as WPLS, places the coins on their sides, but it has no token
-leg to match, so the sweep reports it as a problem.
+leg to match, so the sweep reports it as a problem, whether it holds
+principal or fees alone.
 
 ### Rows for What Summ Lacks
 
@@ -440,17 +459,25 @@ The first rule that fits a leg books it:
    in their descriptions, and the csv holds no row for it.
 3. **Wrapping PLS**: the WPLS in is Swap in; unwrapping, the WPLS out is
    Swap out. The PLS side moves without a log, so it has no row.
-4. **A token on the owner's list of spam**, coming in: Spam.
-5. **A token from or to one of the owner's other wallets**: Receive or
-   Send, with the wallet's name in the description.
-6. **A swap**: a transaction the wallet sent in which one asset, a token
+4. **A swap**: a transaction the wallet sent in which one asset, a token
    or PLS, went out and one other came in, counting every leg the wallet
    has in it, matched or not, and the PLS it sent and was handed back.
    Each token's legs Summ lacks are added up, in less out: a Buy row when
    more came in, a Sell row when more went out. A transaction with more
    than one asset on a side, such as adding liquidity to a pool of two
    tokens, is no swap here, and its legs go to the other rules.
+5. **A token on the owner's list of spam**, coming in: Spam.
+6. **A token from or to one of the owner's other wallets**: Receive or
+   Send, with the wallet's name in the description.
 7. **A token on the owner's list of income tokens**, coming in: Income.
+
+The swap rule looks at the whole transaction, every leg the wallet has
+in it, so it is tried on a transaction before the other rules are tried
+on its legs. It takes no transaction to the position manager, none with
+an NFT and none that wraps or unwraps PLS, so rules 1 to 3 come first in
+effect, and a token on the spam list that comes in as a swap's other side
+is booked as a Buy, as the owner's skill books the incoming side of a
+swap.
 
 Every other leg is a question: a token sent to or received from an
 address on none of the owner's lists, a burn or a mint outside the
@@ -556,7 +583,12 @@ config.json → colour is not a setting this tool reads
 
 A command line whose options take their defaults from a settings file
 makes each option's parser from the kind the schema gives the same
-setting, so a typed value and the file's meet one rule. Commander refuses
+setting, so a typed value and the file's meet one rule. When the file is
+refused, the ratio chart (`ratioCommandFrom`) and the balance checker
+build their command lines from the defaults written in their code, so
+`--help` still answers, and a hook before the action stops any other
+run on the file's problems, after commander has named any mistake in the
+arguments. Commander refuses
 two conflicting options only when both are typed, so the ratio chart
 refuses, with crypto-price-fetchers' `checkConflicts`
 (`crypto-price-fetchers/lib/option-conflicts`), `--source` beside a
