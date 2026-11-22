@@ -39,6 +39,18 @@ folder it runs in, the repo's top; the ratio chart and the balance
 checker read the `config.json` in their own folders, and the Sheets
 script's Node version the one beside the `.gs`.
 
+A tool that reads the owner's own files takes them from its `input/`
+folder, and writes its results in its `output/` folder, in a folder for
+each kind of file: `output/csv/` for csv files and `output/json/` for
+json. The ratio chart has `output/csv/`; the Summ sweep has `input/`, for
+the saved pages of Summ's results, `output/csv/` and `output/json/`. Git
+keeps each such folder by its `.gitkeep`, an empty file, and ignores
+everything else in it, as the format check and the secret scan do. A
+file a tool writes when no option names one goes in its own `output/`
+folder, wherever it runs: the ratio chart's CSV, at config.json's
+`csvFilename`, a path read from the chart's folder. A test names its own
+files, in temp folders, so it never writes in those folders.
+
 ## Node versions of the Sheets scripts
 
 `bin/fetch-amount-of-token-transferred.js` is the Node version of
@@ -112,8 +124,9 @@ that of each command line, and `test/repo-checks.test.js` holds the
 tracked files to its repo checks (`crypto-price-fetchers/lib/repo-checks`):
 every EVM address in EIP-55's form, every npm target named in
 `docs/project-commands.md`, every test file and helper named in the
-docs, and every link and path in a doc pointing at a file, folder or
-heading the repo keeps.
+docs, every link and path in a doc pointing at a file, folder or
+heading the repo keeps, and a `config-example.json` beside every
+`config.json`, holding what a committed `config.json` holds.
 
 The Summ sweep, which compares a wallet's history with its records in
 Summ (below), writes what its command line catches through
@@ -178,6 +191,17 @@ any other run on the file's problems.
 
 A schema names only the keys its file is read for; a key is added to one
 with the owner's go-ahead.
+
+Each kind of `config.json` ships with a `config-example.json` beside it,
+which git keeps and never ignores, and which holds the file's settings
+with their default values, those written in the code where the code holds
+them, which stay there for now; no program reads an example. A
+`config.json` git keeps holds the repo's defaults, so its example holds
+the same settings: the top one's, the ratio chart's and the balance
+checker's. The examples of the owner's own settings, the Summ sweep's and
+the Sheets script's Node version's, show the shape with made-up values.
+The repo checks (crypto-price-fetchers, above) find a `config.json` with
+no example, and an example that differs from its committed `config.json`.
 
 ## Docs
 

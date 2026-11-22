@@ -1,0 +1,18 @@
+{
+  "network": "pulsechain",
+  "chain": "pulse",
+  "dextools": {
+    "subscription": "standard",
+    "host": "https://public-api.dextools.io",
+    "version": "v2"
+  },
+  "moralis": {
+    "chain": "0x171",
+    "days": 730
+  },
+  "csvFilename": "output/csv/token_ratio.csv",
+  "interval": "daily",
+  "maxCandles": 1000,
+  "weeklyResampleDays": 7,
+  "useDexToolsOnly": false
+}

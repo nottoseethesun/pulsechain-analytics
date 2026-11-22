@@ -1,0 +1,12 @@
+{
+  "apiKeys": ["dextools", "moralis"],
+  "pulsechain": {
+    "chainId": 369,
+    "rpcEndpoint": "https://rpc-pulsechain.g4mm4.io",
+    "positionManager": "0xCC05bf158202b4F461Ede8843d76dcd7Bbad07f2",
+    "wrappedCoin": "0xA1077a294dDE1B09bB078844df40758a5D0f9a27",
+    "spanBlocks": 9000,
+    "requestSpacingMs": 222,
+    "batchSize": 50
+  }
+}

@@ -18,6 +18,11 @@
  * action refuses, with crypto-price-fetchers' `checkConflicts`
  * (`crypto-price-fetchers/lib/option-conflicts`), `--source` beside a
  * `useDexToolsOnly` that config.json sets.
+ * A run with `--csv` writes the ratios to `--csv-filename`: by default
+ * config.json's `csvFilename`, a path read from this folder, so the file
+ * lands in the chart's own `output/csv/` wherever the chart runs, where git
+ * keeps nothing but the folder; a path typed on the command line is read
+ * from the folder the chart runs in, as any path a command line takes.
  * `--help` prints the help on stdout, with exit code 0. The message for an
  * option it does not know names the option alone, without what follows its
  * `=`, which may be a secret, such as an api key typed where none is taken.
@@ -28,6 +33,8 @@
  * run's settings.
  */
 
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { Argument, Command, InvalidArgumentError, Option } from "commander";
 import { checkConflicts } from "crypto-price-fetchers/lib/option-conflicts";
 import {
@@ -38,6 +45,16 @@ import {
   settingsProblems,
 } from "crypto-price-fetchers/lib/settings-schema";
 import { SOURCES } from "./ratio-source.js";
+
+/** The chart's folder, which holds config.json and its output/csv/. */
+const CHART_FOLDER = fileURLToPath(new URL(".", import.meta.url));
+
+/**
+ * The CSV file a run with `--csv` writes when config.json names none, as
+ * a path from the chart's folder: in its `output/csv/`, which git ignores
+ * but for its `.gitkeep`, the empty file that keeps the folder in the repo.
+ */
+const DEFAULT_CSV_FILENAME = "output/csv/token_ratio.csv";
 
 /** The intervals the chart offers: weekly is built from daily candles. */
 export const INTERVALS = Object.freeze(["hourly", "daily", "weekly"]);
@@ -115,8 +132,9 @@ Examples:
   The ratio of HEX's price to wrapped PLS's, day by day, with the defaults
   of config.json, from the repo's top folder:
     $ node bin/pulse-token-ratio.js 0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39 0xA1077a294dDE1B09bB078844df40758a5D0f9a27
-  The same ratio hour by hour, also written to a CSV file in the folder
-  it runs in:
+  The same ratio hour by hour, also written to
+  chart-price-ratio/output/csv/token_ratio.csv, where git keeps nothing but
+  the folder:
     $ node bin/pulse-token-ratio.js 0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39 0xA1077a294dDE1B09bB078844df40758a5D0f9a27 hourly --csv
   The first chart, through npm, from chart-price-ratio/:
     $ npm start -- 0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39 0xA1077a294dDE1B09bB078844df40758a5D0f9a27
@@ -179,11 +197,19 @@ export function buildRatioCommand(config) {
         .default(config.interval ?? "daily"),
     )
     .option("--csv", "also write the ratios to a CSV file", false)
-    .option(
-      "--csv-filename <file>",
-      "the CSV file",
-      PARSE.text,
-      config.csvFilename ?? "token_ratio.csv",
+    .addOption(
+      new Option(
+        "--csv-filename <file>",
+        "the CSV file, read from the folder the chart runs in",
+      )
+        .argParser(PARSE.text)
+        .default(
+          path.resolve(
+            CHART_FOLDER,
+            config.csvFilename ?? DEFAULT_CSV_FILENAME,
+          ),
+          `config.json's csvFilename, ${config.csvFilename ?? DEFAULT_CSV_FILENAME}, read from chart-price-ratio/`,
+        ),
     )
     .addOption(
       new Option(

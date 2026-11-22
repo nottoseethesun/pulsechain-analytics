@@ -3,7 +3,8 @@
  * settings (`chart-price-ratio/ratio-command.js`), parsed in the test's
  * thread: the settings' JSON Schema, the parsers made from its kinds of
  * value, the conflict of `--source` with a `useDexToolsOnly` the file
- * sets, and the command built when the settings are refused.
+ * sets, the CSV file's path, and the command built when the settings are
+ * refused.
  * @module test/ratio-command.test
  *
  * The runs of the chart itself are in `pulse-token-ratio.test.js` and
@@ -12,7 +13,10 @@
 
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import {
   buildRatioCommand,
   ratioCommandFrom,
@@ -56,6 +60,41 @@ function parse(config, args = []) {
   }
   return { options: command.opts() };
 }
+
+/** The ratio chart's folder, from which config.json's csvFilename is read. */
+const CHART_FOLDER = fileURLToPath(
+  new URL("../chart-price-ratio/", import.meta.url),
+);
+
+describe("buildRatioCommand, with the CSV file's path", () => {
+  it("writes --csv's file at config.json's csvFilename, read from the chart's folder, in its output/csv/, which git ignores", () => {
+    const { options } = parse(COMMITTED);
+    assert.equal(
+      options.csvFilename,
+      path.join(CHART_FOLDER, "output", "csv", "token_ratio.csv"),
+    );
+    assert.equal(
+      spawnSync("git", ["check-ignore", "-q", options.csvFilename], {
+        cwd: CHART_FOLDER,
+      }).status,
+      0,
+    );
+  });
+
+  it("writes it in the chart's output/csv/ when config.json names no file", () => {
+    assert.equal(
+      parse({}).options.csvFilename,
+      path.join(CHART_FOLDER, "output", "csv", "token_ratio.csv"),
+    );
+  });
+
+  it("takes a typed --csv-filename as it is typed, a path from the folder the chart runs in", () => {
+    assert.equal(
+      parse(COMMITTED, ["--csv-filename", "ratios.csv"]).options.csvFilename,
+      "ratios.csv",
+    );
+  });
+});
 
 describe("buildRatioCommand, with config.json's settings", () => {
   it("takes the committed config.json, which holds to the schema, as the options' defaults", () => {

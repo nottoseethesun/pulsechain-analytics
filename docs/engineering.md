@@ -74,17 +74,33 @@ that hold no key and none of the owner's own settings.
 
 | File | In git | What it holds |
 | ---- | ------ | ------------- |
-| `config.json` | yes | The services whose keys the programs send, under `apiKeys`, and the chain's facts the Summ sweep reads, under `pulsechain`. No key. |
+| `config.json` | yes | The services whose keys the programs send, under `apiKeys`, and the chain's facts the Summ sweep reads, under `pulsechain`. No key. `config-example.json` beside it holds the same. |
 | `summ-sweep/config.json` | no | The owner's settings for the Summ sweep: the path of his Summ template and of his LP Ranger checkout, his own wallets with their names, his spam and income tokens, and each token's symbols in Summ and in a csv. `summ-sweep/config-example.json` beside it shows the shape, with made-up addresses. |
 | `api-keys.json` | no | The keys, each encrypted with the owner's password. `api-keys.json.tmp` is the file it is written through. `API_KEYS_FILE_PATH` names another, as the tests do. |
-| `chart-price-ratio/config.json` | yes | The ratio chart's settings, checked against `RATIO_SETTINGS_SCHEMA`: GeckoTerminal's network, DexTools' plan, Moralis's chain and the days a run reads from it, the interval, the CSV's name. No key. |
-| `check-token-balance/config.json` | yes | The balance checker's rpc endpoint, the json-rpc api of a PulseChain node it reads balances from, checked against `SETTINGS_SCHEMA` in `check-token-balance/settings.js`. |
+| `chart-price-ratio/config.json` | yes | The ratio chart's settings, checked against `RATIO_SETTINGS_SCHEMA`: GeckoTerminal's network, DexTools' plan, Moralis's chain and the days a run reads from it, the interval, the CSV's path, read from the chart's folder. No key. `config-example.json` beside it holds the same. |
+| `check-token-balance/config.json` | yes | The balance checker's rpc endpoint, the json-rpc api of a PulseChain node it reads balances from, checked against `SETTINGS_SCHEMA` in `check-token-balance/settings.js`. `config-example.json` beside it holds the same. |
 | `src/for-google-apps/check-token-balance/config.json` | no | The Node version's rpc endpoint, an http or https url (`CONFIG_SCHEMAS`); `config-example.json` beside it shows the shape. |
 | `coverage/` | no | A test run's coverage report. |
 
+Every `config.json` has a `config-example.json` beside it, which git
+keeps: the settings with their default values, or, for the owner's own
+settings, made-up ones that show the shape.
+
+A tool's `input/` folder holds the owner's files it reads, and its
+`output/` folder the files it writes, in `output/csv/` and
+`output/json/`. Git keeps each folder by its `.gitkeep`, an empty file,
+and ignores everything else in it, and the format check and the secret
+scan pass over it:
+
+| Folder | What it holds |
+| ------ | ------------- |
+| `chart-price-ratio/output/csv/` | The ratio chart's CSV, `token_ratio.csv` unless `--csv-filename` or config.json names another. |
+| `summ-sweep/input/` | The saved pages of Summ's results, and the owner's Summ template, in the examples. |
+| `summ-sweep/output/csv/`, `summ-sweep/output/json/` | The Summ sweep's csv and report, in the examples. |
+
 The Summ sweep writes its csv and its report at the paths its command line
-names, outside the repo, and never over a file already there without
-`--replace`. It checks both paths before it writes either.
+names, and never over a file already there without `--replace`. It checks
+both paths before it writes either.
 
 ---
 
@@ -154,7 +170,7 @@ owner's key file or password.
 | `pulse-token-ratio-moralis.test.js` | The ratio chart reading Moralis's candles, against a stand-in Moralis, GeckoTerminal and DexTools, with the Moralis and DexTools keys from key files of the test's own: the deepest active pair that lists each token first, the two years of daily candles it reads unless `--moralis-days` names another span, its hourly and weekly charts, its fallback to DexTools when Moralis's candles price another token, and its stop when no pair lists a token first; and the choice of the source (`ratio-source.js`): the question asked when a Moralis key is saved, Enter taking Moralis, an answer asked again, `--source` in its place, the stop with no terminal to ask at, and `--source` refused with `--useDexToolsOnly` or with no Moralis key saved; and the question answered in a pseudo-terminal, on Linux: Enter taking Moralis, then the password, which the terminal never shows, and 2 taking GeckoTerminal, opening no key. |
 | `command-line-help.test.js` | Every command line's help, `--help` and `-h`, and its help into a pipe closed before it is written, which must end with exit code 0 and nothing on stderr: the Summ sweep's, the ratio chart's, the balance checker's, the Sheets script's Node version's and the key manager's, each run through its file in `bin/`, and those of the bins of crypto-price-fetchers the npm targets run, its versions tool and `run-actionlint`, each with its options, examples and exit codes, by crypto-price-fetchers' checks (`crypto-price-fetchers/lib/command-line-help`); and that its list holds every command line the repo runs, every bin of crypto-price-fetchers among them; and each tool's start file in `bin/` run with only the packages `npm ci` installs in the tool's folder, from a temp folder that holds a copy of it beside a link to that folder. |
 | `api-keys.test.js` | The keys `config.json` lists, the key manager, which saves and lists the api keys, and the copy of `bin/unlock-api-keys.sh`, the script that keeps the password for a terminal. |
-| `repo-checks.test.js` | The repo's tracked files, by crypto-price-fetchers' checks (`crypto-price-fetchers/lib/repo-checks`): every EVM address in EIP-55's form, every npm target named in `docs/project-commands.md`, every test file and helper named in this doc or `CLAUDE.md`, and every link and path in a doc pointing at a file, folder or heading the repo keeps. |
+| `repo-checks.test.js` | The repo's tracked files, by crypto-price-fetchers' checks (`crypto-price-fetchers/lib/repo-checks`): every EVM address in EIP-55's form, every npm target named in `docs/project-commands.md`, every test file and helper named in this doc or `CLAUDE.md`, every link and path in a doc pointing at a file, folder or heading the repo keeps, and a `config-example.json` beside every `config.json`, holding what a committed `config.json` holds. |
 | `dependencies.test.js` | crypto-price-fetchers installed from GitHub, following its main branch or its latest release, by the ratio chart and the balance checker too, with the same ref, and `npm run github-project-deps` running its versions tool. |
 | `wallet-history.test.js` | The paced provider, the blocks of a range, the logs that name a wallet, the transactions it sent, their receipts and its tokens' facts, a decimals answer above 255 taken for none, a revert or an error of the EVM taken as a token's refusal, and an endpoint's error answer, its limit on a call's time among them, stopping the read, against a stand-in chain. |
 | `wallet-history-coin.test.js` | The PLS a wallet moved: the calls of a trace that pay it, the flows of its own transactions, and the payments from elsewhere its balance reveals, a transaction the endpoint could not trace named, against a stand-in chain whose balances are worked out apart from the code tested. |
