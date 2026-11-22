@@ -267,6 +267,28 @@ describe("the rules of wraps, spam, the owner's wallets and income", () => {
 });
 
 describe("the questions", () => {
+  it("books a position's NFT sent to or from one of the owner's wallets by the own-wallets rule, and asks about one sent to anyone else", () => {
+    const mine = getAddress(`0x${"ab".repeat(20)}`);
+    const nft = { token: PM, decimals: 0, amount: 1n, nftId: 7n };
+    const { rows, questions } = runGaps({
+      legs: [
+        gapLeg({ ...nft, direction: "out", counterparty: mine }),
+        gapLeg({ ...nft, n: 1, direction: "out", counterparty: OTHER }),
+      ],
+      txs: [sentBy(0, { to: PM }), sentBy(1, { to: PM })],
+      owner: { ownWallets: { [mine]: "Cold storage" } },
+    });
+
+    assert.deepEqual(
+      rows.map((row) => row.type),
+      ["send"],
+    );
+    assert.deepEqual(
+      questions.map((one) => one.reason),
+      ["an NFT sent to an address on none of the owner's lists"],
+    );
+  });
+
   it("asks about every leg no rule books, rather than guess", () => {
     const legs = [
       gapLeg({ counterparty: OTHER }),
@@ -292,7 +314,7 @@ describe("the questions", () => {
         "sent to an address on none of the owner's lists",
         "sent to the zero address: a burn or a stake",
         "minted to the wallet: an airdrop, the end of a stake, or a bridge",
-        "an NFT moved outside the position manager",
+        "an NFT received from an address on none of the owner's lists",
         "a transfer from the wallet to itself",
         "its contract gave no decimals",
         "its contract gave no symbol, and the owner's settings give none",

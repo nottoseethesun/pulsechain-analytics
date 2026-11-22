@@ -430,4 +430,38 @@ describe("tokenFacts", () => {
       /socket hang up/,
     );
   });
+
+  it("stops on an endpoint's error answer to a call, which ethers throws as a CALL_EXCEPTION but is not the token's answer", async () => {
+    const failing = {
+      call: async () => {
+        throw Object.assign(new Error("missing revert data"), {
+          code: "CALL_EXCEPTION",
+          data: null,
+          info: { error: { code: -32005, message: "limit exceeded" } },
+        });
+      },
+    };
+
+    await assert.rejects(
+      tokenFacts(unpaced(failing), [TOKEN]),
+      /The endpoint failed a call to .*: limit exceeded/,
+    );
+  });
+
+  it("takes a revert with the contract's data as the contract's refusal", async () => {
+    const reverting = {
+      call: async () => {
+        throw Object.assign(new Error("execution reverted"), {
+          code: "CALL_EXCEPTION",
+          data: "0x08c379a0",
+          info: { error: { code: 3, message: "execution reverted" } },
+        });
+      },
+    };
+
+    const facts = await tokenFacts(unpaced(reverting), [TOKEN]);
+    assert.deepEqual(Object.fromEntries(facts), {
+      [TOKEN]: { symbol: null, decimals: null },
+    });
+  });
 });

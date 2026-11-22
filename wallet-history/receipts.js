@@ -23,6 +23,7 @@
  */
 
 import { AbiCoder, getAddress } from "ethers";
+import { contractRefused, endpointFailure } from "./contract-calls.js";
 
 /** The selector of `symbol()`. */
 const SYMBOL_SELECTOR = "0x95d89b41";
@@ -65,7 +66,8 @@ export async function readReceipts(paced, hashes, { batchSize }) {
 }
 
 /**
- * A contract's answer to a call, or `null` when the contract refuses it.
+ * A contract's answer to a call, or `null` when the contract refuses it,
+ * with a revert (`contract-calls.js`).
  *
  * @param {{ask: function}} paced - The paced provider
  * @param {string} address - The contract
@@ -79,13 +81,8 @@ async function answerOf(paced, address, data) {
     const answer = await paced.ask("call", { to: address, data });
     return answer === "0x" ? null : answer;
   } catch (thrown) {
-    if (
-      typeof thrown === "object" &&
-      thrown !== null &&
-      thrown.code === "CALL_EXCEPTION"
-    )
-      return null;
-    throw thrown;
+    if (contractRefused(thrown)) return null;
+    throw endpointFailure(thrown, `a call to ${address}`);
   }
 }
 

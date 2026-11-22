@@ -16,14 +16,19 @@
  *
  * How: each position is asked at the block before the range, which needs
  * an endpoint that keeps past state. A call the position manager refuses,
- * or answers with nothing, as it does for an NFT not yet minted, means the
- * position was owed nothing.
+ * a revert, or answers with nothing, as it does for an NFT not yet minted,
+ * means the position was owed nothing; any other error is the endpoint
+ * failing, and stops the sweep (`wallet-history/contract-calls.js`).
  *
  * Fit: the sweep asks for each position collected in the range that was
  * not minted within it (`summ-sweep/sweep.js`).
  */
 
 import { Interface } from "ethers";
+import {
+  contractRefused,
+  endpointFailure,
+} from "../wallet-history/contract-calls.js";
 
 /** The position manager's `positions`, as its contract declares it. */
 const POSITION_MANAGER = new Interface([
@@ -50,13 +55,11 @@ async function owedAt(paced, positionManager, nftId, block) {
       blockTag: block,
     });
   } catch (thrown) {
-    if (
-      typeof thrown === "object" &&
-      thrown !== null &&
-      thrown.code === "CALL_EXCEPTION"
-    )
-      return [0n, 0n];
-    throw thrown;
+    if (contractRefused(thrown)) return [0n, 0n];
+    throw endpointFailure(
+      thrown,
+      `the position manager's positions(${nftId}) at block ${block}`,
+    );
   }
   if (answer === "0x") return [0n, 0n];
   const position = POSITION_MANAGER.decodeFunctionResult("positions", answer);

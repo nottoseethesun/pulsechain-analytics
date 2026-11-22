@@ -11,8 +11,10 @@
  *    Remove liquidity, and the fees are Income.
  * 2. A transaction the wallet sent to the position manager: a token out
  *    is a deposit, Add liquidity, into the position its IncreaseLiquidity
- *    event names; the position's NFT in is Receive LP token, and out,
- *    Return LP token; a coin in that a collect with no principal paid is
+ *    event names; the position's NFT the position manager mints to the
+ *    wallet is Receive LP token, and the one it burns, Return LP token, an
+ *    NFT sent or received in a transfer going to the rules below; a coin
+ *    in that a collect with no principal paid is
  *    Income, all of it fees. A deposit's rows name the PLS the
  *    transaction paid the position manager, which has no log.
  * 3. Wrapping PLS: the WPLS in is Swap in. Unwrapping: the WPLS out is
@@ -28,7 +30,8 @@
  *
  * Any other leg is a question for the owner, never a guess: a token sent
  * to or received from an address on none of his lists, a burn or a mint
- * outside the position manager, an NFT outside it, a transfer from the
+ * outside the position manager, an NFT sent or received other than as the
+ * position manager mints or burns it, a transfer from the
  * wallet to itself, a coin of a collect the sweep could not split, and a
  * token whose contract gave no symbol or no decimals.
  *
@@ -358,22 +361,25 @@ function positionRule(group, transaction, env) {
   if (!transaction.toPositionManager) return undefined;
   const leg = group.first;
   const position = `9mm V3 position${positionNumber(transaction)}`;
-  const minted = leg.counterparty === ZERO ? leg.token : leg.counterparty;
   const plsNote = plsDepositNote(transaction, env);
-  if (leg.nftId !== undefined)
+  if (leg.nftId !== undefined) {
+    // An NFT the position manager mints or burns; one sent or received in
+    // a transfer goes to the rules below, the owner's own wallets among them
+    if (leg.counterparty !== ZERO) return undefined;
     return leg.direction === "in"
       ? {
           type: "receive-lp-token",
-          from: minted,
+          from: leg.token,
           to: env.wallet,
           text: `The NFT of 9mm V3 position #${leg.nftId}, which the position manager gave the wallet for the position.${plsNote}`,
         }
       : {
           type: "return-lp-token",
           from: env.wallet,
-          to: minted,
-          text: `The NFT of 9mm V3 position #${leg.nftId}, which left the wallet${leg.counterparty === ZERO ? " as the position manager burned it" : ""}.`,
+          to: leg.token,
+          text: `The NFT of 9mm V3 position #${leg.nftId}, which left the wallet as the position manager burned it.`,
         };
+  }
   if (leg.direction === "out")
     return {
       type: "add-liquidity",
@@ -521,8 +527,15 @@ const RULES = Object.freeze([
  * @returns {string} The reason
  */
 function reasonOf(leg) {
-  if (leg.nftId !== undefined)
-    return "an NFT moved outside the position manager";
+  if (leg.nftId !== undefined) {
+    if (leg.counterparty === ZERO)
+      return leg.direction === "out"
+        ? "an NFT burned, not in a transaction the wallet sent to the position manager"
+        : "an NFT minted to the wallet, not in a transaction it sent to the position manager";
+    return leg.direction === "out"
+      ? "an NFT sent to an address on none of the owner's lists"
+      : "an NFT received from an address on none of the owner's lists";
+  }
   if (leg.counterparty === ZERO)
     return leg.direction === "out"
       ? "sent to the zero address: a burn or a stake"

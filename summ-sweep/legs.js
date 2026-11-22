@@ -13,8 +13,11 @@
  * wrapped, and gave up for PLS it unwrapped.
  *
  * How: an ERC-20 Transfer names the sender and receiver in its second and
- * third topics and holds the amount in its data; an NFT's names the
- * token's id in a fourth topic. A Transfer from the wallet to itself is a
+ * third topics and holds the amount in its data, one 32-byte word; an
+ * NFT's names the token's id in a fourth topic. A Transfer log of any other
+ * shape, as a contract that does not follow either standard can emit,
+ * gives no leg, and `oddTransferLogs` lists it, for the sweep to report.
+ * A Transfer from the wallet to itself is a
  * leg out and a leg in. Each leg carries its token's symbol and decimals,
  * from `tokenFacts`, or `null` for each its contract did not give, and
  * its block's time; an NFT's decimals are 0. Its addresses, the token's
@@ -40,6 +43,35 @@ import { sameAddress } from "../wallet-history/sent.js";
  */
 function topicAddress(topic) {
   return getAddress(`0x${topic.slice(26)}`);
+}
+
+/** An ERC-20 Transfer's data: its amount, one 32-byte word. */
+const AMOUNT_WORD = /^0x[0-9a-fA-F]{64}$/;
+
+/**
+ * Whether a Transfer log has the shape of an ERC-20 Transfer, three topics
+ * and an amount, or of an NFT's, four topics.
+ *
+ * @param {object} log - The log, a Transfer
+ * @returns {boolean} Whether a leg can be read from it
+ */
+function transferShaped(log) {
+  if (log.topics.length === 4) return true;
+  return log.topics.length === 3 && AMOUNT_WORD.test(log.data);
+}
+
+/**
+ * The Transfer logs of a shape neither an ERC-20 nor an NFT Transfer has,
+ * from which `tokenLegs` reads no leg.
+ *
+ * @param {object[]} logs - The logs that name the wallet
+ * @returns {object[]} Those logs, in their order
+ */
+export function oddTransferLogs(logs) {
+  return logs.filter(
+    (log) =>
+      log.topics[0].toLowerCase() === TRANSFER_TOPIC && !transferShaped(log),
+  );
 }
 
 /**
@@ -72,7 +104,7 @@ function legsOfLog(log, wallet, wrappedCoin) {
       },
     ];
   }
-  if (topic !== TRANSFER_TOPIC) return [];
+  if (topic !== TRANSFER_TOPIC || !transferShaped(log)) return [];
   const from = topicAddress(log.topics[1]);
   const to = topicAddress(log.topics[2]);
   const nft = log.topics.length === 4;

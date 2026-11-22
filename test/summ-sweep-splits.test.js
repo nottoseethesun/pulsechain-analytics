@@ -389,6 +389,27 @@ describe("owedWhenRangeBegan", () => {
     assert.deepEqual(chain.callBlocks, [4, 4, 4]);
   });
 
+  it("stops on an endpoint's error answer to its call, which is not the position manager's", async () => {
+    const failing = {
+      async call() {
+        throw Object.assign(new Error("missing revert data"), {
+          code: "CALL_EXCEPTION",
+          data: null,
+          info: { error: { code: -32005, message: "limit exceeded" } },
+        });
+      },
+    };
+
+    await assert.rejects(
+      owedWhenRangeBegan(pacedProvider(failing, { spacingMs: 0 }), {
+        positionManager: PM,
+        nftIds: ["9"],
+        fromBlock: 5,
+      }),
+      /positions\(9\) at block 4: limit exceeded/,
+    );
+  });
+
   it("asks nothing for a range that starts at block 0", async () => {
     const chain = sweepChain({ 9: [ONE, 0n] });
 

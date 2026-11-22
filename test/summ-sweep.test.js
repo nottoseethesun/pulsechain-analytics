@@ -14,7 +14,7 @@ import assert from "node:assert/strict";
 import { ethers } from "ethers";
 import { amountsOf, parseSummResults } from "../summ-sweep/summ-results.js";
 import { decimalText, summHolds } from "../summ-sweep/amounts.js";
-import { tokenLegs } from "../summ-sweep/legs.js";
+import { oddTransferLogs, tokenLegs } from "../summ-sweep/legs.js";
 import {
   attachManualRows,
   matchLegs,
@@ -298,6 +298,27 @@ describe("tokenLegs", () => {
     assert.equal(legs[3].decimals, 0);
     assert.equal(legs[6].decimals, null);
     assert.equal(legs[0].timestamp, TIME);
+  });
+
+  it("reads no leg from a Transfer log of a shape no ERC-20 or NFT Transfer has, and lists it for the sweep to report", () => {
+    const odd = [
+      log(0, HEX, [TRANSFER_TOPIC, addressTopic(WALLET)]),
+      log(
+        1,
+        HEX,
+        [TRANSFER_TOPIC, addressTopic(POOL), addressTopic(WALLET)],
+        "0x",
+      ),
+    ];
+    const legs = tokenLegs({
+      wallet: WALLET,
+      wrappedCoin: WPLS,
+      tokens: facts,
+      times: new Map([[10, TIME]]),
+      logs: odd,
+    });
+    assert.deepEqual(legs, []);
+    assert.deepEqual(oddTransferLogs(odd), odd);
   });
 });
 

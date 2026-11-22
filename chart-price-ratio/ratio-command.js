@@ -39,7 +39,7 @@ import {
 } from "crypto-price-fetchers/lib/settings-schema";
 import { SOURCES } from "./ratio-source.js";
 
-/** The intervals GeckoTerminal's candles serve. */
+/** The intervals the chart offers: weekly is built from daily candles. */
 export const INTERVALS = Object.freeze(["hourly", "daily", "weekly"]);
 
 /**

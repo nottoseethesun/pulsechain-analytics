@@ -179,9 +179,10 @@ input is a pipe, stops and names `--source` (`ratio-source.js`).
    candles, a request that runs out of time means the candles cannot be
    had: the chart falls back to DexTools, or, with no DexTools key saved,
    ends with exit code 1.
-4. It prints the chart, with labels on both axes (`generateNiceTicks.js`
-   picks the y-axis' values), the last ten ratios and the current one, and
-   writes a CSV when asked.
+4. It prints the chart, with labels on both axes, the y-axis' the values
+   asciichart, the package that draws the chart, gives its rows, evenly
+   spaced from the highest ratio to the lowest, the last ten ratios and
+   the current one, and writes a CSV when asked.
 
 The chart spans at least 90 columns: its x-axis spaces four to ten dates
 under its columns, each ten characters wide, or sixteen with the hour, and
@@ -252,7 +253,13 @@ keeps:
    at.
 
 `readReceipts` reads each receipt once, and `tokenFacts` asks each token's
-contract once for its symbol and decimals. Every request goes through a
+contract once for its symbol and decimals. A contract that refuses a call,
+with a revert, gives no symbol or no decimals; ethers, the library the
+sweep reads the chain with, throws the same kind of error, a
+CALL_EXCEPTION, when the endpoint fails the call, so `contract-calls.js`
+tells a revert apart, by its data or its message, and any other error
+stops the sweep. `summ-sweep/owed.js` reads a position's coins owed the
+same way. Every request goes through a
 paced provider (`paced-provider.js`), a set time after the one before, as
 LP Ranger, the owner's bot that manages his 9mm V3 liquidity positions and
 whose coding standards this repo follows, paces its own; requests made
@@ -452,7 +459,9 @@ The first rule that fits a leg books it:
 2. **A transaction the wallet sent to the position manager**: a token out
    is a deposit, Add liquidity, to the position its IncreaseLiquidity
    event names, or else to the one whose NFT the transaction minted; the
-   position's NFT in is Receive LP token, and out, Return LP token; a coin
+   position's NFT the position manager mints to the wallet is Receive LP
+   token, and the one it burns, Return LP token, while an NFT sent or
+   received in a transfer goes to the rules below; a coin
    in that a collect with no principal paid is Income, all of it fees.
    The PLS a deposit paid the position manager, less what the manager
    handed back, moves without a log, so the deposit's rows give its amount
@@ -481,8 +490,9 @@ swap.
 
 Every other leg is a question: a token sent to or received from an
 address on none of the owner's lists, a burn or a mint outside the
-position manager, an NFT outside it, a transfer from the wallet to
-itself, a coin of a collect the sweep could not split, and a token whose
+position manager, an NFT sent or received other than as the position
+manager mints or burns it in a transaction the wallet sent it, a
+transfer from the wallet to itself, a coin of a collect the sweep could not split, and a token whose
 contract gave no decimals, or no symbol that the settings do not give.
 The legs of one token, one direction and one NFT id make one row, and the
 row says how many legs it adds up.

@@ -175,7 +175,9 @@ whose input is a pipe, stops unless `--source` names one.
 
 ## Output Example
 
-The daily ratio of $808 to $pTGC on PulseChain:
+The daily ratio of $808 to $pTGC on PulseChain. The picture comes from an
+older version, which said "PLS-based" and listed its oldest ratios under
+"Recent ratios"; the chart now says "USD-based" and lists the newest ten.
 
 ![The ratio chart's output: the daily ratio of $808 to $pTGC, as a line chart in the terminal](pulse-token-ratio-output.png)
 

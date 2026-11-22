@@ -29,8 +29,8 @@
  * block whose payments do not add up to its unexplained change is
  * reported with the difference.
  *
- * Fit: a sweep of a wallet records each payment found as PLS received,
- * from its sender, and stops on a block it cannot explain. Balances and
+ * Fit: the Summ sweep uses the search to stop on a block whose balance
+ * change no payment explains; it books no row from the payments. Balances and
  * traces at past blocks need an endpoint that keeps past state and offers
  * the debug methods, as g4mm4's does.
  */
