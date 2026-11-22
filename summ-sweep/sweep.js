@@ -15,7 +15,10 @@
  * fixes' income rows and the gaps' rows), the questions for the owner,
  * Summ's legs no leg matched, and every problem it found. A withdrawal
  * the position manager paid as PLS is one of the problems, since the
- * sweep matches token legs only.
+ * sweep matches token legs only; so is a position's first collect in the
+ * range when the position was owed coins as the range began
+ * (`summ-sweep/owed.js`), since part of it may be principal from before
+ * the range.
  *
  * How: the steps run in the order each needs the last: the logs and the
  * wallet's own transactions first, then their receipts, the PLS each moved
