@@ -14,9 +14,12 @@
  *
  * How: an ERC-20 Transfer names the sender and receiver in its second and
  * third topics and holds the amount in its data, one 32-byte word; an
- * NFT's names the token's id in a fourth topic. A Transfer log of any other
- * shape, as a contract that does not follow either standard can emit,
- * gives no leg, and `oddTransferLogs` lists it, for the sweep to report.
+ * NFT's names the token's id in a fourth topic, and its contract gives no
+ * decimals, as ERC-721, the standard for NFTs, defines none. A four-topic
+ * Transfer whose contract gives decimals may be an ERC-20 that puts its
+ * amount in a topic, so it gives no leg, nor does a Transfer log of any
+ * other shape, as a contract that follows neither standard can emit:
+ * `oddTransferLogs` lists each, with why, for the sweep to report.
  * A Transfer from the wallet to itself is a
  * leg out and a leg in. Each leg carries its token's symbol and decimals,
  * from `tokenFacts`, or `null` for each its contract did not give, and
@@ -48,30 +51,58 @@ function topicAddress(topic) {
 /** An ERC-20 Transfer's data: its amount, one 32-byte word. */
 const AMOUNT_WORD = /^0x[0-9a-fA-F]{64}$/;
 
+/** The facts of a contract `tokenFacts` was not asked about. */
+const NO_FACTS = Object.freeze({ symbol: null, decimals: null });
+
 /**
- * Whether a Transfer log has the shape of an ERC-20 Transfer, three topics
- * and an amount, or of an NFT's, four topics.
+ * A contract's facts, from `tokenFacts`.
  *
- * @param {object} log - The log, a Transfer
- * @returns {boolean} Whether a leg can be read from it
+ * @param {Map<string, object>} tokens - Each token's facts, by contract
+ *   in EIP-55's mixed case
+ * @param {string} address - The contract, in any case
+ * @returns {{symbol: (string|null), decimals: (number|null)}} Its facts
  */
-function transferShaped(log) {
-  if (log.topics.length === 4) return true;
-  return log.topics.length === 3 && AMOUNT_WORD.test(log.data);
+function factsOf(tokens, address) {
+  return tokens.get(getAddress(address)) ?? NO_FACTS;
 }
 
 /**
- * The Transfer logs of a shape neither an ERC-20 nor an NFT Transfer has,
- * from which `tokenLegs` reads no leg.
+ * Why a Transfer log gives no leg, or null when it gives one: an ERC-20
+ * Transfer has three topics and its amount as one 32-byte word of data,
+ * and an NFT's four topics, from a contract that gives no decimals.
+ *
+ * @param {object} log - The log, a Transfer
+ * @param {{decimals: (number|null)}} facts - Its contract's facts
+ * @returns {?string} Why, in words that follow the log's contract, or
+ *   null when a leg can be read from it
+ */
+function shapeProblem(log, facts) {
+  if (log.topics.length === 4)
+    return facts.decimals === null
+      ? null
+      : "has 4 topics, as an NFT's Transfer has, but its contract gives decimals, which ERC-721 defines none of, so it may be an ERC-20 that puts its amount in a topic";
+  if (log.topics.length === 3 && AMOUNT_WORD.test(log.data)) return null;
+  const bytes = Math.max(0, (log.data.length - 2) / 2);
+  return `has ${log.topics.length} topics and ${bytes} bytes of data, a shape no ERC-20 or NFT Transfer has`;
+}
+
+/**
+ * The Transfer logs from which `tokenLegs` reads no leg, each with why.
  *
  * @param {object[]} logs - The logs that name the wallet
- * @returns {object[]} Those logs, in their order
+ * @param {Map<string, object>} tokens - Each token's facts, by contract
+ *   in EIP-55's mixed case
+ * @returns {Array<{log: object, problem: string}>} Those logs, in their
+ *   order, each with why, in words that follow its contract's address
  */
-export function oddTransferLogs(logs) {
-  return logs.filter(
-    (log) =>
-      log.topics[0].toLowerCase() === TRANSFER_TOPIC && !transferShaped(log),
-  );
+export function oddTransferLogs(logs, tokens) {
+  return logs
+    .filter((log) => log.topics[0].toLowerCase() === TRANSFER_TOPIC)
+    .map((log) => ({
+      log,
+      problem: shapeProblem(log, factsOf(tokens, log.address)),
+    }))
+    .filter((odd) => odd.problem !== null);
 }
 
 /**
@@ -80,9 +111,10 @@ export function oddTransferLogs(logs) {
  * @param {object} log - The log
  * @param {string} wallet - The wallet
  * @param {string} wrappedCoin - The wrapped coin's contract
+ * @param {{decimals: (number|null)}} facts - The log's contract's facts
  * @returns {Array<object>} The legs, without their token's facts and time
  */
-function legsOfLog(log, wallet, wrappedCoin) {
+function legsOfLog(log, wallet, wrappedCoin, facts) {
   const token = getAddress(log.address);
   const at = {
     hash: log.transactionHash.toLowerCase(),
@@ -104,7 +136,7 @@ function legsOfLog(log, wallet, wrappedCoin) {
       },
     ];
   }
-  if (topic !== TRANSFER_TOPIC || !transferShaped(log)) return [];
+  if (topic !== TRANSFER_TOPIC || shapeProblem(log, facts) !== null) return [];
   const from = topicAddress(log.topics[1]);
   const to = topicAddress(log.topics[2]);
   const nft = log.topics.length === 4;
@@ -140,9 +172,11 @@ function legsOfLog(log, wallet, wrappedCoin) {
  */
 export function tokenLegs({ wallet, logs, tokens, times, wrappedCoin }) {
   return logs
-    .flatMap((log) => legsOfLog(log, wallet, wrappedCoin))
+    .flatMap((log) =>
+      legsOfLog(log, wallet, wrappedCoin, factsOf(tokens, log.address)),
+    )
     .map((leg) => {
-      const facts = tokens.get(leg.token) ?? { symbol: null, decimals: null };
+      const facts = factsOf(tokens, leg.token);
       return {
         ...leg,
         timestamp: times.get(leg.blockNumber),

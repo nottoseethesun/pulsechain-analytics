@@ -34,7 +34,8 @@
  *      highest ratio on the top row, the lowest on the bottom one, and
  *      evenly spaced values between, as asciichart, the package that draws
  *      the chart, works them out, in one row more than the height of 30 it
- *      is given; each rounded to 6, 8, 10 or 12 decimals,
+ *      is given; a series whose ratios are all the same is drawn in one
+ *      row, labelled with the ratio; each rounded to 6, 8, 10 or 12 decimals,
  *      more for a narrower range, with trailing zeros dropped; the labels
  *      of a range under 0.00001 are written in scientific notation.
  *    • Each y-axis label is padded with spaces to the length of the

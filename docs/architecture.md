@@ -185,6 +185,9 @@ input is a pipe, stops and names `--source` (`ratio-source.js`).
    rows, one more than the height of 30 it is given, and works out each
    row's value: the highest ratio on the top row, the lowest on the bottom
    one, and evenly spaced values between. Each row's label is its value.
+   A series whose ratios are all the same is drawn in one row, labelled
+   with the ratio, since asciichart's own number for that row is the ratio
+   rounded to a whole number.
 
 The chart spans at least 90 columns: its x-axis spaces four to ten dates
 under its columns, each ten characters wide, or sixteen with the hour, and
@@ -343,10 +346,13 @@ NFT as a leg of 1, and wrapping or unwrapping PLS as a leg of WPLS. A
 transfer from the wallet to itself is two legs, one out and one in. An
 ERC-20 Transfer has three topics, the event and the two addresses, and
 its amount as one 32-byte word of data; an NFT's has a fourth topic, the
-token's id. A Transfer log of any other shape, as a contract that follows
-neither standard can emit, gives no leg: the sweep reports it among its
-problems, with its transaction, since the history then holds a move it
-cannot read. A
+token's id, and its contract gives no decimals, as ERC-721, the standard
+for NFTs, defines none. A four-topic Transfer whose contract gives
+decimals may be an ERC-20 that puts its amount in a topic, so it gives no
+leg, nor does a Transfer log of any other shape, as a contract that
+follows neither standard can emit: the sweep reports each among its
+problems, with its transaction and why, since the history then holds a
+move it cannot read. A
 leg's time is its block's: the search for the wallet's transactions has
 already read the block of each one the wallet sent, so the sweep reads
 only the other blocks the logs name.

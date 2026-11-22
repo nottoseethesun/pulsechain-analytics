@@ -18,8 +18,9 @@
  * sweep matches token legs only; so is a position's first collect in the
  * range when the position was owed coins as the range began
  * (`summ-sweep/owed.js`), since part of it may be principal from before
- * the range; and so is a Transfer log of a shape no ERC-20 or NFT Transfer
- * has, from which `summ-sweep/legs.js` reads no leg.
+ * the range; and so is a Transfer log from which `summ-sweep/legs.js`
+ * reads no leg: one of a shape no ERC-20 or NFT Transfer has, or a
+ * four-topic one whose contract gives decimals.
  *
  * How: the steps run in the order each needs the last: the logs and the
  * wallet's own transactions first, then their receipts, the PLS each moved
@@ -55,17 +56,16 @@ import { PLS_DECIMALS } from "./rows.js";
 import { sortSplits } from "./splits.js";
 
 /**
- * The problem of a Transfer log of a shape no ERC-20 or NFT Transfer has,
- * from which the sweep reads no leg.
+ * The problem of a Transfer log from which the sweep reads no leg.
  *
- * @param {object} log - The log
+ * @param {{log: object, problem: string}} odd - The log, and why, from
+ *   `oddTransferLogs`
  * @returns {{hash: string, problem: string}} The problem
  */
-function oddLogProblem(log) {
-  const bytes = Math.max(0, (log.data.length - 2) / 2);
+function oddLogProblem({ log, problem }) {
   return {
     hash: log.transactionHash.toLowerCase(),
-    problem: `a Transfer log of ${getAddress(log.address)} has ${log.topics.length} topics and ${bytes} bytes of data, a shape no ERC-20 or NFT Transfer has, so the sweep reads no leg from it`,
+    problem: `a Transfer log of ${getAddress(log.address)} ${problem}, so the sweep reads no leg from it`,
   };
 }
 
@@ -147,7 +147,7 @@ async function readHistory(paced, range) {
     own,
     payments: inflows.payments,
     legs,
-    oddLogs: oddTransferLogs(logs),
+    oddLogs: oddTransferLogs(logs, tokens),
   };
 }
 
