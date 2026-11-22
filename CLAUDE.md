@@ -354,7 +354,11 @@ beside it shows the shape.
 
 ## Known bugs
 
-None is known. When one is found, it gets a test in
+Two are known, each with its test in `test/known-bugs.test.js`: the Node
+copy of `getTokenTransferred` stops on a token written in a mixed case
+that is not its checksum, and sends a transaction hash with the spaces
+around it, both of which the Sheets copy takes.
+When one is found, it gets a test in
 `test/known-bugs.test.js`, declared with `knownBug`, so the test passes while
 the bug is present. The bug's fix makes its test fail; declare that test with
 `it` instead, in the same change, among the tests of the code it is about.

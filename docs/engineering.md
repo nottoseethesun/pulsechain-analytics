@@ -311,7 +311,11 @@ deleted. The steps from a branch to `main` are LP Ranger's eight, in its
 
 ## Known Bugs
 
-None is known. A bug found gets a test in `test/known-bugs.test.js`,
+Two are known, each with its test in `test/known-bugs.test.js`: the Node
+copy of `getTokenTransferred` stops on a token written in a mixed case
+that is not its checksum, and sends a transaction hash with the spaces
+around it, both of which the Sheets copy takes.
+A bug found gets a test in `test/known-bugs.test.js`,
 declared with `knownBug` (`test/helpers/known-bug.js`), so the test passes
 while the bug is present. The bug's fix makes its test fail; the same change
 declares the test with `it`, among the tests of the code it is about.
