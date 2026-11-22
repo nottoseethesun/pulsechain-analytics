@@ -210,6 +210,10 @@ owner's key file or password.
   of Summ's csv template, and the temp folders the tests make and remove.
 - `summ-gaps.js`: builds the legs, transactions and Summ rows the tests
   of the gap rules book, and runs `rowsForGaps` on them.
+- `summ-sweep-command-run.js`: runs the Summ sweep's command line as its
+  tests do, on a repo top in a temp folder of its own, with the stand-in
+  chain of `summ-sweep-case.js`, Summ's page written by `summ-pages.js`,
+  and LP Ranger's tool a stand-in that answers with the case's records.
 
 `npm run test:coverage` fails below 80% of lines covered. Code written to
 check something goes into the tests, so it is kept and run again rather
@@ -306,7 +310,17 @@ deleted. The steps from a branch to `main` are LP Ranger's eight, in its
 
 ## Known Bugs
 
-None is known. A bug found gets a test in `test/known-bugs.test.js`,
+Seven are known, each with its test in `test/known-bugs.test.js`: the
+Summ sweep stops on a token whose decimals are above 80, and takes a
+decimals answer above 255 for decimals; it takes saved pages of Summ's
+results whose counts of pages or totals disagree; its `--replace` run
+with no rows leaves the last run's csv; it takes a `requestSpacingMs`
+Node's timers cannot keep; and it stops on a TypeError when the endpoint
+could not trace a transaction. The Sheets copy of `getTokenTransferred`
+gives 0 for an address that is not one, where the Node copy gives
+ethers' own error; and the ratio chart's labels of a range under
+0.00001 can all be one value.
+A bug found gets a test in `test/known-bugs.test.js`,
 declared with `knownBug` (`test/helpers/known-bug.js`), so the test passes
 while the bug is present. The bug's fix makes its test fail; the same change
 declares the test with `it`, among the tests of the code it is about.

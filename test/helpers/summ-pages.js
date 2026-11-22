@@ -68,11 +68,19 @@ function rowBlock(row, place) {
  * @param {object[]} page.rows - Its rows
  * @param {number} [page.returned] - How many rows its first line says it
  *   returned; by default, as many as it holds
+ * @param {number} [page.total] - How many rows its first line says Summ
+ *   holds in all; by default, as many as it says it returned
  * @returns {string} The page's text
  */
-export function summPage({ page, pages, rows, returned = rows.length }) {
+export function summPage({
+  page,
+  pages,
+  rows,
+  returned = rows.length,
+  total = returned,
+}) {
   return [
-    `# Transactions (Page ${page} of ${pages}, ${returned} returned, ${returned} total)`,
+    `# Transactions (Page ${page} of ${pages}, ${returned} returned, ${total} total)`,
     "",
     "_Action IDs change after each report refresh; Transaction IDs do not._",
     "",
