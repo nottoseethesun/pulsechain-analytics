@@ -25,8 +25,8 @@
  *   amount in its data, as ERC-20 has it. An NFT's Transfer event, whose third indexed value is the token id, is not counted.
  * - Returns 0 when the transaction transferred none of the token to the wallet. When a read fails, or the transaction is
  *   not found, it throws, so a failure is never mistaken for an amount.
- * - The amount is cut off at 7 decimal places and returned as a number, as the Sheets script returns it. A number holds
- *   about 15 significant digits, so an amount of 100 million tokens or more can lose its 7th decimal place.
+ * - The amount is cut off at 7 decimal places and returned as a number, as the Sheets script returns it. A number keeps
+ *   all 7 places for an amount below 2^29, 536,870,912 tokens; from there up, the conversion can round the 7th place.
  * - Assumes the token is ERC-20 compliant with the `decimals()` function and the Transfer event.
  */
 

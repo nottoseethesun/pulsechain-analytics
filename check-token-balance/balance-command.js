@@ -55,7 +55,7 @@ Examples:
 Exit codes:
   0  each balance was printed
   1  an option was wrong or missing, neither --block nor --date was given,
-     or a read from the chain failed`;
+     config.json was refused, or a read from the chain failed`;
 
 /**
  * An address in EIP-55's form.
