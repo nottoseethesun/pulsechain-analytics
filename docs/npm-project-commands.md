@@ -57,13 +57,15 @@ codes: `npm run summ-sweep -- --help`.
 
 ## Api Keys
 
-The api keys the programs send, DexTools' for the ratio chart, are kept
-encrypted in `api-keys.json` by crypto-price-fetchers' key store. One
-command runs the store's key manager.
+The api keys the programs send, the ratio chart's, are kept encrypted in
+`api-keys.json` by crypto-price-fetchers' key store: DexTools', for the
+chart's fallback to current prices, and Moralis's, for its candles, from
+Moralis, a service that prices tokens from the pools of decentralized
+exchanges. One command runs the store's key manager.
 
 | Command | Flags | Description | Example |
 | ------- | ----- | ----------- | ------- |
-| `api-keys` | `set <service>`, `check-password`, `--help` | The key manager, crypto-price-fetchers'. Lists each key the top `config.json` names, saved or not, never showing a key's characters, and asks for each one not saved: the key, then the password. Each key is saved, encrypted, once its service takes it. `set <service>` replaces one key. `check-password` says, by its exit code, whether the password in `API_KEYS_PASSWORD` opens every key saved; `unlock-api-keys.sh`, the script that keeps the password for a terminal, runs it. | `npm run api-keys` · `npm run api-keys -- set dextools` |
+| `api-keys` | `set <service>`, `check-password`, `--help` | The key manager, crypto-price-fetchers'. Lists each key the top `config.json` names, saved or not, never showing a key's characters, and asks for each one not saved: the key, then the password. Each key is saved, encrypted, once its service takes it. `set <service>` replaces one key. `check-password` says, by its exit code, whether the password in `API_KEYS_PASSWORD` opens every key saved; `unlock-api-keys.sh`, the script that keeps the password for a terminal, runs it. | `npm run api-keys` · `npm run api-keys -- set moralis` |
 
 `source ./unlock-api-keys.sh`, which is no npm command, keeps the password
 for a terminal: see [the README](../README.md#api-keys).
@@ -143,7 +145,7 @@ their own: run `npm install` in the folder before using the tool there.
 
 | Folder | Command | Description | Example |
 | ------ | ------- | ----------- | ------- |
-| `chart-price-ratio/` | `start`, `ratio` | Run the ratio chart. `npm start -- --help` lists its options, each with its default from `config.json`, examples of its common uses, and its exit codes. | `npm start -- <tokenA> <tokenB> daily` |
+| `chart-price-ratio/` | `start`, `ratio` | Run the ratio chart. With a Moralis key saved, a run asks which source to read, Moralis or GeckoTerminal, unless `--source` names one. `npm start -- --help` lists its options, each with its default from `config.json`, examples of its common uses, and its exit codes. | `npm start -- <tokenA> <tokenB> daily` · `npm start -- <tokenA> <tokenB> --source moralis` |
 
 The balance checker has no npm command: `node index.js --help`, in its
 folder, lists its options, with examples of its common uses and its exit

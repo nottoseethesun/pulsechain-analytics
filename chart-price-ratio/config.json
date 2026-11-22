@@ -6,6 +6,10 @@
     "host": "https://public-api.dextools.io",
     "version": "v2"
   },
+  "moralis": {
+    "chain": "0x171",
+    "days": 730
+  },
   "csvFilename": "token_ratio.csv",
   "interval": "daily",
   "maxCandles": 1000,

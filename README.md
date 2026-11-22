@@ -102,8 +102,8 @@ It installs everything the top folder's tools need, among them
 crypto-price-fetchers, the owner's repo of code his projects share, from
 GitHub: it runs the Sheets script under Node, keeps the api keys, asks
 GeckoTerminal, a service that lists the pools of decentralized exchanges
-with their prices and candles, for the ratio chart, and writes the Summ
-sweep's csv.
+with their prices and candles, Moralis and DexTools for the ratio chart,
+and writes the Summ sweep's csv.
 `chart-price-ratio/` and `check-token-balance/` each have a package of
 their own: run `npm install` in the folder of the tool you use too.
 
@@ -141,14 +141,16 @@ does for a release whose top folder has no package.json, every
 
 ### Api keys
 
-The ratio chart, `chart-price-ratio/`, can fall back to DexTools, a service
-that prices tokens from the pools of decentralized exchanges, which takes an
-api key. The key is kept in `api-keys.json` in the repo's top folder, which
-git, the version-control program that keeps the repo's history, ignores,
+The ratio chart, `chart-price-ratio/`, sends two api keys: Moralis's, to
+read two years of daily candles from Moralis, and DexTools', to fall back
+to current prices when the candles cannot be had. Moralis and DexTools
+are services that price tokens from the pools of decentralized exchanges.
+The keys are kept in `api-keys.json` in the repo's top folder, which git,
+the version-control program that keeps the repo's history, ignores,
 encrypted with a password you choose, by crypto-price-fetchers' key store,
 which keeps keys as LP Ranger, the owner's bot that manages his 9mm V3
 liquidity positions, keeps its own. This repo's `npm run api-keys` runs the
-store's key manager. To save the key, from the repo's top folder:
+store's key manager. To save the keys, from the repo's top folder:
 
 ```bash
 npm run api-keys
