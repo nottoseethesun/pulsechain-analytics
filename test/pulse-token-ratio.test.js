@@ -405,6 +405,40 @@ describe("ratioRows", () => {
       ["2026-01-01", "2026-01-01"],
     );
   });
+
+  it("writes a price or a ratio below a millionth with its digits, rather than as 0, and one from a millionth up to 12 decimal places", () => {
+    const day = 86400000;
+    const dataA = [3e-13, 1.23456789e-10, 2].map((close, index) => ({
+      timestamp: start + index * day,
+      close,
+    }));
+    const dataB = dataA.map(({ timestamp }) => ({ timestamp, close: 1 }));
+    const tiny = ratioRows(dataA, dataB, "daily");
+    assert.deepEqual(
+      tiny.rows.map((row) => [row.priceA, row.ratio]),
+      [
+        ["3.00000000000e-13", "3.00000000000e-13"],
+        ["1.23456789000e-10", "1.23456789000e-10"],
+        ["2.000000000000", "2.000000000000"],
+      ],
+    );
+    const lines = [];
+    printRatios(
+      { interval: "daily", tokenA: "0xA", tokenB: "0xB", saveCsv: false },
+      ["A", "B"],
+      "GeckoTerminal",
+      {
+        ...tiny,
+        ratios: tiny.ratios.slice(0, 2),
+        timestamps: tiny.timestamps.slice(0, 2),
+      },
+      (line) => lines.push(line),
+    );
+    assert.ok(
+      lines.includes("\nCurrent ratio: 1.23456789000e-10"),
+      lines.join("\n"),
+    );
+  });
 });
 
 /**

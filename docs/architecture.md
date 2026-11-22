@@ -444,11 +444,14 @@ last collect, and its fees are the rest of what the wallet received.
    stops the sweep, naming the transaction. A collect it cannot split is
    reported, never guessed at: one that collects from two positions, one
    whose coins cannot be placed on the two sides, and one that paid out
-   less than the principal.
+   less of a coin than its principal, or none of it. The position still
+   owes the principal a collect did not pay out, so that rest waits for
+   the next collect.
 3. `splits.js` sorts each coin with principal into Summ's three cases.
    Summ holds the whole amount on one leg: the leg is a fix, to be set to
    the principal and the category Remove liquidity through Summ's
-   connector, and the fee becomes an income row. Summ holds the principal
+   connector, and the fee becomes an income row, or, for a token with no
+   symbol a csv can carry, a question. Summ holds the principal
    and the fee as two legs: the coin is reconciled. Summ holds neither:
    both parts are legs Summ lacks. A coin with no principal is all fees:
    its legs are matched, and booked when Summ lacks them, as any other
@@ -527,8 +530,10 @@ outside a transaction the wallet sent to the position manager, a transfer
 from the wallet to itself, a coin of a collect the sweep could not split,
 a coin the position manager paid that no collect in the transaction
 accounts for, a swap's token whose legs Summ lacks, in and out, add up to
-nothing, and a token whose contract gave no decimals, or no symbol that
-the settings do not give.
+nothing, and a token whose contract gave no decimals, or no symbol a csv
+can carry, which the settings do not give: none, a blank one, or PLS, the
+chain's own coin's, which a token can take to pass for the coin and which
+the Summ csv utility refuses on a token's row.
 The legs of one token, one direction and one NFT id make one row, and the
 row says how many legs it adds up.
 
@@ -577,7 +582,7 @@ neither over a file already there without `--replace`:
   the problems; and the time given as reached by Summ's sync. Amounts are
   written as decimal text of the token's smallest units, and a question's
   leg also gives its amount in whole tokens with its csv symbol, such as
-  `2 TKN`, when the token's decimals are known.
+  `2 TKN`, when the token's decimals and that symbol are known.
 
 Addresses are in EIP-55's mixed case in the report. The Summ csv utility
 writes them in lower case, since its settings for PulseChain give an

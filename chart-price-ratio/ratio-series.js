@@ -26,7 +26,7 @@ import {
   moralisPair,
 } from "./moralis.js";
 import { getBestPoolWithHistory } from "./pool-selector.js";
-import { timeLabel } from "./ratio-output.js";
+import { priceText, timeLabel } from "./ratio-output.js";
 
 /** Seconds in an hour, and in a day, for the span a run reads from Moralis. */
 const HOUR_SECONDS = 60 * 60;
@@ -346,9 +346,9 @@ export function ratioRows(dataA, dataB, interval) {
     timestamps.push(timestamp);
     rows.push({
       date: timeLabel(timestamp, interval),
-      priceA: pA.toFixed(12),
-      priceB: pB.toFixed(12),
-      ratio: ratio.toFixed(12),
+      priceA: priceText(pA),
+      priceB: priceText(pB),
+      ratio: priceText(ratio),
     });
   }
   return { rows, ratios, timestamps };

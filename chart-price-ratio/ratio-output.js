@@ -26,6 +26,22 @@ export const MIN_CHART_COLUMNS = 90;
  */
 export const GECKOTERMINAL_FREE_DAYS = 184;
 
+/** The least value written to fixed decimal places; a smaller one is written in exponent form. */
+const LEAST_FIXED_VALUE = 1e-6;
+
+/**
+ * A price or a ratio as the csv and the printed lines write it: to 12
+ * decimal places, which keep at least 7 digits from a millionth up, or,
+ * for a smaller value, to 12 digits in exponent form, so a tiny price or
+ * ratio is never written as 0.
+ *
+ * @param {number} value - The price or ratio, above 0
+ * @returns {string} The value, as text
+ */
+export function priceText(value) {
+  return value >= LEAST_FIXED_VALUE ? value.toFixed(12) : value.toPrecision(12);
+}
+
 /**
  * The columns the chart draws a series across: the points themselves, or,
  * for a series too short to span `MIN_CHART_COLUMNS`, each point widened to
@@ -273,7 +289,7 @@ export function printRatios(
 
   print("\nRecent ratios (last 10):");
   rows.slice(-10).forEach((r) => print(`${r.date}: ${r.ratio}`));
-  print(`\nCurrent ratio: ${ratios[ratios.length - 1].toFixed(12)}`);
+  print(`\nCurrent ratio: ${priceText(ratios[ratios.length - 1])}`);
 
   if (run.saveCsv) {
     const csv =

@@ -7,7 +7,11 @@
  * tokens are spam; which tokens he receives as income; and each token's
  * symbols in Summ and in a csv, where they differ from its contract's
  * own. `ownerLists` reads them into lookups by address, and `csvSymbolOf`
- * gives the symbol a token takes in a csv.
+ * gives the symbol a token takes in a csv: the owner's, or else its
+ * contract's, unless that is blank or PLS, the chain's own coin's, which
+ * the Summ csv utility refuses on a token's row, as a token that names
+ * itself PLS to pass for the coin can. Such a token has no symbol for the
+ * csv until the owner's settings give one (`symbolLack` says why).
  *
  * How: the sweep holds every address in EIP-55's mixed case, so every
  * address in the lists is put in that case as it is read; an address
@@ -20,6 +24,7 @@
  */
 
 import { getAddress } from "ethers";
+import { PLS } from "./rows.js";
 
 /**
  * An object of the settings, keyed by address, as a lookup by address.
@@ -69,14 +74,33 @@ export function ownerLists(owner) {
 }
 
 /**
- * The symbol a token takes in a csv: the owner's, or else its contract's.
+ * Why a contract's symbol cannot stand for its token in a csv: none, blank,
+ * or the chain's own coin's.
+ *
+ * @param {string|null} symbol - The contract's symbol; `null` when the
+ *   contract gave none
+ * @returns {string|null} The reason, as words that follow "its contract";
+ *   `null` when the symbol can stand
+ */
+export function symbolLack(symbol) {
+  if (symbol === null) return "gave no symbol";
+  if (symbol.trim() === "") return "gave a blank symbol";
+  if (symbol === PLS) return `names itself ${PLS}, the chain's own coin`;
+  return null;
+}
+
+/**
+ * The symbol a token takes in a csv: the owner's, or else its contract's,
+ * when that can stand (`symbolLack`).
  *
  * @param {object} lists - The owner's lists
  * @param {string} token - The token's contract, in EIP-55's mixed case
  * @param {string|null} symbol - Its contract's symbol; `null` when the
  *   contract gave none
- * @returns {string|null} The symbol; `null` when neither names one
+ * @returns {string|null} The symbol; `null` when neither gives one
  */
 export function csvSymbolOf(lists, token, symbol) {
-  return lists.csvSymbols.get(token) ?? symbol;
+  return (
+    lists.csvSymbols.get(token) ?? (symbolLack(symbol) === null ? symbol : null)
+  );
 }

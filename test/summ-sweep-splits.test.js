@@ -18,6 +18,7 @@ import path from "node:path";
 import { splitCollects } from "../summ-sweep/positions.js";
 import { readThroughLpRanger } from "../summ-sweep/lp-ranger.js";
 import { sortSplits } from "../summ-sweep/splits.js";
+import { csvSymbolOf, ownerLists } from "../summ-sweep/owner-lists.js";
 import { owedWhenRangeBegan } from "../summ-sweep/owed.js";
 import { pacedProvider } from "../wallet-history/paced-provider.js";
 import {
@@ -41,6 +42,89 @@ after(removeTempFolders);
 
 describe("splitCollects", () => {
   const received = (coins) => () => new Map(coins);
+
+  it("reports a collect that paid nothing of a coin with principal waiting, and keeps that principal for the next collect", () => {
+    const coinA = `0x${"11".repeat(20)}`;
+    const coinB = `0x${"22".repeat(20)}`;
+    const liquidity = (name, amount0, amount1) => ({
+      event: name,
+      nftId: "7",
+      amount0,
+      amount1,
+    });
+    const paid = new Map([
+      [hashOf(1), new Map([[coinB, 250n]])],
+      [hashOf(2), new Map([[coinA, 100n]])],
+    ]);
+    const { splits, problems } = splitCollects({
+      order: [hashOf(1), hashOf(2)],
+      records: new Map([
+        [
+          hashOf(1),
+          {
+            liquidity: [
+              liquidity("DecreaseLiquidity", "100", "200"),
+              liquidity("Collect", "0", "250"),
+            ],
+          },
+        ],
+        [hashOf(2), { liquidity: [liquidity("Collect", "100", "0")] }],
+      ]),
+      receivedIn: (hash) => paid.get(hash),
+    });
+    assert.deepEqual(problems, [
+      {
+        hash: hashOf(1),
+        problem:
+          "it paid out nothing of the coin on side 0 of position #7, though its DecreaseLiquidity events name principal of it",
+      },
+    ]);
+    assert.deepEqual(
+      splits.map((one) => [one.hash, one.token, one.principal, one.fee]),
+      [
+        [hashOf(1), coinB, 200n, 50n],
+        [hashOf(2), coinA, 100n, 0n],
+      ],
+    );
+  });
+
+  it("keeps the principal a collect paid out less of waiting, as the rest still owed", () => {
+    const coinA = `0x${"11".repeat(20)}`;
+    const liquidity = (name, amount0) => ({
+      event: name,
+      nftId: "7",
+      amount0,
+      amount1: "0",
+    });
+    const paid = new Map([
+      [hashOf(1), new Map([[coinA, 60n]])],
+      [hashOf(2), new Map([[coinA, 45n]])],
+    ]);
+    const { splits, problems } = splitCollects({
+      order: [hashOf(1), hashOf(2)],
+      records: new Map([
+        [
+          hashOf(1),
+          {
+            liquidity: [
+              liquidity("DecreaseLiquidity", "100"),
+              liquidity("Collect", "60"),
+            ],
+          },
+        ],
+        [hashOf(2), { liquidity: [liquidity("Collect", "45")] }],
+      ]),
+      receivedIn: (hash) => paid.get(hash),
+    });
+    assert.deepEqual(
+      problems.map((one) => one.hash),
+      [hashOf(1)],
+    );
+    assert.deepEqual(
+      splits.map((one) => [one.hash, one.principal, one.fee]),
+      [[hashOf(2), 40n, 5n]],
+    );
+  });
 
   it("takes each NFT's decreases until its next collect, and places the coins by contract", () => {
     const { splits, problems } = splitCollects({
@@ -315,6 +399,42 @@ describe("readThroughLpRanger", () => {
     await assert.rejects(
       readThroughLpRanger([hashOf(1)], reading),
       /no such receipt/,
+    );
+  });
+});
+
+describe("sortSplits, with the owner's lists", () => {
+  it("leaves the fee of a position's coin with no symbol for the csv to be asked about, rather than book a fee row with none", () => {
+    const leg = {
+      hash: hashOf(9),
+      direction: "in",
+      token: HEX,
+      symbol: "PLS",
+      amount: 3n,
+      decimals: 8,
+    };
+    const lists = ownerLists({});
+    const sorted = sortSplits({
+      splits: [
+        {
+          hash: hashOf(9),
+          nftId: "11",
+          token: HEX,
+          received: 3n,
+          principal: 2n,
+          fee: 1n,
+        },
+      ],
+      legs: [leg],
+      matches: new Map([[leg, { id: "summ-leg" }]]),
+      wallet: WALLET,
+      csvSymbolOf: (token, symbol) => csvSymbolOf(lists, token, symbol),
+    });
+    assert.deepEqual(sorted.rows, []);
+    assert.equal(sorted.fixes.length, 1);
+    assert.deepEqual(
+      sorted.parts.map((part) => [part.part, part.amount]),
+      [["fee", 1n]],
     );
   });
 });

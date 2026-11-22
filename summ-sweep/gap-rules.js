@@ -36,7 +36,8 @@
  * sweep could not split, a coin the position manager paid that no collect
  * in the transaction accounts for, a swap's token whose legs Summ lacks,
  * in and out, add up to nothing, and a token whose contract gave no
- * decimals, or no symbol that the owner's settings do not give.
+ * decimals, or no symbol a csv can carry (`csvSymbolOf`), which the
+ * owner's settings do not give.
  *
  * How: the swap rule runs first, on the whole transaction, since it needs
  * every leg the wallet has in it, matched or not, and the PLS it sent and
@@ -54,7 +55,7 @@
 
 import { ZeroAddress } from "ethers";
 import { decimalText } from "./amounts.js";
-import { csvSymbolOf } from "./owner-lists.js";
+import { csvSymbolOf, symbolLack } from "./owner-lists.js";
 import { PLS, PLS_DECIMALS, legRow } from "./rows.js";
 
 /** The zero address: the sender of a mint, and the receiver of a burn. */
@@ -588,7 +589,7 @@ function bookGroup(group, transaction, env) {
         group.legs,
         leg.decimals === null
           ? "its contract gave no decimals"
-          : "its contract gave no symbol, and the owner's settings give none",
+          : `its contract ${symbolLack(leg.symbol)}, and the owner's settings give none`,
         env,
       ),
     };

@@ -43,8 +43,8 @@ const TRANSFER_TOPIC = ethers.id("Transfer(address,address,uint256)");
 /** The decimal places of the amount returned. */
 const DECIMAL_PLACES_RETURNED = 7;
 
-/** An address as a caller writes it: 0x and 40 hex digits, in any case. */
-const ADDRESS_FORM = /^0x[0-9a-fA-F]{40}$/;
+/** An address, put in lower case as a caller's is before it is checked: 0x and 40 hex digits. */
+const ADDRESS_FORM = /^0x[0-9a-f]{40}$/;
 
 /**
  * Refuses a token or a wallet that is not an address, naming it, as the Sheets copy does, so a mistyped address is
@@ -58,13 +58,13 @@ const ADDRESS_FORM = /^0x[0-9a-fA-F]{40}$/;
  * @throws {Error} When it is not 0x and 40 hex digits
  */
 function checkAddress(what, address) {
-  const text = String(address).trim();
+  const text = String(address).trim().toLowerCase();
   if (!ADDRESS_FORM.test(text)) {
     throw new Error(
       `The ${what} ${text} is not an address: 0x and 40 hex digits`,
     );
   }
-  return text.toLowerCase();
+  return text;
 }
 
 /**
