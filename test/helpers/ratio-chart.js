@@ -67,21 +67,21 @@ function candlesUrl(pool, timeframe, token) {
 
 /**
  * Builds a pool's daily candles: one a day from 2026-01-01, closing at the
- * prices given.
+ * prices given, and none for a day whose close is null, as GeckoTerminal
+ * makes no candle for a day in which nothing traded.
  *
- * @param {Array<number>} closes - Each day's close
- * @returns {Array<Array<number>>} The candles, as GeckoTerminal lists them
+ * @param {Array<?number>} closes - Each day's close, or null for a day with no candle
+ * @param {boolean} [newestFirst=false] - Whether to list the newest day first, as GeckoTerminal does
+ * @returns {Array<Array<number>>} The candles
  */
-function dailyCandles(closes) {
+function dailyCandles(closes, newestFirst = false) {
   const start = Date.UTC(2026, 0, 1) / 1000;
-  return closes.map((close, day) => [
-    start + day * 86400,
-    close,
-    close,
-    close,
-    close,
-    1,
-  ]);
+  const candles = closes.flatMap((close, day) =>
+    close === null
+      ? []
+      : [[start + day * 86400, close, close, close, close, 1]],
+  );
+  return newestFirst ? candles.reverse() : candles;
 }
 
 /**
@@ -90,16 +90,18 @@ function dailyCandles(closes) {
  * address. Hourly candles are not answered unless `hourlyRefused` adds
  * their refusal.
  *
- * @param {Array<number>} closesA - Token A's pool's daily closes
- * @param {Array<number>} closesB - Token B's pool's daily closes
+ * @param {Array<?number>} closesA - Token A's pool's daily closes, null for a day with no candle
+ * @param {Array<?number>} closesB - Token B's pool's daily closes, null for a day with no candle
+ * @param {Object} [options] - How the candles are listed
+ * @param {boolean} [options.newestFirst=false] - Whether the newest day comes first, as GeckoTerminal lists them
  * @returns {Array<{url: string, status?: number, body: Object}>} The answers
  */
-export function geckoAnswers(closesA, closesB) {
+export function geckoAnswers(closesA, closesB, { newestFirst = false } = {}) {
   const pool = (address, name, reserve) => ({
     data: [{ attributes: { address, name, reserve_in_usd: reserve } }],
   });
   const candles = (closes) => ({
-    data: { attributes: { ohlcv_list: dailyCandles(closes) } },
+    data: { attributes: { ohlcv_list: dailyCandles(closes, newestFirst) } },
   });
   return [
     {

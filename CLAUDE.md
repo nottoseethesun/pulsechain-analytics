@@ -279,7 +279,13 @@ beside it shows the shape.
 
 ## Known bugs
 
-None is known. When one is found, it gets a test in
+Three are known, in the ratio chart. GeckoTerminal lists a pool's candles
+newest first, and the chart prints the last of its series, the oldest
+ratios, as its recent and current ones, and makes its weekly points as if
+the oldest came first, so a weekly series has one point. It also pairs the
+two tokens' prices by position, though GeckoTerminal makes no candle for a
+period in which nothing traded, so a period one pool lacks pairs prices of
+two different times. When one is found, it gets a test in
 `test/known-bugs.test.js`, declared with `knownBug`, so the test passes while
 the bug is present. The bug's fix makes its test fail; declare that test with
 `it` instead, in the same change, among the tests of the code it is about.
