@@ -28,11 +28,11 @@ the repo's key store. To save one, in the repo's top folder:
   npm run api-keys
 
 Examples:
-  The ratio of HEX's price to wrapped PLS's, week by week, with the defaults
+  The ratio of HEX's price to wrapped PLS's, day by day, with the defaults
   of config.json:
     $ node pulse-token-ratio.js 0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39 0xA1077a294dDE1B09bB078844df40758a5D0f9a27
-  The same ratio day by day, also written to a CSV file:
-    $ node pulse-token-ratio.js 0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39 0xA1077a294dDE1B09bB078844df40758a5D0f9a27 daily --csv
+  The same ratio hour by hour, also written to a CSV file:
+    $ node pulse-token-ratio.js 0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39 0xA1077a294dDE1B09bB078844df40758a5D0f9a27 hourly --csv
   The first chart, through npm, from this folder:
     $ npm start -- 0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39 0xA1077a294dDE1B09bB078844df40758a5D0f9a27
 
@@ -109,7 +109,7 @@ export function buildRatioCommand(config) {
     .addOption(
       new Option("--interval <interval>", "the candles' interval")
         .choices(INTERVALS)
-        .default(config.interval ?? "weekly"),
+        .default(config.interval ?? "daily"),
     )
     .option("--csv", "also write the ratios to a CSV file", false)
     .option(

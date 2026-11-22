@@ -13,8 +13,8 @@
  * many (429) again after its waits, and reads the answers as numbers. This
  * module shapes them as the chart uses them: a name and symbol, with
  * stand-ins where GeckoTerminal gives none, and a token's closes in a pool
- * as `{timestamp, close}`, in USD, newest first, as GeckoTerminal gives the
- * candles.
+ * as `{timestamp, close}`, in USD, oldest first: GeckoTerminal gives the
+ * candles newest first, and the chart reads its series from the oldest.
  *
  * Fit: `ratio-series.js` and `pool-selector.js` both ask it, so it is a
  * module of its own, which neither of them imports the other for.
@@ -94,7 +94,7 @@ export async function getTokenPools(network, tokenAddress) {
  * @param {string} query.token - The token's address
  * @param {string} [query.timeframe='day'] - The candles' timeframe: `day` or `hour`
  * @param {number} [query.limit=1000] - The most candles to fetch
- * @returns {Promise<Array<{timestamp: number, close: number}>>} Each candle's time, in milliseconds, and close, newest first
+ * @returns {Promise<Array<{timestamp: number, close: number}>>} Each candle's time, in milliseconds, and close, oldest first
  * @throws {Error} When GeckoTerminal does not answer, or has no candles
  */
 export async function getClosesGecko({
@@ -109,8 +109,7 @@ export async function getClosesGecko({
     geckoTerminalSettings(),
   );
   if (page.candles.length === 0) throw new Error("Empty OHLCV data");
-  return page.candles.map((candle) => ({
-    timestamp: candle[0] * 1000,
-    close: candle[4],
-  }));
+  return page.candles
+    .map((candle) => ({ timestamp: candle[0] * 1000, close: candle[4] }))
+    .sort((a, b) => a.timestamp - b.timestamp);
 }

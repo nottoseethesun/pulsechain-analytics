@@ -1,7 +1,7 @@
 /**
  * The ratio chart's prices: the two tokens' names, their prices over time
- * from GeckoTerminal's best pools, or their current prices from DexTools,
- * and the ratio at each point.
+ * from GeckoTerminal's best pools, oldest first, or their current prices
+ * from DexTools, and the ratio at each time both tokens have a price for.
  * @module chart-price-ratio/ratio-series
  *
  * Each function takes the run: its settings (`ratioSettings`, in
@@ -40,7 +40,7 @@ export async function tokenNames(run) {
 /**
  * Resamples daily closes to weeks: each week's close is its last day's.
  *
- * @param {Array<{timestamp: number, close: number}>} dailyData - The daily closes
+ * @param {Array<{timestamp: number, close: number}>} dailyData - The daily closes, oldest first
  * @param {number} weeklyResampleDays - The days in a week's point
  * @returns {Array<{timestamp: number, close: number}>} The weekly closes
  */
@@ -107,8 +107,11 @@ async function geckoCloses(run, poolA, poolB) {
     });
   if (run.interval === "weekly") {
     console.log("Fetching daily data for weekly resampling...");
-    const dailyA = await closes(poolA, "day");
-    const dailyB = await closes(poolB, "day");
+    // The days both pools have, so both series' weeks start on one day
+    const [dailyA, dailyB] = sameTimes(
+      await closes(poolA, "day"),
+      await closes(poolB, "day"),
+    );
     return {
       dataA: resampleToWeekly(dailyA, run.weeklyResampleDays),
       dataB: resampleToWeekly(dailyB, run.weeklyResampleDays),
@@ -117,6 +120,22 @@ async function geckoCloses(run, poolA, poolB) {
   const tf = run.interval === "hourly" ? "hour" : "day";
   console.log(`Fetching ${run.interval} data...`);
   return { dataA: await closes(poolA, tf), dataB: await closes(poolB, tf) };
+}
+
+/**
+ * Keeps the prices of the times both series have: GeckoTerminal makes no
+ * candle for a period in which nothing traded, so a pool can lack a time
+ * the other has.
+ *
+ * @param {Array<{timestamp: number, close: number}>} dataA - Token A's prices
+ * @param {Array<{timestamp: number, close: number}>} dataB - Token B's prices
+ * @returns {Array<Array<{timestamp: number, close: number}>>} Each series with only those times, in its own order
+ */
+function sameTimes(dataA, dataB) {
+  const timesB = new Set(dataB.map((point) => point.timestamp));
+  const pairedA = dataA.filter((point) => timesB.has(point.timestamp));
+  const timesA = new Set(pairedA.map((point) => point.timestamp));
+  return [pairedA, dataB.filter((point) => timesA.has(point.timestamp))];
 }
 
 /**
@@ -193,33 +212,31 @@ export async function fetchSeries(run) {
 }
 
 /**
- * Works out the ratio at each point both series have a price for.
+ * Works out the ratio at each time both series have a price above 0 for:
+ * token A's price at that time over token B's at the same time.
  *
- * @param {Array<{timestamp: number, close: number}>} dataA - Token A's prices
+ * @param {Array<{timestamp: number, close: number}>} dataA - Token A's prices, oldest first
  * @param {Array<{timestamp: number, close: number}>} dataB - Token B's prices
- * @returns {{rows: Array<Object>, ratios: Array<number>, timestamps: Array<number>}} The CSV's rows, the ratios, and their times
+ * @returns {{rows: Array<Object>, ratios: Array<number>, timestamps: Array<number>}} The CSV's rows, the ratios, and their times, oldest first
  */
 export function ratioRows(dataA, dataB) {
-  const minLen = Math.min(dataA.length, dataB.length);
+  const closesB = new Map(dataB.map((point) => [point.timestamp, point.close]));
   const rows = [];
   const ratios = [];
   const timestamps = [];
 
-  for (let i = 0; i < minLen; i++) {
-    const pA = dataA[i].close;
-    const pB = dataB[i].close;
-    if (pB > 0 && pA > 0) {
-      const ratio = pA / pB;
-      ratios.push(ratio);
-      timestamps.push(dataA[i].timestamp);
-      const date = new Date(dataA[i].timestamp).toISOString().split("T")[0];
-      rows.push({
-        date,
-        priceA: pA.toFixed(12),
-        priceB: pB.toFixed(12),
-        ratio: ratio.toFixed(12),
-      });
-    }
+  for (const { timestamp, close: pA } of dataA) {
+    const pB = closesB.get(timestamp);
+    if (pB === undefined || !(pA > 0 && pB > 0)) continue;
+    const ratio = pA / pB;
+    ratios.push(ratio);
+    timestamps.push(timestamp);
+    rows.push({
+      date: new Date(timestamp).toISOString().split("T")[0],
+      priceA: pA.toFixed(12),
+      priceB: pB.toFixed(12),
+      ratio: ratio.toFixed(12),
+    });
   }
   return { rows, ratios, timestamps };
 }
