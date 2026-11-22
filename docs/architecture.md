@@ -38,6 +38,7 @@ Two companion references sit alongside this one:
     - [The Rules](#the-rules)
     - [What Every Row of a Transaction Shares](#what-every-row-of-a-transaction-shares)
   - [What the Sweep Writes](#what-the-sweep-writes)
+- [Settings Files](#settings-files)
 - [Api Keys](#api-keys)
 - [crypto-price-fetchers](#crypto-price-fetchers)
 - [Technology Choices](#technology-choices)
@@ -106,6 +107,10 @@ line, declared in `balance-command.js`, checks each option as it is parsed,
 so a block that is no whole number, a date no calendar has, an address that
 is not 0x and 40 hex digits, or an endpoint that is not an http or https
 url stops the run, naming the option, before the chain is asked anything.
+The endpoint's default is `defaultRpc` in the `config.json` beside
+`index.js`, whichever folder the command runs in, which `settings.js`
+checks against its JSON Schema (see [Settings Files](#settings-files)),
+else g4mm4's public endpoint.
 It holds addresses in EIP-55's mixed case. It reads each balance once and
 writes it twice: with commas between the thousands, and again as plain
 digits (`format-balance.js`). A balance at a past block needs an archive
@@ -188,7 +193,13 @@ weekly ones; a weekly run from GeckoTerminal says so before its chart.
 `pulse-token-ratio.js` reads `config.json` and runs the command line, which
 `ratio-command.js` declares with commander, the package that reads a
 command line's options and writes its help, with the settings' defaults
-from `config.json`; `ratio-source.js` settles the source; `ratio-series.js`
+from `config.json`. Before it takes a default, `buildRatioCommand` checks
+the settings against their JSON Schema, `RATIO_SETTINGS_SCHEMA` (see
+[Settings Files](#settings-files)); each option's parser is made from the
+kind of value the schema gives the same setting, and a hook before the
+action refuses `--source` beside a `useDexToolsOnly` the file sets, which
+commander refuses only when both are typed. `ratio-source.js` settles the
+source; `ratio-series.js`
 fetches the prices and works out the ratios; `ratio-output.js` prints
 them. The run ends with exit code 0 when it printed the ratios, and 1 when
 it did not: a mistake in the arguments or in `config.json`, no source
@@ -300,8 +311,10 @@ repo is public: the path of his Summ template and of his LP Ranger
 checkout; his own wallets, each with its name; the tokens he counts as
 spam, and those he receives as income; and each token's symbols in Summ
 and in a csv, where they differ from its contract's own
-(`owner-lists.js`). `summ-sweep/config-example.json` shows the shape. The
-endpoint must keep past state and offer the debug methods, as for the
+(`owner-lists.js`). `summ-sweep/config-example.json` shows the shape.
+`summ-sweep/settings.js` checks both files against their JSON Schemas
+before the sweep takes a setting (see [Settings Files](#settings-files)).
+The endpoint must keep past state and offer the debug methods, as for the
 history.
 
 ### Legs and the Match
@@ -508,6 +521,47 @@ would be compared as if it were whole.
 
 ---
 
+## Settings Files
+
+A tool keeps its settings in a JSON file, and a setting there is a
+decision the owner made: a misspelled key a tool passes over, or a value
+of the wrong kind it bends to fit, runs the tool on a setting the owner
+did not choose. So each settings file is checked against its JSON Schema,
+a description in JSON of the keys the file may hold and the kind of value
+each takes, before a tool takes a setting, as LP Ranger checks its
+settings. crypto-price-fetchers' `readSettingsFile`
+(`crypto-price-fetchers/lib/settings-file`) reads the file, and each
+schema is built from its kinds of value
+(`crypto-price-fetchers/lib/settings-schema`), each with the words a
+refusal uses, such as "a whole number above 0". Ajv, an npm package that
+checks JSON against a schema, checks them on draft 2020-12, strict, with
+every object refusing a key its schema does not name. A file that is not
+JSON, a key the schema does not name, or a value of the wrong kind stops
+the run, with every problem listed, one line each:
+
+```text
+config.json → maxCandles must be a whole number above 0; it is 0
+config.json → colour is not a setting this tool reads
+```
+
+| File | Schema | Read by |
+| --- | --- | --- |
+| `chart-price-ratio/config.json` | `RATIO_SETTINGS_SCHEMA` (`chart-price-ratio/ratio-command.js`), every setting optional | `buildRatioCommand`, before it takes a default |
+| `check-token-balance/config.json`, beside the checker's files | `SETTINGS_SCHEMA` (`check-token-balance/settings.js`): `defaultRpc`, an http or https url | `defaultRpcFrom`; no file gives g4mm4's endpoint, with a notice |
+| The top `config.json` | `CHAIN_SETTINGS_SCHEMA` (`summ-sweep/settings.js`): the chain's facts under `pulsechain`, each required, its two contracts in EIP-55's form | The Summ sweep, and crypto-price-fetchers' key store for `apiKeys` |
+| `summ-sweep/config.json` | `OWNER_SETTINGS_SCHEMA` (`summ-sweep/settings.js`): the template's and LP Ranger's paths, required, and the owner's lists, whose addresses may be in lower case | The Summ sweep |
+| `for-google-apps/check-token-balance/config.json` | Built from the Sheets script's own config objects, by crypto-price-fetchers' runner | The script's Node version |
+
+A command line whose options take their defaults from a settings file
+makes each option's parser from the kind the schema gives the same
+setting, so a typed value and the file's meet one rule. Commander refuses
+two conflicting options only when both are typed, so the ratio chart
+refuses, with crypto-price-fetchers' `checkConflicts`
+(`crypto-price-fetchers/lib/option-conflicts`), `--source` beside a
+`useDexToolsOnly` its file sets.
+
+---
+
 ## Api Keys
 
 The keys this repo's programs send are listed in its top `config.json`,
@@ -554,9 +608,13 @@ against a default made with `||`
 `run-actionlint`, which runs actionlint, the checker of GitHub Actions
 workflow files, from its official release, refused unless its SHA-256 and
 its program's are the ones crypto-price-fetchers pins, the helpers the
-command lines check a day and an url with and end quietly with when their
-output closes (`crypto-price-fetchers/lib/calendar-day`, `…/lib/http-url`,
-`…/lib/closed-output`), and the checks the tests make of each command
+command lines check a day with and end quietly with when their output
+closes (`crypto-price-fetchers/lib/calendar-day`, `…/lib/closed-output`),
+the checks of a settings file against its JSON Schema and the option
+parsers made from the same kinds of value (`…/lib/settings-file`,
+`…/lib/settings-schema`), `checkConflicts`, which refuses a typed option
+that conflicts with one a settings file sets (`…/lib/option-conflicts`),
+and the checks the tests make of each command
 line's help and of the repo's tracked files
 (`crypto-price-fetchers/lib/command-line-help`, `…/lib/repo-checks`).
 

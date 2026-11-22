@@ -194,7 +194,10 @@ the Summ csv template, the path of an LP Ranger checkout, whose
 bookkeeping tool reads each withdrawal from a position, the owner's other
 wallets with their names, the tokens to book as spam and as income, and
 the symbols Summ and a csv give each token whose symbol differs from its
-contract's.
+contract's. The sweep checks the file against its JSON Schema before it
+starts (`summ-sweep/settings.js`): a misspelled key, a value of the wrong
+kind, or an address whose mixed case breaks its checksum stops it, with
+every problem listed.
 
 It also needs Summ's rows of the wallet, saved to files a page at a time
 from Summ's connector for Claude, and the time up to which Summ's sync has

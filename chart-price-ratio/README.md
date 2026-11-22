@@ -87,7 +87,7 @@ Edit `config.json` to set defaults:
   "chain": "pulse",
   "dextools": {
     "subscription": "standard",
-    "host": "<https://public-api.dextools.io>",
+    "host": "https://public-api.dextools.io",
     "version": "v2"
   },
   "moralis": {
@@ -104,6 +104,13 @@ Edit `config.json` to set defaults:
 
 `moralis.chain` is Moralis's id for PulseChain, and `moralis.days` the
 days of daily candles a run reads from Moralis.
+
+The file is checked against its JSON Schema, `RATIO_SETTINGS_SCHEMA` in
+`ratio-command.js`, before any setting is taken: a key the schema does not
+name, such as a misspelled one, or a value of the wrong kind, such as a
+`maxCandles` of 0, stops the run, with every problem listed. A typed option
+meets the rule its setting meets here, and `--source` is refused beside a
+`useDexToolsOnly` set to true here.
 
 ### API keys
 

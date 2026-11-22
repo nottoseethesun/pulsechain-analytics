@@ -21,7 +21,9 @@
  * and of his LP Ranger checkout, his own wallets, his spam and income
  * tokens, and each token's symbols in Summ and in a csv) are in
  * `summ-sweep/config.json`, which git ignores, since this repo is public;
- * `summ-sweep/config-example.json` shows its shape. The range runs from
+ * `summ-sweep/config-example.json` shows its shape. Both files are checked
+ * against their JSON Schemas (`summ-sweep/settings.js`) before the sweep
+ * takes a setting. The range runs from
  * the first block of its first day to the last block of its last. Before
  * either file is written, the rows are checked by the csv utility and
  * both paths are checked for files already there, so a run that fails
@@ -33,7 +35,6 @@
  */
 
 import fs from "node:fs";
-import path from "node:path";
 import { Command, CommanderError, InvalidArgumentError } from "commander";
 import { JsonRpcProvider, Network, getAddress, isAddress } from "ethers";
 import {
@@ -48,6 +49,7 @@ import { parseSummResults } from "./summ-results.js";
 import { readThroughLpRanger } from "./lp-ranger.js";
 import { sweepWallet } from "./sweep.js";
 import { dayStartSeconds } from "crypto-price-fetchers/lib/calendar-day";
+import { readSweepSettings } from "./settings.js";
 import { secondsOfTime } from "./times.js";
 
 /** One day, in seconds. */
@@ -264,18 +266,6 @@ async function sweepWith(options, context) {
 }
 
 /**
- * Reads a json file of settings.
- *
- * @param {string} file - The file
- * @param {string} missing - What to say when it is not there
- * @returns {object} The settings
- */
-function settingsFrom(file, missing) {
-  if (!fs.existsSync(file)) throw new Error(missing);
-  return JSON.parse(fs.readFileSync(file, "utf8"));
-}
-
-/**
  * An ethers provider of the chain's endpoint, which takes the chain's id
  * from the settings rather than asking the endpoint, and gathers requests
  * made together into batches.
@@ -354,14 +344,7 @@ export async function runSummSweep(argv, deps = {}) {
   const program = sweepCommand(stdout, stderr);
   try {
     program.parse(argv);
-    const chain = settingsFrom(
-      path.join(repoTop, "config.json"),
-      "The top config.json is missing",
-    ).pulsechain;
-    const owner = settingsFrom(
-      path.join(repoTop, "summ-sweep", "config.json"),
-      "summ-sweep/config.json is missing: copy summ-sweep/config-example.json to it and fill it in",
-    );
+    const { chain, owner } = readSweepSettings(repoTop);
     await sweepWith(program.opts(), {
       chain,
       owner,

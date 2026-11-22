@@ -66,9 +66,15 @@
  *      for.
  *
  * Configuration:
- *   - All settings are loaded from config.json in the same directory.
+ *   - All settings are loaded from config.json in the same directory, and
+ *     checked against their JSON Schema, `RATIO_SETTINGS_SCHEMA` in
+ *     `ratio-command.js`, before any is taken: a key the schema does not
+ *     name, or a value of the wrong kind, stops the run, with every problem
+ *     listed.
  *   - Command-line options override them for one run:
  *     node pulse-token-ratio.js --help lists them, each with its default.
+ *     A typed option meets the rule its setting meets in config.json, and
+ *     `--source` is refused beside a `useDexToolsOnly` the file sets.
  *
  * Requirements:
  *   Node.js v24+ (native fetch, ESM support)
@@ -119,35 +125,35 @@
  *    prices, or a failed request.
  */
 
-import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 
+import { readSettingsFile } from "crypto-price-fetchers/lib/settings-file";
 import { keySaved, openKey, SAVE_KEY_HELP } from "./api-keys.js";
-import {
-  buildRatioCommand,
-  INTERVALS,
-  ratioSettings,
-} from "./ratio-command.js";
+import { buildRatioCommand, ratioSettings } from "./ratio-command.js";
 import { printRatios } from "./ratio-output.js";
 import { fetchSeries, ratioRows } from "./ratio-series.js";
 import { askAtTerminal, chooseSource } from "./ratio-source.js";
 import { endQuietlyWhenOutputCloses } from "crypto-price-fetchers/lib/closed-output";
 
 /**
- * Reads config.json, beside this file, or stops the run when it cannot.
+ * Reads config.json, beside this file, with crypto-price-fetchers'
+ * `readSettingsFile`, and builds the command line from it, which checks the
+ * settings against their JSON Schema first (`ratio-command.js`); or stops
+ * the run, with exit code 1 and every problem listed, when either cannot be
+ * done.
  *
- * @returns {Object} The settings
+ * @returns {import('commander').Command} The command, without its action
  */
-function readConfig() {
+function ratioCommand() {
   const configPath = path.join(
     path.dirname(fileURLToPath(import.meta.url)),
     "config.json",
   );
   try {
-    return JSON.parse(fs.readFileSync(configPath, "utf8"));
+    return buildRatioCommand(readSettingsFile(configPath, { required: true }));
   } catch (err) {
-    console.error("Error loading config.json:", err.message);
+    console.error(`Error: ${err.message}`);
     process.exit(1);
   }
 }
@@ -230,17 +236,10 @@ async function settleSource(settings, command) {
   }
 }
 
-const config = readConfig();
-
 endQuietlyWhenOutputCloses();
-await buildRatioCommand(config)
+await ratioCommand()
   .action(async (tokenA, tokenB, interval, options, command) => {
     const settings = ratioSettings(tokenA, tokenB, interval, options);
-    if (!INTERVALS.includes(settings.interval)) {
-      command.error(
-        `config.json's interval must be one of ${INTERVALS.join(", ")}.`,
-      );
-    }
     warnWhenNoKeySaved();
     const source = await settleSource(settings, command);
     try {

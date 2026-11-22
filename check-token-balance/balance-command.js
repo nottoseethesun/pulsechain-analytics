@@ -20,7 +20,9 @@
  *   for PLS, PulseChain's own coin, which has no contract, or a contract's
  *   address;
  * - the rpc endpoint, the json-rpc api of the PulseChain node asked, is an
- *   http or https url, as crypto-price-fetchers' `isHttpUrl` says.
+ *   http or https url, by crypto-price-fetchers' kind of value `KINDS.url`
+ *   (`crypto-price-fetchers/lib/settings-schema`), the same rule
+ *   config.json's `defaultRpc` meets (`settings.js`).
  *
  * `--block` and `--date` exclude each other; the action checks that one of
  * them is given.
@@ -28,7 +30,7 @@
 
 import { Command, InvalidArgumentError, Option } from "commander";
 import { dayStartSeconds } from "crypto-price-fetchers/lib/calendar-day";
-import { isHttpUrl } from "crypto-price-fetchers/lib/http-url";
+import { KINDS, kindParser } from "crypto-price-fetchers/lib/settings-schema";
 import { ethers } from "ethers";
 
 /** The name the command line takes for PLS, which has no contract. */
@@ -36,9 +38,8 @@ export const NATIVE_TOKEN = "Pulse_Native_Gas_Token";
 
 /** What the help says after the options: examples and exit codes. */
 const HELP_AFTER = `
-The rpc endpoint's default comes from config.json in the folder the
-command runs in. A balance at a past block needs an endpoint that keeps
-past state.
+The rpc endpoint's default comes from config.json beside index.js. A
+balance at a past block needs an endpoint that keeps past state.
 
 Examples:
   A wallet's PLS and HEX at the start of 1 November 2026, UTC:
@@ -138,18 +139,14 @@ export function tokenList(value) {
 }
 
 /**
- * Checks an rpc endpoint's url, as commander parses it.
+ * Checks an rpc endpoint's url, as commander parses it: the kind of value
+ * config.json's schema gives `defaultRpc` (`settings.js`), so a typed url
+ * and the file's meet one rule.
  *
- * @param {string} value - The url typed
- * @returns {string} The url
+ * @type {function(string): string}
  * @throws {InvalidArgumentError} When it is not an http or https url
  */
-export function rpcUrl(value) {
-  if (!isHttpUrl(value)) {
-    throw new InvalidArgumentError("Not an http or https url.");
-  }
-  return value;
-}
+export const rpcUrl = kindParser(KINDS.url);
 
 /**
  * Builds the command line.

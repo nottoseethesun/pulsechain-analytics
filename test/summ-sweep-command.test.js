@@ -15,6 +15,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import { runSummSweep } from "../summ-sweep/command-line.js";
+import { readSweepSettings } from "../summ-sweep/settings.js";
 import { summPage } from "./helpers/summ-pages.js";
 import {
   CHAIN,
@@ -27,9 +28,13 @@ import {
   summRows,
   sweepChain,
   tempFolder,
+  WPLS,
 } from "./helpers/summ-sweep-case.js";
 
 after(removeTempFolders);
+
+/** The repo's top folder. */
+const REPO_TOP = path.resolve(import.meta.dirname, "..");
 
 /**
  * A repo top in a temp folder, with the chain settings, a template,
@@ -194,6 +199,71 @@ describe("runSummSweep", () => {
       run.err,
       /summ-sweep\/config\.json is missing: copy summ-sweep\/config-example\.json/,
     );
+  });
+
+  it("refuses the chain's facts of the wrong kind in the top config.json, listing every problem, before it reads the chain", async () => {
+    const top = repo();
+    const chain = JSON.parse(fs.readFileSync(path.join(top, "config.json")));
+    chain.pulsechain.batchSize = 0;
+    chain.pulsechain.wrappedCoin = WPLS.toLowerCase();
+    delete chain.pulsechain.spanBlocks;
+    fs.writeFileSync(path.join(top, "config.json"), JSON.stringify(chain));
+
+    const run = await runOn(top, argsFor(top));
+
+    assert.equal(run.code, 1);
+    assert.equal(
+      run.err,
+      [
+        "config.json → pulsechain.spanBlocks is missing",
+        `config.json → pulsechain.wrappedCoin must be an EIP-55 address; it is "${WPLS.toLowerCase()}"`,
+        "config.json → pulsechain.batchSize must be a whole number above 0; it is 0",
+        "",
+      ].join("\n"),
+    );
+    assert.equal(run.chainMade, false);
+  });
+
+  it("refuses an owner's address whose mixed case breaks its checksum, as a key and in a list, before it reads the chain", async () => {
+    const top = repo();
+    const ownerFile = path.join(top, "summ-sweep", "config.json");
+    const owner = JSON.parse(fs.readFileSync(ownerFile));
+    // WPLS with its first letter in lower case: mixed case, checksum broken
+    const broken = `0xa${WPLS.slice(3)}`;
+    owner.ownWallets = { [broken]: "Mine" };
+    owner.spamTokens = [broken, broken];
+    fs.writeFileSync(ownerFile, JSON.stringify(owner));
+
+    const run = await runOn(top, argsFor(top));
+
+    assert.equal(run.code, 1);
+    assert.ok(
+      run.err.includes(
+        `summ-sweep/config.json → ownWallets has the key "${broken}", which must be an address, 0x and 40 hex digits, in lower case or in EIP-55's mixed case\n`,
+      ),
+      run.err,
+    );
+    assert.match(
+      run.err,
+      /summ-sweep\/config\.json → spamTokens must be a list of addresses, each once/,
+    );
+    assert.equal(run.chainMade, false);
+  });
+
+  it("takes the committed top config.json and summ-sweep/config-example.json, which hold to their schemas", () => {
+    const top = tempFolder("summ-sweep-committed-");
+    fs.mkdirSync(path.join(top, "summ-sweep"));
+    fs.copyFileSync(
+      path.join(REPO_TOP, "config.json"),
+      path.join(top, "config.json"),
+    );
+    fs.copyFileSync(
+      path.join(REPO_TOP, "summ-sweep", "config-example.json"),
+      path.join(top, "summ-sweep", "config.json"),
+    );
+    const { chain, owner } = readSweepSettings(top);
+    assert.equal(chain.chainId, 369);
+    assert.ok(Object.keys(owner.csvSymbols).length > 0);
   });
 
   it("refuses a mistake in an option as it parses it, naming the option, before it reads anything", async () => {
