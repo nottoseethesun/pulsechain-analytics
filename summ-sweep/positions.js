@@ -7,14 +7,16 @@
  * more than one: `decreaseLiquidity`, which takes liquidity out of the
  * pool and logs a DecreaseLiquidity event with the two coins' amounts, the
  * principal; and `collect`, which pays the wallet everything the position
- * is owed: that principal, plus the fees the position earned. So the fees
- * of a collect are the coins it paid out, less every DecreaseLiquidity of
- * the same NFT since the NFT's last collect. A collect with no
- * DecreaseLiquidity before it is all fees. The position manager takes off
- * what the position is owed the amounts a Collect event names, whoever
- * receives the coins, so the principal those amounts leave owed waits for
- * the next collect. A collect whose coins the wallet received less of than
- * its principal, or none of, is reported. The owner books fees as income,
+ * is owed: that principal, plus the fees the position earned. The
+ * position manager takes off what the position is owed the amounts a
+ * Collect event names, whoever receives the coins, so the principal those
+ * amounts leave owed waits for the next collect. So the principal of a
+ * collect is what the position still owes of its principal: every
+ * DecreaseLiquidity of the same NFT since its last collect, and what its
+ * earlier Collect events left owed; its fees are the coins it paid out,
+ * less that principal. A collect with no principal owed is all fees. A
+ * collect whose coins the wallet received less of than its principal, or
+ * none of, is reported. The owner books fees as income,
  * and principal as liquidity removed. The sweep reads one range of blocks:
  * a position owed coins when it began (`summ-sweep/owed.js`) may pay
  * principal from a DecreaseLiquidity before the range in its first collect
@@ -26,8 +28,11 @@
  * in the order sent, through LP Ranger's tool (`summ-sweep/lp-ranger.js`),
  * whose record gives each liquidity event's NFT id and amounts as strings
  * of digits; a record of another shape stops the sweep, naming the
- * transaction. Each NFT's DecreaseLiquidity amounts are added up until its
- * next Collect, which takes them. The coins paid out are the coins the
+ * transaction. Each NFT's DecreaseLiquidity amounts are added to the
+ * principal it is owed; its next Collect takes all of that as its
+ * principal, and what the Collect event's amounts leave of it stays owed
+ * for the collect after. A transaction with more than one Collect event,
+ * of two positions or of one, is reported. The coins paid out are the coins the
  * wallet received in the collect's transaction: its token legs in, and the
  * PLS the position manager handed back when it unwrapped WPLS, counted as
  * WPLS. The pool orders its two coins by address, as numbers, lowest
@@ -207,18 +212,23 @@ export function splitCollects({
   for (const hash of order) {
     const collects = collectsOf(hash, records.get(hash), waiting);
     if (collects.length === 0) continue;
-    const firsts = collects.map((one) => !collected.has(one.nftId));
-    const owed = collects.map((one, index) => {
-      if (firsts[index] && owedAtStart.has(one.nftId))
+    const firsts = [];
+    const owed = collects.map((one) => {
+      const first = !collected.has(one.nftId);
+      firsts.push(first);
+      if (first && owedAtStart.has(one.nftId))
         owedLeft.set(one.nftId, owedAtStart.get(one.nftId));
       collected.add(one.nftId);
       return payOwed(owedLeft, one);
     });
     if (collects.length > 1) {
+      const positions = new Set(collects.map((one) => one.nftId));
       problems.push({
         hash,
         problem:
-          "it collects from more than one position, so its coins cannot be split between them",
+          positions.size > 1
+            ? "it collects from more than one position, so its coins cannot be split between them"
+            : `it holds more than one Collect event of position #${collects[0].nftId}, so its coins cannot be split between them`,
       });
       continue;
     }

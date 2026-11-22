@@ -356,14 +356,7 @@ beside it shows the shape.
 
 ## Known bugs
 
-Two are known, each with its test in `test/known-bugs.test.js`: when one
-transaction collects twice from a position owed coins when the swept range
-began, the Summ sweep forgets what the first Collect paid of them, and
-reports the position's later collects as possibly paying them; and the
-ratio chart's two test files fail, in their `after` hooks, when a test-name
-pattern selects none of their tests, so the commands doc's
-`--test-name-pattern` example fails.
-When one is found, it gets a test in
+None is known. When one is found, it gets a test in
 `test/known-bugs.test.js`, declared with `knownBug`, so the test passes while
 the bug is present. The bug's fix makes its test fail; declare that test with
 `it` instead, in the same change, among the tests of the code it is about.

@@ -420,8 +420,10 @@ manager: DecreaseLiquidity, which moves the principal out of the pool's
 liquidity and states its amounts, and Collect, which pays out what the
 position is owed, the principal and the fees it earned. The two can come
 in the same transaction or in different ones, so the principal a collect
-pays out is the sum of the position's DecreaseLiquidity amounts since its
-last collect, and its fees are the rest of what the wallet received.
+pays out is what the position still owes of its principal: the sum of its
+DecreaseLiquidity amounts since its last collect, and what earlier Collect
+events left owed (item 2 below); its fees are the rest of what the wallet
+received.
 
 1. Each transaction the wallet sent to the position manager is read by
    LP Ranger's own tool, `util/bookkeeping/coins-in-transaction.js`, which
@@ -442,8 +444,9 @@ last collect, and its fees are the rest of what the wallet received.
    the position, which can be less. LP Ranger's record gives each event's
    NFT id and amounts as strings of digits, and a record of another shape
    stops the sweep, naming the transaction. A collect it cannot split is
-   reported, never guessed at: one that collects from two positions, one
-   whose coins cannot be placed on the two sides, and one whose coins the
+   reported, never guessed at: one of a transaction with more than one
+   Collect event, of two positions or of one, one whose coins cannot be
+   placed on the two sides, and one whose coins the
    wallet received less of than its principal, or none of. The position
    manager takes off what the position is owed the amounts a Collect event
    names, whoever receives the coins, so the principal those amounts leave

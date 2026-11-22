@@ -13,10 +13,12 @@
  * tested there.
  */
 
+import { spawnSync } from "node:child_process";
 import { after, before, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { ratioRows } from "../chart-price-ratio/ratio-series.js";
 import { printRatios } from "../chart-price-ratio/ratio-output.js";
 import {
@@ -50,8 +52,10 @@ before(async () => {
   keyFile = keys.dexTools;
 });
 
+// A test-name pattern that selects none of this file's tests skips the
+// before, so no keys were saved
 after(() => {
-  keys.remove();
+  if (keys !== undefined) keys.remove();
 });
 
 describe("pulse-token-ratio.js", () => {
@@ -512,5 +516,31 @@ describe("the chart's y-axis", () => {
       assert.equal(labels.length, 31);
       assert.equal(new Set(labels).size, 31, labels.join(" "));
     }
+  });
+});
+
+describe("the ratio chart's test files, run by name", () => {
+  it("pass when a name pattern selects none of their tests", () => {
+    const env = Object.fromEntries(
+      Object.entries(process.env).filter(
+        ([name]) => !["NODE_TEST_CONTEXT", "NODE_V8_COVERAGE"].includes(name),
+      ),
+    );
+    const run = spawnSync(
+      process.execPath,
+      [
+        "--test",
+        "--test-name-pattern=a name no test has",
+        "test/pulse-token-ratio.test.js",
+        "test/pulse-token-ratio-moralis.test.js",
+      ],
+      {
+        cwd: fileURLToPath(new URL("..", import.meta.url)),
+        encoding: "utf8",
+        env,
+      },
+    );
+
+    assert.equal(run.status, 0, run.stdout);
   });
 });

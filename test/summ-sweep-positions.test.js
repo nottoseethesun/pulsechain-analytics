@@ -429,4 +429,32 @@ describe("splitCollects", () => {
       },
     );
   });
+
+  it("keeps what a transaction's first Collect of a position paid of what it was owed when the range began, when the same transaction collects from it again, and reports that transaction", () => {
+    const { splits, problems } = splitFirstCoin(
+      [
+        {
+          events: [
+            ["Collect", "100"],
+            ["Collect", "0"],
+          ],
+          received: 100n,
+        },
+        { events: [["Collect", "5"]], received: 5n },
+      ],
+      new Map([["7", [100n, 0n]]]),
+    );
+
+    assert.deepEqual(problems, [
+      {
+        hash: "0x01",
+        problem:
+          "it holds more than one Collect event of position #7, so its coins cannot be split between them",
+      },
+    ]);
+    assert.deepEqual(
+      splits.map((one) => [one.hash, one.principal, one.fee]),
+      [["0x02", 0n, 5n]],
+    );
+  });
 });
