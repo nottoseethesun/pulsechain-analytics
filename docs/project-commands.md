@@ -88,9 +88,10 @@ says [how](architecture.md#the-summ-sweep).
 
 ## Dependency Versions
 
-crypto-price-fetchers is installed from GitHub, at the top and in
-`chart-price-ratio/`, at the commit each `package-lock.json` keeps. One
-command, entirely optional, moves both.
+crypto-price-fetchers is installed from GitHub, at the top, in
+`chart-price-ratio/` and in `check-token-balance/`, at the commit each
+`package-lock.json` keeps. One command, entirely optional, moves all
+three.
 
 | Command | Flags | Description | Example |
 | ------- | ----- | ----------- | ------- |

@@ -21,7 +21,11 @@
  * `--help` prints the help on stdout, with exit code 0. The message for an
  * option it does not know names the option alone, without what follows its
  * `=`, which may be a secret, such as an api key typed where none is taken.
- * `ratioSettings` gathers what was parsed into the run's settings.
+ * `ratioCommandFrom` builds the command from the settings a function reads,
+ * and when they are refused, builds it from the defaults written here, so
+ * `--help` still answers, and stops every other run, before its action, on
+ * the settings' problems. `ratioSettings` gathers what was parsed into the
+ * run's settings.
  */
 
 import { Argument, Command, InvalidArgumentError, Option } from "commander";
@@ -80,17 +84,21 @@ export const RATIO_SETTINGS_SCHEMA = Object.freeze({
 const checkSettings = compileSettingsSchema(RATIO_SETTINGS_SCHEMA);
 
 /**
- * The parsers of the options that take a number or an url, made from the
- * kinds config.json's schema gives the same settings.
+ * The parsers of the options that take a number, an url or text, made from
+ * the kinds config.json's schema gives the same settings.
  */
 const PARSE = Object.freeze({
   wholeAbove0: kindParser(KINDS.wholeAbove0, asWholeNumber),
   url: kindParser(KINDS.url),
+  text: kindParser(KINDS.text),
 });
 
 /** What the help says after the options. */
 const HELP_AFTER = `
-Each option's default is set in config.json, beside this file.
+Each option's default is set in config.json, beside this file. When
+config.json is refused, the help shows the defaults written in
+ratio-command.js, and any other run stops: on a mistake in its arguments
+when it has one, else on the file's problems.
 
 The candles come from GeckoTerminal, which takes no key, or from Moralis,
 which reads two years of daily candles unless --moralis-days names another
@@ -173,6 +181,7 @@ export function buildRatioCommand(config) {
     .option(
       "--csv-filename <file>",
       "the CSV file",
+      PARSE.text,
       config.csvFilename ?? "token_ratio.csv",
     )
     .addOption(
@@ -191,16 +200,19 @@ export function buildRatioCommand(config) {
     .option(
       "--network <network>",
       "GeckoTerminal's name for the network",
+      PARSE.text,
       config.network ?? "pulsechain",
     )
     .option(
       "--chain <chain>",
       "DexTools' name for the chain",
+      PARSE.text,
       config.chain ?? "pulse",
     )
     .option(
       "--moralis-chain <chain>",
       "Moralis's id for the chain",
+      PARSE.text,
       moralis.chain ?? "0x171",
     )
     .option(
@@ -212,6 +224,7 @@ export function buildRatioCommand(config) {
     .option(
       "--subscription <plan>",
       "the DexTools plan",
+      PARSE.text,
       dextools.subscription ?? "standard",
     )
     .option(
@@ -223,6 +236,7 @@ export function buildRatioCommand(config) {
     .option(
       "--version <version>",
       "DexTools' api version",
+      PARSE.text,
       dextools.version ?? "v2",
     )
     .option(
@@ -243,6 +257,26 @@ export function buildRatioCommand(config) {
       outputError: (message, write) =>
         write(message.replace(/'(-[^'=\s]+)=[^']*'/g, "'$1'")),
     });
+}
+
+/**
+ * Builds the command line from the settings `readConfig` gives. When
+ * reading them fails, or the schema refuses them, it builds the command
+ * from the defaults written here, with a hook before the action that stops
+ * the run, with exit code 1 and every problem listed: `--help` still
+ * prints the help, and a mistake in the arguments is still named first.
+ *
+ * @param {function(): Object} readConfig - Reads config.json's settings
+ * @returns {import('commander').Command} The command, without its action
+ */
+export function ratioCommandFrom(readConfig) {
+  try {
+    return buildRatioCommand(readConfig());
+  } catch (err) {
+    return buildRatioCommand({}).hook("preAction", (command) =>
+      command.error(`Error: ${err.message}`),
+    );
+  }
 }
 
 /**

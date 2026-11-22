@@ -77,6 +77,21 @@ function yLabelFormat(range) {
 }
 
 /**
+ * A time as the chart and its rows name it: its day, as YYYY-MM-DD in UTC,
+ * and, for an hourly run, its hour too, as YYYY-MM-DD HH:MM.
+ *
+ * @param {number} timestamp - The time, in milliseconds since 1970
+ * @param {string} interval - The run's interval: hourly names the hour
+ * @returns {string} The time's name
+ */
+export function timeLabel(timestamp, interval) {
+  const iso = new Date(timestamp).toISOString();
+  return interval === "hourly"
+    ? iso.replace("T", " ").slice(0, 16)
+    : iso.split("T")[0];
+}
+
+/**
  * Builds the x-axis' line: sparse dates, or dates and hours, each under the
  * column of the point it names.
  *
@@ -103,15 +118,7 @@ function xAxisLine(interval, chronologicalTimestamps, width) {
     ts: chronologicalTimestamps[points - 1],
   });
 
-  const formatLabel = (ts) => {
-    const d = new Date(ts);
-    if (interval === "hourly") {
-      return d.toISOString().replace("T", " ").slice(0, 16);
-    }
-    return d.toISOString().split("T")[0];
-  };
-
-  const labelTexts = labels.map((l) => formatLabel(l.ts));
+  const labelTexts = labels.map((l) => timeLabel(l.ts, interval));
 
   let xAxis = "";
   let prevEnd = 0;

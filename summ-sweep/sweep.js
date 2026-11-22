@@ -15,7 +15,10 @@
  * fixes' income rows and the gaps' rows), the questions for the owner,
  * Summ's legs no leg matched, and every problem it found. A withdrawal
  * the position manager paid as PLS is one of the problems, since the
- * sweep matches token legs only.
+ * sweep matches token legs only; so is a position's first collect in the
+ * range when the position was owed coins as the range began
+ * (`summ-sweep/owed.js`), since part of it may be principal from before
+ * the range.
  *
  * How: the steps run in the order each needs the last: the logs and the
  * wallet's own transactions first, then their receipts, the PLS each moved
@@ -33,7 +36,7 @@
  * report as json.
  */
 
-import { getAddress } from "ethers";
+import { getAddress, ZeroAddress } from "ethers";
 import { blockTimes } from "../wallet-history/blocks.js";
 import { walletTransferLogs } from "../wallet-history/transfers.js";
 import { sameAddress, walletSentTransactions } from "../wallet-history/sent.js";
@@ -45,12 +48,13 @@ import { rowsForGaps, sortRows } from "./gaps.js";
 import { tokenLegs } from "./legs.js";
 import { attachManualRows, matchLegs, summLegsOf } from "./match.js";
 import { csvSymbolOf, ownerLists } from "./owner-lists.js";
-import { splitCollects } from "./positions.js";
+import { owedWhenRangeBegan } from "./owed.js";
+import { collectedNftIds, splitCollects } from "./positions.js";
 import { PLS_DECIMALS } from "./rows.js";
 import { sortSplits } from "./splits.js";
 
 /**
- * The problem of a coin with principal the position manager paid as PLS.
+ * The problem of a coin the position manager paid as PLS.
  *
  * @param {object} split - The coin, from `splitCollects`
  * @returns {{hash: string, problem: string}} The problem
@@ -196,10 +200,27 @@ export async function sweepWallet(paced, sweep) {
     .filter((one) => sameAddress(one.to, chain.positionManager))
     .map((one) => one.hash.toLowerCase());
   const records = await sweep.readRecords(order);
+  const minted = new Set(
+    history.legs
+      .filter(
+        (leg) =>
+          leg.nftId !== undefined &&
+          leg.direction === "in" &&
+          leg.counterparty === ZeroAddress &&
+          sameAddress(leg.token, chain.positionManager),
+      )
+      .map((leg) => String(leg.nftId)),
+  );
+  const owedAtStart = await owedWhenRangeBegan(paced, {
+    positionManager: chain.positionManager,
+    nftIds: collectedNftIds(order, records).filter((id) => !minted.has(id)),
+    fromBlock: sweep.fromBlock,
+  });
   const { splits, problems } = splitCollects({
     order,
     records,
     receivedIn: receivedIn(history, chain),
+    owedAtStart,
   });
   const sorted = sortSplits({
     splits,

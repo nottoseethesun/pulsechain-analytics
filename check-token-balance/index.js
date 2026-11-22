@@ -34,7 +34,7 @@ import {
   formatBalanceWithCommas,
 } from "./format-balance.js";
 import { endQuietlyWhenOutputCloses } from "crypto-price-fetchers/lib/closed-output";
-import { defaultRpcFrom } from "./settings.js";
+import { defaultRpcFrom, FALLBACK_RPC } from "./settings.js";
 
 /** The two calls of an ERC-20 contract the checker makes. */
 const ERC20_ABI = Object.freeze([
@@ -43,18 +43,22 @@ const ERC20_ABI = Object.freeze([
 ]);
 
 /**
- * The rpc endpoint `--rpc` defaults to (`settings.js`), or the end of the
- * run, with exit code 1 and every problem of config.json, when the file
- * cannot be taken.
+ * The command line, with `--rpc` defaulting to the endpoint config.json
+ * names (`settings.js`). When the file cannot be taken, `--rpc` defaults
+ * to g4mm4's endpoint, written in `settings.js`, and a hook before the
+ * action stops the run, with exit code 1 and every problem of config.json
+ * listed: `--help` still prints the help, and a mistake in an option is
+ * still named first.
  *
- * @returns {string} The endpoint's url
+ * @returns {import('commander').Command} The command, without its action
  */
-function defaultRpc() {
+function balanceCommand() {
   try {
-    return defaultRpcFrom();
+    return buildBalanceCommand(defaultRpcFrom());
   } catch (error) {
-    console.error(`Error: ${error.message}`);
-    process.exit(1);
+    return buildBalanceCommand(FALLBACK_RPC).hook("preAction", (command) =>
+      command.error(`Error: ${error.message}`),
+    );
   }
 }
 
@@ -167,7 +171,7 @@ async function printBalances(options) {
 }
 
 endQuietlyWhenOutputCloses();
-await buildBalanceCommand(defaultRpc())
+await balanceCommand()
   .action(async (options, command) => {
     if (options.block === undefined && options.date === undefined) {
       command.error("error: give --block or --date");

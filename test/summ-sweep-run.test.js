@@ -187,6 +187,45 @@ describe("sweepWallet", () => {
     ]);
   });
 
+  it("reports a position's first collect in the range when the position was owed coins as the range began, and asks about its coins rather than book them", async () => {
+    /*- Position #9's DecreaseLiquidity is left out of the range: its
+     * collect at hashOf(2) then pays principal from before the range,
+     * which the position manager shows as coins owed when it began. */
+    const records = new Map(RECORDS);
+    records.set(hashOf(1), { kind: "other", liquidity: [] });
+    const chain = sweepChain({ 9: [ONE, 0n] });
+
+    const result = await sweepWallet(pacedProvider(chain, { spacingMs: 0 }), {
+      wallet: WALLET,
+      fromBlock: 1,
+      toBlock: 100,
+      chain: CHAIN,
+      owner: { summSymbols: {}, csvSymbols: {} },
+      summRows: summRows().map((row) => ({
+        ...row,
+        timestamp: Date.parse(row.date) / 1000,
+      })),
+      syncedTo: SYNCED_TO,
+      readRecords: async (hashes) =>
+        new Map(hashes.map((hash) => [hash, records.get(hash)])),
+    });
+
+    assert.deepEqual(result.problems, [
+      {
+        hash: hashOf(2),
+        problem:
+          "position #9 was owed coins when the swept range began, so this collect, its first in the range, may pay principal from a DecreaseLiquidity before the range, which the range does not show",
+      },
+    ]);
+    assert.ok(!result.rows.some((row) => row.id === hashOf(2)));
+    assert.deepEqual(
+      result.questions
+        .filter((one) => one.hash === hashOf(2))
+        .map((one) => one.reason),
+      [`the sweep could not split this collect: ${result.problems[0].problem}`],
+    );
+  });
+
   it("stops on a change of balance no payment explains", async () => {
     const chain = standInWalletChain({
       latest: 100,

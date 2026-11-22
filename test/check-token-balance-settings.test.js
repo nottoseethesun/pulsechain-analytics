@@ -8,9 +8,10 @@
  * removed afterwards. Since the checker reads the config.json beside its
  * own files, a run with a config.json of the test's is a run of a copy of
  * the checker's files in that folder, whose `node_modules` is a link to the
- * checker's own. Each run is given `--block abc`, which the checker refuses
- * as it parses, so a run that got past config.json would stop there and
- * ask no chain.
+ * checker's own. A run whose config.json the checker takes is given
+ * `--block abc`, which the checker refuses as it parses, so it asks no
+ * chain; a run whose config.json is refused stops before its action, on the
+ * file's problems, so it asks no chain either.
  */
 
 import { after, before, describe, it, mock } from "node:test";
@@ -76,7 +77,7 @@ function writeConfig(text) {
  * @param {string} configText - The config.json
  * @returns {{status: number, stdout: string, stderr: string}} How it ended
  */
-function runWith(configText) {
+function runWith(configText, block = "abc") {
   fs.writeFileSync(path.join(copy, "config.json"), configText);
   return spawnSync(
     process.execPath,
@@ -87,7 +88,7 @@ function runWith(configText) {
       "--tokens",
       "Pulse_Native_Gas_Token",
       "--block",
-      "abc",
+      block,
     ],
     { cwd: folder, encoding: "utf8", timeout: 30_000 },
   );
@@ -146,19 +147,29 @@ describe("check-token-balance/index.js, with a config.json it refuses", () => {
   });
 
   it("stops with exit code 1, naming the file, when config.json is not JSON", () => {
-    const ended = runWith('{ defaultRpc: "https://rpc.example.com" }');
+    const ended = runWith('{ defaultRpc: "https://rpc.example.com" }', "1");
     assert.equal(ended.status, 1);
     assert.match(ended.stderr, /^Error: \S*config\.json is not valid JSON: /m);
     assert.doesNotMatch(ended.stderr, /--block/);
   });
 
   it("stops with exit code 1, naming the setting, when defaultRpc is not an http or https url", () => {
-    const ended = runWith(JSON.stringify({ defaultRpc: "rpc.example.com" }));
+    const ended = runWith(
+      JSON.stringify({ defaultRpc: "rpc.example.com" }),
+      "1",
+    );
     assert.equal(ended.status, 1);
     assert.match(
       ended.stderr,
       /^Error: check-token-balance\/config\.json → defaultRpc must be an http or https url; it is "rpc\.example\.com"$/m,
     );
     assert.doesNotMatch(ended.stderr, /--block/);
+  });
+
+  it("names a mistake in an option first, when config.json is refused too", () => {
+    const ended = runWith(JSON.stringify({ defaultRpc: "rpc.example.com" }));
+    assert.equal(ended.status, 1);
+    assert.match(ended.stderr, /--block/);
+    assert.doesNotMatch(ended.stderr, /defaultRpc/);
   });
 });

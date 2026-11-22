@@ -17,13 +17,13 @@
  *    transaction paid the position manager, which has no log.
  * 3. Wrapping PLS: the WPLS in is Swap in. Unwrapping: the WPLS out is
  *    Swap out. The PLS side moves without a log, so it has no row here.
- * 4. A token on the owner's list of spam, coming in: Spam.
- * 5. A token from or to one of the owner's other wallets: Receive or
- *    Send.
- * 6. A swap: a transaction the wallet sent in which one asset, a token
+ * 4. A swap: a transaction the wallet sent in which one asset, a token
  *    or PLS, went out and one other came in. Each token's legs Summ lacks
  *    are added up, in less out: a Buy row when more came in, a Sell row
  *    when more went out.
+ * 5. A token on the owner's list of spam, coming in: Spam.
+ * 6. A token from or to one of the owner's other wallets: Receive or
+ *    Send.
  * 7. A token on the owner's list of income tokens, coming in: Income.
  *
  * Any other leg is a question for the owner, never a guess: a token sent
@@ -34,7 +34,9 @@
  *
  * How: the swap rule runs first, on the whole transaction, since it needs
  * every leg the wallet has in it, matched or not, and the PLS it sent and
- * was handed back: an asset's side of the swap can be in Summ already.
+ * was handed back: an asset's side of the swap can be in Summ already. It
+ * takes no transaction to the position manager, none with an NFT and none
+ * that wraps, so rules 1 to 3 come first in effect.
  * The other legs Summ lacks are gathered token by token: the legs of one
  * token, one direction and one NFT id become one row, as the skill
  * allows, and the row says how many legs it adds up.
@@ -430,7 +432,7 @@ function wrapRule(group, transaction, env) {
 }
 
 /**
- * Rule 4: a token on the owner's list of spam, coming in.
+ * Rule 5: a token on the owner's list of spam, coming in.
  *
  * @param {object} group - The legs gathered
  * @param {object} transaction - The transaction
@@ -451,7 +453,7 @@ function spamRule(group, transaction, env) {
 }
 
 /**
- * Rule 5: a token from or to one of the owner's other wallets.
+ * Rule 6: a token from or to one of the owner's other wallets.
  *
  * @param {object} group - The legs gathered
  * @param {object} transaction - The transaction

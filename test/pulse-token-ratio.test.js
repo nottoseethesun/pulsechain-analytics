@@ -17,6 +17,7 @@ import { after, before, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
+import { ratioRows } from "../chart-price-ratio/ratio-series.js";
 import {
   assertKeysNotShown,
   CLOSES_A,
@@ -377,5 +378,30 @@ describe("pulse-token-ratio.js, its command line", () => {
     assert.equal(run.stderr, "error: unknown option '--api-key'\n");
     assert.deepEqual(run.requests, []);
     assertKeysNotShown(run);
+  });
+});
+
+describe("ratioRows", () => {
+  const hour = 3600000;
+  const start = Date.UTC(2026, 0, 1, 10);
+  const series = [
+    { timestamp: start, close: 2 },
+    { timestamp: start + hour, close: 3 },
+  ];
+
+  it("dates an hourly run's rows with each one's hour, in UTC", () => {
+    const { rows } = ratioRows(series, series, "hourly");
+    assert.deepEqual(
+      rows.map((row) => row.date),
+      ["2026-01-01 10:00", "2026-01-01 11:00"],
+    );
+  });
+
+  it("dates a daily run's rows with their day", () => {
+    const { rows } = ratioRows(series, series, "daily");
+    assert.deepEqual(
+      rows.map((row) => row.date),
+      ["2026-01-01", "2026-01-01"],
+    );
   });
 });

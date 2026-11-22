@@ -26,6 +26,7 @@ import {
   moralisPair,
 } from "./moralis.js";
 import { getBestPoolWithHistory } from "./pool-selector.js";
+import { timeLabel } from "./ratio-output.js";
 
 /** Seconds in an hour, and in a day, for the span a run reads from Moralis. */
 const HOUR_SECONDS = 60 * 60;
@@ -328,9 +329,10 @@ export async function fetchSeries(run) {
  *
  * @param {Array<{timestamp: number, close: number}>} dataA - Token A's prices, oldest first
  * @param {Array<{timestamp: number, close: number}>} dataB - Token B's prices
+ * @param {string} interval - The run's interval: an hourly row's date names its hour (`timeLabel`)
  * @returns {{rows: Array<Object>, ratios: Array<number>, timestamps: Array<number>}} The CSV's rows, the ratios, and their times, oldest first
  */
-export function ratioRows(dataA, dataB) {
+export function ratioRows(dataA, dataB, interval) {
   const closesB = new Map(dataB.map((point) => [point.timestamp, point.close]));
   const rows = [];
   const ratios = [];
@@ -343,7 +345,7 @@ export function ratioRows(dataA, dataB) {
     ratios.push(ratio);
     timestamps.push(timestamp);
     rows.push({
-      date: new Date(timestamp).toISOString().split("T")[0],
+      date: timeLabel(timestamp, interval),
       priceA: pA.toFixed(12),
       priceB: pB.toFixed(12),
       ratio: ratio.toFixed(12),

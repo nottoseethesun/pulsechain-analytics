@@ -42,7 +42,7 @@
     "secretlint": "^11.7.1"
   },
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "engines": {
     "node": ">=24"
   }

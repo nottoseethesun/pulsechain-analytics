@@ -8,7 +8,9 @@
  * a wallet's history makes from that description, as an ethers provider
  * would: block numbers and blocks, log searches, counts of transactions
  * and balances at past blocks, receipts, traces from the call tracer,
- * blocks and their receipts as json-rpc gives them, and contract calls.
+ * blocks and their receipts as json-rpc gives them, and contract calls:
+ * a token's `symbol()` and `decimals()`, and the position manager's
+ * `positions(tokenId)`, whose coins owed a test gives.
  *
  * Its balances are worked out from the description directly (the PLS a
  * transaction carries, its gas, its `pays`, the withdrawals and the
@@ -19,6 +21,31 @@
  * `spanLimit` blocks is refused, as g4mm4's endpoint refuses one wider
  * than 10,000. Every request is counted in `requests`, by method.
  */
+
+import { AbiCoder } from "ethers";
+
+/** The selector of the position manager's `positions(uint256)`. */
+const POSITIONS_SELECTOR = "0x99fbab88";
+
+/**
+ * The types `positions(uint256)` answers with: the position's nonce,
+ * operator, two coins, fee, ticks, liquidity, fee growth of each coin, and
+ * the coins it is owed.
+ */
+const POSITION_TYPES = Object.freeze([
+  "uint96",
+  "address",
+  "address",
+  "address",
+  "uint24",
+  "int24",
+  "int24",
+  "uint128",
+  "uint256",
+  "uint256",
+  "uint128",
+  "uint128",
+]);
 
 /** The time of block 0 in the stand-in, in seconds since 1970. */
 export const FIRST_BLOCK_TIME = 1_700_000_000;
@@ -107,7 +134,10 @@ function topicsMatch(topics, wanted) {
  *   withdrawal or tip makes, for the tests of what cannot be explained
  * @param {Object<string, object>} [description.contracts] - Contracts by
  *   address, in any case: `symbol` (an answer's hex), `decimals` (hex),
- *   or `refuses`, a list of the selectors it refuses
+ *   `refuses`, a list of the selectors it refuses, or `positions`, the
+ *   position manager's positions by NFT id, each the two coins it is owed,
+ *   at any block; it refuses `positions` for an NFT id it does not name,
+ *   as the position manager does for one not minted
  * @param {number} [description.spanLimit] - The widest log search taken
  * @returns {object} The stand-in, with an ethers provider's methods, and
  *   `requests`, a count of the requests by method
@@ -284,10 +314,19 @@ export function standInWalletChain(description) {
       count("call");
       const contract = contracts[to.toLowerCase()];
       if (contract === undefined) return "0x";
-      if ((contract.refuses ?? []).includes(data))
-        throw Object.assign(new Error("execution reverted"), {
-          code: "CALL_EXCEPTION",
-        });
+      const refusal = Object.assign(new Error("execution reverted"), {
+        code: "CALL_EXCEPTION",
+      });
+      if ((contract.refuses ?? []).includes(data)) throw refusal;
+      if (data.startsWith(POSITIONS_SELECTOR)) {
+        const owed = (contract.positions ?? {})[BigInt(`0x${data.slice(10)}`)];
+        if (owed === undefined) throw refusal;
+        const zero = `0x${"0".repeat(40)}`;
+        return AbiCoder.defaultAbiCoder().encode(POSITION_TYPES, [
+          ...[0n, zero, zero, zero, 0n, 0n, 0n, 0n, 0n, 0n],
+          ...owed,
+        ]);
+      }
       return data === "0x95d89b41" ? contract.symbol : contract.decimals;
     },
   };
