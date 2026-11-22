@@ -142,7 +142,7 @@ owner's key file or password.
 
 | Test | What it covers |
 | ---- | -------------- |
-| `fetch-amount-of-token-transferred.test.js` | The module on ethers, a library for talking to Ethereum-style chains, against a stand-in chain, on the cases `transfer-cases.js` holds both copies to, a token or wallet that is not an address, one written with spaces around it, and a token of more than 80 decimals among them. |
+| `fetch-amount-of-token-transferred.test.js` | The module on ethers, a library for talking to Ethereum-style chains, against a stand-in chain, on the cases `transfer-cases.js` holds both copies to, a token or wallet that is not an address, one written with spaces around it or in a mixed case that is not its checksum, a transaction hash with spaces around it, and a token of more than 80 decimals among them. |
 | `fetch-amount-of-token-transferred-gs.test.js` | The Sheets script, run unchanged under Node, on the same cases; and `wrapper.gs`, against a stand-in of the deployed library, giving its amount and letting its error through. |
 | `fetch-amount-of-token-transferred-node-version.test.js` | The Sheets script's Node version, its command line included; its schema of the script's config object held to the script by crypto-price-fetchers' `configSchemaProblems`, and a `config.json` it refuses. |
 | `format-balance.test.js` | How the balance checker writes a balance, for a token of any decimals from 0 to 255. |
@@ -170,8 +170,9 @@ owner's key file or password.
 - `stand-in-chain.js`: a PulseChain rpc endpoint held in memory, with
   options for the other cases: a failed read, a transaction it doesn't
   know, more Transfer events in the receipt, another transfer in the same
-  block, or a token of other decimals. `standInChainFetch` hands it the
-  Node version's requests.
+  block, or a token of other decimals. It takes a receipt's hash as a node
+  does, refusing one that is not 0x and 64 hex digits. `standInChainFetch`
+  hands it the Node version's requests.
 - `transfer-cases.js`: the cases both copies of `getTokenTransferred` are
   tested on, so the two give the same answers.
 - `ethers-stand-in.js`: routes ethers' http requests to a stand-in chain.
@@ -311,11 +312,7 @@ deleted. The steps from a branch to `main` are LP Ranger's eight, in its
 
 ## Known Bugs
 
-Two are known, each with its test in `test/known-bugs.test.js`: the Node
-copy of `getTokenTransferred` stops on a token written in a mixed case
-that is not its checksum, and sends a transaction hash with the spaces
-around it, both of which the Sheets copy takes.
-A bug found gets a test in `test/known-bugs.test.js`,
+None is known. A bug found gets a test in `test/known-bugs.test.js`,
 declared with `knownBug` (`test/helpers/known-bug.js`), so the test passes
 while the bug is present. The bug's fix makes its test fail; the same change
 declares the test with `it`, among the tests of the code it is about.

@@ -38,6 +38,7 @@ describe("getTokenTransferred, the Sheets script", () => {
     chain,
     amount,
     error,
+    transaction = TRANSACTION,
     token = TOKEN,
     wallet = WALLET,
   } of TRANSFER_CASES) {
@@ -45,12 +46,12 @@ describe("getTokenTransferred, the Sheets script", () => {
       const script = loadSheetsScript(TRANSFER_SHEETS_SCRIPT, chain());
       if (error === undefined) {
         assert.equal(
-          script.getTokenTransferred(TRANSACTION, token, wallet),
+          script.getTokenTransferred(transaction, token, wallet),
           amount,
         );
       } else {
         assert.throws(
-          () => script.getTokenTransferred(TRANSACTION, token, wallet),
+          () => script.getTokenTransferred(transaction, token, wallet),
           error,
         );
       }

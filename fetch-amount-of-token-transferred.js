@@ -27,8 +27,8 @@
  *   amount in its data, as ERC-20 has it. An NFT's Transfer event, whose third indexed value is the token id, is not counted.
  * - Returns 0 when the transaction transferred none of the token to the wallet. When a read fails, or the transaction is
  *   not found, it throws, so a failure is never mistaken for an amount; so it does, before it asks the chain, for a token
- *   or wallet that is not 0x and 40 hex digits, naming it. Spaces around an address are dropped, as the Sheets script
- *   drops them.
+ *   or wallet that is not 0x and 40 hex digits, naming it. Spaces around an address or the transaction's hash are
+ *   dropped, and an address is taken in any case, as the Sheets script takes them.
  * - The amount is cut off at 7 decimal places and returned as a number, as the Sheets script returns it. A number keeps
  *   all 7 places for an amount below 2^29, 536,870,912 tokens; from there up, the conversion can round the 7th place.
  * - Assumes the token is ERC-20 compliant with the `decimals()` function and the Transfer event.
@@ -48,12 +48,13 @@ const ADDRESS_FORM = /^0x[0-9a-fA-F]{40}$/;
 
 /**
  * Refuses a token or a wallet that is not an address, naming it, as the Sheets copy does, so a mistyped address is
- * never taken for one that received nothing; and gives the address without the spaces around it, which the Sheets
- * copy drops too, as a cell may hold them.
+ * never taken for one that received nothing; and gives the address as the Sheets copy takes it: without the spaces
+ * around it, as a cell may hold them, and in lower case, which ethers takes whatever the case it was written in,
+ * where a mixed case that is not its EIP-55 checksum would be refused.
  *
  * @param {string} what - What the address is, such as "wallet"
  * @param {string} address - The address given
- * @returns {string} The address, trimmed
+ * @returns {string} The address, trimmed and in lower case
  * @throws {Error} When it is not 0x and 40 hex digits
  */
 function checkAddress(what, address) {
@@ -63,7 +64,7 @@ function checkAddress(what, address) {
       `The ${what} ${text} is not an address: 0x and 40 hex digits`,
     );
   }
-  return text;
+  return text.toLowerCase();
 }
 
 /**
@@ -133,15 +134,20 @@ function cutOffDecimals(wholeTokens) {
 export async function getTokenTransferred(txId, tokenAddress, walletAddress) {
   const tokenGiven = checkAddress("token", tokenAddress);
   const walletGiven = checkAddress("wallet", walletAddress);
+  // As the Sheets copy takes it: without the spaces around it, which a
+  // node refuses
+  const transaction = String(txId).trim().toLowerCase();
   const provider = new ethers.JsonRpcProvider(
     "https://rpc-pulsechain.g4mm4.io",
   );
   const receipt = await read(
-    `the receipt of ${txId}`,
-    provider.getTransactionReceipt(txId),
+    `the receipt of ${transaction}`,
+    provider.getTransactionReceipt(transaction),
   );
   if (receipt === null) {
-    throw new Error(`Transaction ${txId} not found; it may still be pending`);
+    throw new Error(
+      `Transaction ${transaction} not found; it may still be pending`,
+    );
   }
   const total = sumTransfersTo(receipt.logs, tokenGiven, walletGiven);
   if (total === 0n) {

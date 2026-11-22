@@ -34,6 +34,7 @@ describe("getTokenTransferred, the Node script", () => {
     chain,
     amount,
     error,
+    transaction = TRANSACTION,
     token = TOKEN,
     wallet = WALLET,
   } of TRANSFER_CASES) {
@@ -41,12 +42,12 @@ describe("getTokenTransferred, the Node script", () => {
       useStandInChain(chain());
       if (error === undefined) {
         assert.equal(
-          await getTokenTransferred(TRANSACTION, token, wallet),
+          await getTokenTransferred(transaction, token, wallet),
           amount,
         );
       } else {
         await assert.rejects(
-          getTokenTransferred(TRANSACTION, token, wallet),
+          getTokenTransferred(transaction, token, wallet),
           error,
         );
       }
