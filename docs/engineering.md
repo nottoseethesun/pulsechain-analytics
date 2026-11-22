@@ -313,7 +313,14 @@ deleted. The steps from a branch to `main` are LP Ranger's eight, in its
 
 ## Known Bugs
 
-None is known. A bug found gets a test in `test/known-bugs.test.js`,
+Two are known, each with its test in `test/known-bugs.test.js`: when one
+transaction collects twice from a position owed coins when the swept range
+began, the Summ sweep forgets what the first Collect paid of them, and
+reports the position's later collects as possibly paying them; and the
+ratio chart's two test files fail, in their `after` hooks, when a test-name
+pattern selects none of their tests, so the commands doc's
+`--test-name-pattern` example fails.
+A bug found gets a test in `test/known-bugs.test.js`,
 declared with `knownBug` (`test/helpers/known-bug.js`), so the test passes
 while the bug is present. The bug's fix makes its test fail; the same change
 declares the test with `it`, among the tests of the code it is about.
