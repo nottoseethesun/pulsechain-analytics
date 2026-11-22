@@ -604,7 +604,8 @@ Licensed under the MIT License. See [LICENSE](LICENSE) for the full text.
 
 ## Road Map
 
-The repo lists no planned work yet, and no bug is known.
+The repo lists no planned work yet. Five bugs are known, as
+[`docs/engineering.md`](docs/engineering.md#known-bugs) says.
 
 ---
 
