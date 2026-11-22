@@ -350,7 +350,12 @@ beside it shows the shape.
 
 ## Known bugs
 
-None is known. When one is found, it gets a test in
+Two are known, each with its test in `test/known-bugs.test.js`: the
+ratio chart labels a series whose ratios are all the same with
+asciichart's number for its one row, rounded, rather than the ratio; and
+`summ-sweep/legs.js` reads every four-topic Transfer as an NFT's, so an
+ERC-20 that puts its amount in a topic is booked as 1 token.
+When one is found, it gets a test in
 `test/known-bugs.test.js`, declared with `knownBug`, so the test passes while
 the bug is present. The bug's fix makes its test fail; declare that test with
 `it` instead, in the same change, among the tests of the code it is about.
