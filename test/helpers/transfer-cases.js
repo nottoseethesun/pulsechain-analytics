@@ -5,8 +5,8 @@
  *
  * Each case builds a stand-in chain (`stand-in-chain.js`) and says what
  * getTokenTransferred should give: an `amount`, or an `error` whose message
- * matches a pattern; a case may name a `token` or a `wallet` of its own in
- * place of the chain's. Both test files run every case, so the two copies are
+ * matches a pattern; a case may name a `transaction`, a `token` or a
+ * `wallet` of its own in place of the chain's. Both test files run every case, so the two copies are
  * held to the same answers. The cases with another transfer in the block,
  * or a failed balance read, guard the method itself: a copy that worked
  * the amount out from the wallet's balance around the block, rather than
@@ -18,6 +18,7 @@ import {
   OTHER_WALLET,
   standInChain,
   TOKEN,
+  TRANSACTION,
   WALLET,
 } from "./stand-in-chain.js";
 
@@ -80,6 +81,18 @@ export const TRANSFER_CASES = [
     chain: () => standInChain(250n),
     token: ` ${TOKEN} `,
     wallet: ` ${WALLET}\t`,
+    amount: 250,
+  },
+  {
+    name: "takes a token written in a mixed case that is not its checksum",
+    chain: () => standInChain(250n),
+    token: `0x8A${TOKEN.slice(4)}`,
+    amount: 250,
+  },
+  {
+    name: "takes a transaction hash written with spaces around it",
+    chain: () => standInChain(250n),
+    transaction: ` ${TRANSACTION}\t`,
     amount: 250,
   },
   {

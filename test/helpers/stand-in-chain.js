@@ -27,6 +27,10 @@
  * `'receipt'`, `'decimals'`, or `'before'`, the wallet's balance before the
  * block; or `'no-receipt'`, which answers the receipt with null, as an
  * endpoint does for a transaction it does not know.
+ *
+ * The receipt is asked by hash as a node asks it: a hash that is not 0x and
+ * 64 hex digits, in either case, gets a json-rpc error, and one that names
+ * another transaction gets null.
  */
 
 export const TOKEN = "0x8a7FDcA264e87b6da72D000f22186B4403081A2a";
@@ -46,6 +50,8 @@ const TRANSFER_TOPIC =
   "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
 
 const quantity = (n) => "0x" + n.toString(16);
+/** A transaction hash as a node takes it: 0x and 64 hex digits, in either case. */
+const HASH_FORM = /^0x[0-9a-fA-F]{64}$/;
 const word = (n) => "0x" + BigInt(n).toString(16).padStart(64, "0");
 const addressWord = (address) =>
   "0x" + address.slice(2).toLowerCase().padStart(64, "0");
@@ -157,9 +163,21 @@ export function standInChain(
           return reply("0x171");
         case "eth_blockNumber":
           return reply(quantity(BLOCK + 1));
-        case "eth_getTransactionReceipt":
-          if (fail === "no-receipt") return reply(null);
+        case "eth_getTransactionReceipt": {
+          const hash = request.params[0];
+          if (typeof hash !== "string" || !HASH_FORM.test(hash))
+            return {
+              jsonrpc: "2.0",
+              id: request.id,
+              error: {
+                code: -32602,
+                message: `invalid argument 0: ${JSON.stringify(hash)} is not a hash of 0x and 64 hex digits`,
+              },
+            };
+          if (fail === "no-receipt" || hash.toLowerCase() !== TRANSACTION)
+            return reply(null);
           return fail === "receipt" ? busy : reply(receipt);
+        }
         case "eth_call": {
           if (request.params[0].data === DECIMALS_SELECTOR)
             return fail === "decimals" ? busy : reply(word(decimals));

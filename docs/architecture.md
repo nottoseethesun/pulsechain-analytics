@@ -75,8 +75,9 @@ token's Transfer events to the wallet in it. A receipt holds that
 transaction's events alone, so another transaction in the same block never
 counts. And no archive node is needed, since no past balance is read. A
 read that fails throws, so a failure is never taken for an amount. Both
-take a token or a wallet written with spaces around it, as a cell may hold
-it, and the amount of a token of any decimals from 0 to 255.
+take a token, a wallet or a transaction hash written with spaces around
+it, as a cell may hold it, an address in any case, and the amount of a
+token of any decimals from 0 to 255.
 
 The owner deploys the Sheets script as a library. A cell cannot call a
 library's functions directly, only those of the sheet's own project, so a
