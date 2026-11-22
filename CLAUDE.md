@@ -227,7 +227,9 @@ holds the stand-ins:
   runner's services, its `UrlFetchApp` answering from a stand-in chain.
 - `stand-in-web-preload.js` replaces `fetch` in a program a test starts,
   with answers from a file the test writes; `ratio-chart.js` runs the ratio
-  chart with it, against a stand-in GeckoTerminal, Moralis and DexTools.
+  chart with it, against a stand-in GeckoTerminal, Moralis and DexTools,
+  and in a pseudo-terminal, through util-linux's `script`, to answer its
+  questions as at the owner's terminal.
 - `known-bug.js` declares a known-bug test, described below.
 - `stand-in-wallet-chain.js` is a PulseChain endpoint held in memory for
   `wallet-history/`, built from blocks a test describes. It works out

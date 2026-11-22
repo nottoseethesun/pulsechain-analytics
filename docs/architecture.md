@@ -162,8 +162,16 @@ input is a pipe, stops and names `--source` (`ratio-source.js`).
 3. When the candles cannot be had, the chart falls back to each token's
    current USD price from DexTools, a third such service, which takes an
    api key: one point. It asks DexTools through crypto-price-fetchers'
-   client. Every request of crypto-price-fetchers' clients has 30 seconds
-   to answer in full, or the chart stops with the error.
+   client. Each request through crypto-price-fetchers' clients has 30
+   seconds to answer in full. One that runs out of time ends the run with
+   exit code 1, printing no ratio, when it lists a token's pools at
+   GeckoTerminal or its pairs at Moralis, or asks DexTools. The history
+   requests of a token's most liquid pools at GeckoTerminal, up to five,
+   each a pool's daily candles, end the run only when all of them fail; one
+   that fails drops only its pool. On the chart's
+   candles, a request that runs out of time means the candles cannot be
+   had: the chart falls back to DexTools, or, with no DexTools key saved,
+   ends with exit code 1.
 4. It prints the chart, with labels on both axes (`generateNiceTicks.js`
    picks the y-axis' values), the last ten ratios and the current one, and
    writes a CSV when asked.
@@ -183,8 +191,8 @@ command line's options and writes its help, with the settings' defaults
 from `config.json`; `ratio-source.js` settles the source; `ratio-series.js`
 fetches the prices and works out the ratios; `ratio-output.js` prints
 them. The run ends with exit code 0 when it printed the ratios, and 1 when
-it did not: a mistake in the arguments, no source to read, no prices, or a
-request that failed.
+it did not: a mistake in the arguments or in `config.json`, no source
+chosen, no prices, or a request that failed.
 
 Each key is opened from the repo's key store the first time the chart asks
 its service (`api-keys.js`), so a run that reads GeckoTerminal's candles

@@ -8,7 +8,10 @@
  *
  * The Moralis and DexTools keys come from the repo's key store, never from
  * a setting or the command line: the tests save them in key files of their
- * own, in a temp folder, removed afterwards. No output may hold one.
+ * own, in a temp folder, removed afterwards. No output may hold one. The
+ * question of the source is also answered in a pseudo-terminal, through
+ * util-linux's `script` (`runChartInTerminal`), on Linux, where `script`
+ * runs.
  */
 
 import { after, before, describe, it } from "node:test";
@@ -33,6 +36,7 @@ import {
   PAIR_B,
   PASSWORD,
   runChart,
+  runChartInTerminal,
   saveStandInKeys,
   TOKEN_A,
   TOKEN_B,
@@ -317,3 +321,42 @@ describe("chooseSource, the choice of the source of candles", () => {
     assert.deepEqual(silent.asked, []);
   });
 });
+
+describe(
+  "pulse-token-ratio.js, asking for the source at a terminal",
+  {
+    skip: process.platform !== "linux" && "needs util-linux's script",
+  },
+  () => {
+    /** The question's last line, where the answer is typed. */
+    const QUESTION = /Which should this run read, 1 or 2\? /;
+
+    it("takes Moralis on Enter, then asks for the password, showing none of it", async () => {
+      const run = await runChartInTerminal([TOKEN_A, TOKEN_B], {
+        answers: moralisAnswers(CLOSES_A, CLOSES_B),
+        keyFile: keys.moralis,
+        replies: [
+          { after: QUESTION, type: "\r" },
+          { after: /Password for the api keys in /, type: `${PASSWORD}\r` },
+        ],
+      });
+      assert.equal(run.status, 0, run.output);
+      assert.ok(run.output.includes("  1  Moralis: the last 730 days (Enter)"));
+      assert.match(run.output, /ratio \(daily, 100 points\) - Source: Moralis/);
+      assert.ok(!run.output.includes(PASSWORD), "The password was shown");
+      assertKeysNotShown({ stdout: run.output, stderr: "" });
+    });
+
+    it("takes GeckoTerminal on 2, and opens no key", async () => {
+      const run = await runChartInTerminal([TOKEN_A, TOKEN_B], {
+        answers: geckoAnswers(CLOSES_A, CLOSES_B),
+        keyFile: keys.moralis,
+        replies: [{ after: QUESTION, type: "2\r" }],
+      });
+      assert.equal(run.status, 0, run.output);
+      assert.match(run.output, /Source: GeckoTerminal/);
+      assert.doesNotMatch(run.output, /Password/);
+      assert.ok(run.requests.every(({ url }) => !url.includes("moralis")));
+    });
+  },
+);

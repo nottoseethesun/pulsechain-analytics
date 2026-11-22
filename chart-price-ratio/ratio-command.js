@@ -50,8 +50,8 @@ Examples:
 
 Exit codes:
   0  the ratios were printed
-  1  no ratios were printed: a mistake in the arguments, no prices to be
-     had, or a request that failed`;
+  1  no ratios were printed: a mistake in the arguments or in config.json,
+     no source chosen, no prices to be had, or a request that failed`;
 
 /**
  * Checks a contract address, as commander parses it.
@@ -182,7 +182,7 @@ export function buildRatioCommand(config) {
     )
     .option(
       "--max-candles <number>",
-      "the most candles to fetch from each pool",
+      "the most candles to fetch from each pool at GeckoTerminal, and the hours an hourly run reads from Moralis",
       positiveInteger,
       config.maxCandles ?? 1000,
     )

@@ -115,7 +115,8 @@
  *  - CSV includes columns: date, price_tokenA, price_tokenB, ratio.
  *  - Edit config.json for persistent changes; use flags for one-off overrides.
  *  - Exit codes: 0 when the ratios were printed; 1 when none were, from a
- *    mistake in the arguments, no prices, or a failed request.
+ *    mistake in the arguments or in config.json, no source chosen, no
+ *    prices, or a failed request.
  */
 
 import fs from "fs";
