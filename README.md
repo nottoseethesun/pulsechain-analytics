@@ -340,7 +340,9 @@ folder unless a sub-section says otherwise; `<wallet>` and
 `getTokenTransferred(transaction, token, wallet)` gives how much of a
 token one PulseChain transaction sent a wallet: it reads the
 transaction's receipt and adds up the token's transfers to the wallet in
-it, cut off at 7 decimal places rather than rounded. A failed read shows
+it, cut off at 7 decimal places rather than rounded; an amount of 100
+million tokens or more can lose its 7th place, since a number holds about
+15 significant digits. A failed read shows
 in the cell as an error. With the library and the wrapper in the sheet's
 project ([Google Sheets](#google-sheets)), the wrapper's
 `getTokenTransferred` asks the library's caching function, which answers

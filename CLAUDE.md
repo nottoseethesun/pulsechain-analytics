@@ -288,7 +288,8 @@ holds the stand-ins:
   `wallet-history/`, built from blocks a test describes, with the coins
   each position was owed for the position manager's `positions`. It works
   out balances from the description, never through the code tested,
-  refuses a log search wider than its limit, and counts every request.
+  refuses a log search wider than its limit, counts every request, and
+  records the block each contract call asks at.
 - `summ-pages.js` writes pages of Summ's results as Summ's connector
   returns them.
 - `summ-sweep-case.js` is the made-up wallet history the Summ sweep's tests

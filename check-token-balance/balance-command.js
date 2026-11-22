@@ -24,8 +24,9 @@
  *   (`crypto-price-fetchers/lib/settings-schema`), the same rule
  *   config.json's `defaultRpc` meets (`settings.js`).
  *
- * `--block` and `--date` exclude each other; the action checks that one of
- * them is given.
+ * `--block` and `--date` exclude each other, and a hook before the action
+ * checks that one of them is given, so a run without either is named
+ * before any hook added after the command is built.
  */
 
 import { Command, InvalidArgumentError, Option } from "commander";
@@ -189,5 +190,11 @@ export function buildBalanceCommand(defaultRpc) {
       rpcUrl,
       defaultRpc,
     )
+    .hook("preAction", (command) => {
+      const { block, date } = command.opts();
+      if (block === undefined && date === undefined) {
+        command.error("error: give --block or --date");
+      }
+    })
     .addHelpText("after", HELP_AFTER);
 }
