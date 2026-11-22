@@ -443,10 +443,11 @@ last collect, and its fees are the rest of what the wallet received.
    NFT id and amounts as strings of digits, and a record of another shape
    stops the sweep, naming the transaction. A collect it cannot split is
    reported, never guessed at: one that collects from two positions, one
-   whose coins cannot be placed on the two sides, and one that paid out
-   less of a coin than its principal, or none of it. The position still
-   owes the principal a collect did not pay out, so that rest waits for
-   the next collect.
+   whose coins cannot be placed on the two sides, and one whose coins the
+   wallet received less of than its principal, or none of. The position
+   manager takes off what the position is owed the amounts a Collect event
+   names, whoever receives the coins, so the principal those amounts leave
+   owed waits for the next collect.
 3. `splits.js` sorts each coin with principal into Summ's three cases.
    Summ holds the whole amount on one leg: the leg is a fix, to be set to
    the principal and the category Remove liquidity through Summ's
@@ -466,7 +467,10 @@ the range, unless the wallet got the position's NFT minted within it.
 The first collect in the range of a position owed coins then is reported
 as one the sweep cannot split, and its coins Summ lacks become questions,
 since part of what it paid may be principal from before the range, as
-the owner's skill asks of a collect whose principal is not known.
+the owner's skill asks of a collect whose principal is not known. So is
+each later collect of the position until the Collect events in the range
+have paid out, past the range's own principal, which they pay first, all
+it was owed when the range began.
 
 When a pool holds WPLS, the position manager can unwrap it and pay the
 wallet PLS inside the transaction, which logs no Transfer. That PLS,
