@@ -10,13 +10,17 @@
  * is owed: that principal, plus the fees the position earned. So the fees
  * of a collect are the coins it paid out, less every DecreaseLiquidity of
  * the same NFT since the NFT's last collect. A collect with no
- * DecreaseLiquidity before it is all fees. A collect that pays out less of
- * a coin than its principal, or none of it, leaves the rest owed: it is
- * reported, and the rest waits for the next collect. The owner books fees
- * as income, and principal as liquidity removed. The sweep reads one range of blocks:
+ * DecreaseLiquidity before it is all fees. The position manager takes off
+ * what the position is owed the amounts a Collect event names, whoever
+ * receives the coins, so the principal those amounts leave owed waits for
+ * the next collect. A collect whose coins the wallet received less of than
+ * its principal, or none of, is reported. The owner books fees as income,
+ * and principal as liquidity removed. The sweep reads one range of blocks:
  * a position owed coins when it began (`summ-sweep/owed.js`) may pay
  * principal from a DecreaseLiquidity before the range in its first collect
- * within it, so that collect is reported, never split.
+ * within it, so that collect is reported, never split, and so is each
+ * later collect of the position while its events have not paid out, past
+ * the range's own principal, all it was owed when the range began.
  *
  * How: the transactions the wallet sent to the position manager are read
  * in the order sent, through LP Ranger's tool (`summ-sweep/lp-ranger.js`),
@@ -80,9 +84,22 @@ function digitsOf(value, name, hash) {
 }
 
 /**
+ * What is left of an amount once another is taken off it, never below 0.
+ *
+ * @param {bigint} amount - The amount
+ * @param {bigint} taken - What is taken off it
+ * @returns {bigint} What is left
+ */
+function leftOf(amount, taken) {
+  return amount > taken ? amount - taken : 0n;
+}
+
+/**
  * The DecreaseLiquidity and Collect events of one transaction, taken in
  * order: each decrease added to its NFT's principal waiting, each collect
- * taking it.
+ * taking off it the amounts its event names, which the position manager
+ * takes off what the position is owed, whoever receives the coins, so
+ * the rest waits for the next collect.
  *
  * @param {string} hash - The transaction
  * @param {object|undefined} record - LP Ranger's record of it
@@ -109,10 +126,35 @@ function collectsOf(hash, record, waiting) {
       waiting.set(nftId, [before[0] + amounts[0], before[1] + amounts[1]]);
     if (event.event === "Collect") {
       collects.push({ nftId, principal: before, collected: amounts });
-      waiting.set(nftId, [0n, 0n]);
+      waiting.set(nftId, [
+        leftOf(before[0], amounts[0]),
+        leftOf(before[1], amounts[1]),
+      ]);
     }
   }
   return collects;
+}
+
+/**
+ * Takes a collect's payment off what its position was still owed from
+ * before the swept range, when it was: the collect pays the range's own
+ * principal first, so only what its event names past that principal is
+ * taken off, and a position stays owed until every side is paid.
+ *
+ * @param {Map<string, bigint[]>} owedLeft - What each position is still
+ *   owed from before the range, by NFT id, which this updates
+ * @param {{nftId: string, principal: bigint[], collected: bigint[]}} collect - The collect
+ * @returns {boolean} Whether the position was still owed coins from before the range as the collect came
+ */
+function payOwed(owedLeft, collect) {
+  const owed = owedLeft.get(collect.nftId);
+  if (owed === undefined) return false;
+  const left = owed.map((amount, side) =>
+    leftOf(amount, leftOf(collect.collected[side], collect.principal[side])),
+  );
+  if (left.every((amount) => amount === 0n)) owedLeft.delete(collect.nftId);
+  else owedLeft.set(collect.nftId, left);
+  return true;
 }
 
 /**
@@ -159,13 +201,20 @@ export function splitCollects({
 }) {
   const waiting = new Map();
   const collected = new Set();
+  const owedLeft = new Map();
   const splits = [];
   const problems = [];
   for (const hash of order) {
     const collects = collectsOf(hash, records.get(hash), waiting);
     if (collects.length === 0) continue;
+    const firsts = collects.map((one) => !collected.has(one.nftId));
+    const owed = collects.map((one, index) => {
+      if (firsts[index] && owedAtStart.has(one.nftId))
+        owedLeft.set(one.nftId, owedAtStart.get(one.nftId));
+      collected.add(one.nftId);
+      return payOwed(owedLeft, one);
+    });
     if (collects.length > 1) {
-      for (const one of collects) collected.add(one.nftId);
       problems.push({
         hash,
         problem:
@@ -174,12 +223,12 @@ export function splitCollects({
       continue;
     }
     const [collect] = collects;
-    const first = !collected.has(collect.nftId);
-    collected.add(collect.nftId);
-    if (first && owedAtStart.has(collect.nftId)) {
+    if (owed[0]) {
       problems.push({
         hash,
-        problem: `position #${collect.nftId} was owed coins when the swept range began, so this collect, its first in the range, may pay principal from a DecreaseLiquidity before the range, which the range does not show`,
+        problem: firsts[0]
+          ? `position #${collect.nftId} was owed coins when the swept range began, so this collect, its first in the range, may pay principal from a DecreaseLiquidity before the range, which the range does not show`
+          : `position #${collect.nftId} may still owe coins from before the swept range, which its collects in the range have not paid out in full, so this collect may pay principal from a DecreaseLiquidity before the range, which the range does not show`,
       });
       continue;
     }
@@ -193,12 +242,10 @@ export function splitCollects({
       });
       continue;
     }
-    const unpaid = [0n, 0n];
     sides.forEach((coin, side) => {
       const principal = collect.principal[side];
       const got = coin === null ? 0n : received.get(coin);
       if (got < principal) {
-        unpaid[side] = principal - got;
         problems.push({
           hash,
           problem:
@@ -216,12 +263,6 @@ export function splitCollects({
           fee: got - principal,
         });
     });
-    // The position still owes the principal it did not pay out
-    const waitingNow = waiting.get(collect.nftId) ?? [0n, 0n];
-    waiting.set(collect.nftId, [
-      waitingNow[0] + unpaid[0],
-      waitingNow[1] + unpaid[1],
-    ]);
   }
   return { splits, problems };
 }

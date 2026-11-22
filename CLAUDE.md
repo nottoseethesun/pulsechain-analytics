@@ -345,7 +345,9 @@ owner's LP Ranger checkout, since LP Ranger is never changed. A position
 owed coins when the range began, as the position manager's `positions`
 shows at the block before it (`summ-sweep/owed.js`), may pay principal
 from before the range in its first collect within it: that collect is
-reported, never split, and its coins Summ lacks become questions. The
+reported, never split, and its coins Summ lacks become questions, and so
+is each later collect until the range's Collect events have paid out all
+it was owed then. The
 chain's facts are in the top `config.json`, under `pulsechain`; the owner's
 settings (his template's path, his LP Ranger checkout, his own wallets,
 his spam and income tokens, each token's symbols in Summ and in a csv) are

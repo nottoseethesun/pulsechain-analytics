@@ -41,14 +41,16 @@ gates work. This file covers how to drive them.
 
 Run with `npm run <name>`; `test` also works without `run`. Flags go after
 a `--` separator, which tells npm the rest belongs to the script, as in
-these two commands: the first replaces the saved key of DexTools, a
-service that prices tokens from the pools of decentralized exchanges,
-([Api Keys](#api-keys)), and the second runs the ratio chart's tests
-alone ([Test](#test)):
+the first of these two commands, which replaces the saved key of DexTools,
+a service that prices tokens from the pools of decentralized exchanges
+([Api Keys](#api-keys)). npm puts them after the script's own words, and
+Node's test runner reads its flags only before the file pattern, so the
+second, which runs the tests whose names hold `ratio` ([Test](#test)),
+runs Node itself:
 
 ```sh
 npm run api-keys -- set dextools
-npm test -- --test-name-pattern="pulse-token-ratio"
+node --test --test-name-pattern="ratio" "test/*.test.js"
 ```
 
 A command that runs one of the repo's command lines passes `--help` on to
@@ -126,7 +128,7 @@ them, after the lint, and must pass before a commit and a push.
 | `audit:security` | — | The security lint, `eslint-security.config.js`: the rules of eslint-plugin-security, against code open to attack, of eslint-plugin-no-secrets, against strings that look like keys, and crypto-price-fetchers' `no-secret-logging`, against printing a name that may hold a secret. | `npm run audit:security` |
 | `check` | — | The full gate: `lint`, `test:coverage`, `audit:deps` (with `audit:actionlint`), `audit:security` and `audit:secrets`, in that order, stopping at the first that fails. | `npm run check` |
 | `format:check` | — | Prettier in check mode; fails rather than rewriting. | `npm run format:check` |
-| `test` | any `node --test` flag | The tests, on Node's test runner. | `npm test -- --test-name-pattern="api keys"` |
+| `test` | — | The tests, on Node's test runner. The tests whose names hold some words run as `node --test --test-name-pattern="api keys" "test/*.test.js"`, since Node reads that flag only before the file pattern. | `npm test` |
 | `test:coverage` | — | The same tests with coverage, failing below 80% of lines covered. | `npm run test:coverage` |
 
 ---
