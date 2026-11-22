@@ -33,17 +33,24 @@ import {
 } from "./helpers/sheets-script.js";
 
 describe("getTokenTransferred, the Sheets script", () => {
-  for (const { name, chain, amount, error } of TRANSFER_CASES) {
+  for (const {
+    name,
+    chain,
+    amount,
+    error,
+    token = TOKEN,
+    wallet = WALLET,
+  } of TRANSFER_CASES) {
     it(name, () => {
       const script = loadSheetsScript(TRANSFER_SHEETS_SCRIPT, chain());
       if (error === undefined) {
         assert.equal(
-          script.getTokenTransferred(TRANSACTION, TOKEN, WALLET),
+          script.getTokenTransferred(TRANSACTION, token, wallet),
           amount,
         );
       } else {
         assert.throws(
-          () => script.getTokenTransferred(TRANSACTION, TOKEN, WALLET),
+          () => script.getTokenTransferred(TRANSACTION, token, wallet),
           error,
         );
       }

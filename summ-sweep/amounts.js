@@ -28,21 +28,22 @@
  * `summHolds`; `decimalText` writes an amount in a description.
  */
 
-import { formatUnits } from "ethers";
+import { decimalFromRaw } from "crypto-price-fetchers/summ-csv";
 
 /** The significant digits Summ rounds a figure to, when it rounds one. */
 const SUMM_DIGITS = 10;
 
 /**
- * An amount as decimal text, without a fraction of zero.
+ * An amount as decimal text, without a fraction of zero, written by the
+ * Summ csv utility's `decimalFromRaw`, as a csv row's amounts are: it
+ * takes decimals from 0 to 255, as many as a token's uint8 holds.
  *
  * @param {bigint} raw - The amount, in the token's smallest units
  * @param {number} decimals - The token's decimals
  * @returns {string} Such as `12345.67890123`, or `5` for five whole tokens
  */
 export function decimalText(raw, decimals) {
-  const text = formatUnits(raw, decimals);
-  return text.endsWith(".0") ? text.slice(0, -2) : text;
+  return decimalFromRaw(raw, decimals);
 }
 
 /**

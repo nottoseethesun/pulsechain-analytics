@@ -29,17 +29,24 @@ import {
 describe("getTokenTransferred, the Node script", () => {
   after(useEthersOwnHttp);
 
-  for (const { name, chain, amount, error } of TRANSFER_CASES) {
+  for (const {
+    name,
+    chain,
+    amount,
+    error,
+    token = TOKEN,
+    wallet = WALLET,
+  } of TRANSFER_CASES) {
     it(name, async () => {
       useStandInChain(chain());
       if (error === undefined) {
         assert.equal(
-          await getTokenTransferred(TRANSACTION, TOKEN, WALLET),
+          await getTokenTransferred(TRANSACTION, token, wallet),
           amount,
         );
       } else {
         await assert.rejects(
-          getTokenTransferred(TRANSACTION, TOKEN, WALLET),
+          getTokenTransferred(TRANSACTION, token, wallet),
           error,
         );
       }

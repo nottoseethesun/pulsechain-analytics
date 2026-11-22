@@ -35,9 +35,13 @@
  *      evenly spaced values between, as asciichart, the package that draws
  *      the chart, works them out, in one row more than the height of 30 it
  *      is given; a series whose ratios are all the same is drawn in one
- *      row, labelled with the ratio; each rounded to 6, 8, 10 or 12 decimals,
- *      more for a narrower range, with trailing zeros dropped; the labels
- *      of a range under 0.00001 are written in scientific notation.
+ *      row, labelled with the ratio, written in full; each other label is
+ *      rounded to 6, 8, 10 or 12 decimals, more for a narrower range, with
+ *      trailing zeros dropped; the labels of a range under 0.00001 are
+ *      written in scientific notation, with as many digits as keep each
+ *      row's label apart from the next.
+ *    • The chart prints its lines through printRatios' print function,
+ *      the console's log unless a test reads the lines.
  *    • Each y-axis label is padded with spaces to the length of the
  *      longest, so the axis lines up.
  *    • The x-axis carries up to 10 dates, with the hour for the hourly

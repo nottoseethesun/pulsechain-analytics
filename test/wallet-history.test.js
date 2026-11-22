@@ -485,6 +485,17 @@ describe("tokenFacts", () => {
     });
   });
 
+  it("takes a decimals answer above 255, which no uint8 holds, for no decimals", async () => {
+    const contract = {
+      call: async ({ data }) =>
+        data === "0x95d89b41"
+          ? coder.encode(["string"], ["ODD"])
+          : `0x${"f".repeat(64)}`,
+    };
+    const facts = await tokenFacts(unpaced(contract), [TOKEN]);
+    assert.deepEqual(facts.get(TOKEN), { symbol: "ODD", decimals: null });
+  });
+
   it("takes an error of the EVM that is no revert, such as an invalid opcode, as the contract's refusal: the call ran, and the contract's code stopped it", async () => {
     for (const message of [
       "invalid opcode: INVALID",

@@ -184,10 +184,13 @@ input is a pipe, stops and names `--source` (`ratio-source.js`).
    an npm package that draws a line chart in text, draws the chart in 31
    rows, one more than the height of 30 it is given, and works out each
    row's value: the highest ratio on the top row, the lowest on the bottom
-   one, and evenly spaced values between. Each row's label is its value.
-   A series whose ratios are all the same is drawn in one row, labelled
-   with the ratio, since asciichart's own number for that row is the ratio
-   rounded to a whole number.
+   one, and evenly spaced values between. Each row's label is its value,
+   with as many digits as keep it apart from the next row's: for a range
+   under 0.00001, in scientific notation, so ratios near 1 that differ in
+   their sixth decimal still get labels of their own. A series whose
+   ratios are all the same is drawn in one row, labelled with the ratio,
+   written in full, since asciichart's own number for that row is the
+   ratio rounded to a whole number.
 
 The chart spans at least 90 columns: its x-axis spaces four to ten dates
 under its columns, each ten characters wide, or sixteen with the hour, and
@@ -318,10 +321,13 @@ A mistake stops the run before it reads anything.
 Summ's connector for Claude, through which Claude reads and edits the
 owner's records in Summ, returns the rows a page at a time, and the pages
 are saved to files: `summ-results.js` reads them, and refuses a set with
-a page missing or given twice, or a page holding fewer or more rows than
-it says
-it returned. The range of blocks runs from the first block of the first
-day to the last block of the last.
+a page missing, given twice or past the last, a page holding fewer or
+more rows than it says it returned, two pages that name a different
+number of pages or a different total, or rows that do not add up to the
+total. Pages saved while Summ's rows changed between them disagree on one
+of these, and a row on neither would be booked again as one Summ lacks.
+The range of blocks runs from the first block of the first day to the
+last block of the last.
 
 The chain's facts are in the top `config.json`, under `pulsechain`: the
 endpoint, the chain's id, the position manager, WPLS, the widest span of
@@ -554,7 +560,9 @@ neither over a file already there without `--replace`:
   what Summ lacks, through crypto-price-fetchers' Summ csv utility, the
   one way a csv for Summ is written: it takes the header from the owner's
   template, checks every row against Summ's rules, and writes nothing
-  while a row breaks one. A sweep with no rows writes no csv.
+  while a row breaks one. A sweep with no rows writes no csv, and with
+  `--replace` removes the csv already at its path, whose rows, of the run
+  before, may already be in Summ.
 - **The report**, as json: the fixes, each with the ids Summ gave its
   leg; the legs and parts Summ lacks; the questions, each with its legs
   and the reason no rule books them; Summ's legs no chain leg matched;

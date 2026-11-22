@@ -7,26 +7,20 @@
  * The command line runs on a repo top in a temp folder of its own, with
  * the stand-in chain of `helpers/summ-sweep-case.js`, Summ's page written
  * by `helpers/summ-pages.js`, and LP Ranger's tool a stand-in that answers
- * with the case's records.
+ * with the case's records (`helpers/summ-sweep-command-run.js`).
  */
 
 import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
-import { runSummSweep } from "../summ-sweep/command-line.js";
 import { readSweepSettings } from "../summ-sweep/settings.js";
-import { summPage } from "./helpers/summ-pages.js";
+import { argsFor, repo, runOn } from "./helpers/summ-sweep-command-run.js";
 import {
-  CHAIN,
   POOL,
-  RECORDS,
-  TEMPLATE_HEADER,
   TKN,
   WALLET,
   removeTempFolders,
-  summRows,
-  sweepChain,
   tempFolder,
   WPLS,
 } from "./helpers/summ-sweep-case.js";
@@ -35,90 +29,6 @@ after(removeTempFolders);
 
 /** The repo's top folder. */
 const REPO_TOP = path.resolve(import.meta.dirname, "..");
-
-/**
- * A repo top in a temp folder, with the chain settings, a template,
- * Summ's page and, unless left out, the owner's settings.
- *
- * @param {boolean} [owner] - Whether to write the owner's settings
- * @returns {string} The repo top
- */
-function repo(owner = true) {
-  const top = tempFolder("summ-sweep-cli-");
-  fs.mkdirSync(path.join(top, "summ-sweep"));
-  fs.writeFileSync(
-    path.join(top, "config.json"),
-    JSON.stringify({
-      pulsechain: {
-        ...CHAIN,
-        chainId: 369,
-        rpcEndpoint: "https://rpc.example",
-        requestSpacingMs: 0,
-      },
-    }),
-  );
-  fs.writeFileSync(path.join(top, "template.csv"), `${TEMPLATE_HEADER}\n`);
-  if (owner)
-    fs.writeFileSync(
-      path.join(top, "summ-sweep", "config.json"),
-      JSON.stringify({
-        templatePath: path.join(top, "template.csv"),
-        lpRangerDir: "/lp",
-        summSymbols: {},
-        csvSymbols: {},
-      }),
-    );
-  fs.writeFileSync(
-    path.join(top, "page-1.txt"),
-    summPage({ page: 1, pages: 1, rows: summRows() }),
-  );
-  return top;
-}
-
-/**
- * Runs the command line on a repo top, with the stand-ins.
- *
- * @param {string} top - The repo top
- * @param {string[]} args - The command line's arguments
- * @returns {Promise<{code: number, out: string, err: string,
- *   chainMade: boolean}>} What it returned and printed, and whether it
- *   went as far as making the chain's provider
- */
-async function runOn(top, args) {
-  const output = { out: "", err: "", chainMade: false };
-  const code = await runSummSweep(["node", "summ-sweep.js", ...args], {
-    repoTop: top,
-    stdout: { write: (text) => (output.out += text) },
-    stderr: { write: (text) => (output.err += text) },
-    makeProvider: () => {
-      output.chainMade = true;
-      return sweepChain();
-    },
-    run: async (_file, args) => JSON.stringify(RECORDS.get(args[1])),
-  });
-  return { code, ...output };
-}
-
-/**
- * The arguments of a run, with any of them changed.
- *
- * @param {string} top - The repo top
- * @param {object} [changes] - The options to change, by name
- * @returns {string[]} The arguments
- */
-function argsFor(top, changes = {}) {
-  const options = {
-    "--wallet": WALLET,
-    "--start-date": "2023-11-14",
-    "--end-date": "2023-11-14",
-    "--summ-synced-to": "2023-11-14 22:18:20",
-    "--summ-results": path.join(top, "page-1.txt"),
-    "--out": path.join(top, "rows.csv"),
-    "--report": path.join(top, "report.json"),
-    ...changes,
-  };
-  return Object.entries(options).flat();
-}
 
 describe("runSummSweep", () => {
   it("writes the csv through the Summ csv utility, and the report as json", async () => {
@@ -187,6 +97,44 @@ describe("runSummSweep", () => {
     assert.equal(run.code, 0);
     assert.match(run.out, /No rows to write, so no csv was written\./);
     assert.equal(fs.existsSync(path.join(top, "rows.csv")), false);
+  });
+
+  it("removes the last run's csv, saying so, when a run with --replace has no rows to write", async () => {
+    const top = repo();
+    const csv = path.join(top, "rows.csv");
+    fs.writeFileSync(csv, "the last run's rows\n");
+
+    const run = await runOn(top, [
+      ...argsFor(top, {
+        "--start-date": "2023-11-13",
+        "--end-date": "2023-11-13",
+      }),
+      "--replace",
+    ]);
+
+    assert.equal(run.code, 0);
+    assert.equal(fs.existsSync(csv), false);
+    assert.match(
+      run.out,
+      /No rows to write, so no csv was written, and the last run's csv at \S*rows\.csv was removed\./,
+    );
+  });
+
+  it("refuses a requestSpacingMs Node's timers cannot keep, more than 2147483647 milliseconds", async () => {
+    const top = repo();
+    const file = path.join(top, "config.json");
+    const settings = JSON.parse(fs.readFileSync(file, "utf8"));
+    settings.pulsechain.requestSpacingMs = 3000000000;
+    fs.writeFileSync(file, JSON.stringify(settings));
+
+    const run = await runOn(top, argsFor(top));
+
+    assert.equal(run.code, 1);
+    assert.match(
+      run.err,
+      /pulsechain\.requestSpacingMs must be a whole number of milliseconds from 0 to 2147483647/,
+    );
+    assert.equal(run.chainMade, false);
   });
 
   it("asks for the owner's settings when they are missing", async () => {

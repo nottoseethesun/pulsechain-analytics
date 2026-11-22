@@ -298,6 +298,9 @@ holds the stand-ins:
   address from the owner's own books, since the repo is public.
 - `summ-gaps.js` builds the legs and transactions the tests of the gap
   rules book, and runs `rowsForGaps` on them.
+- `summ-sweep-command-run.js` runs the Summ sweep's command line on a repo
+  top in a temp folder, with the stand-in chain, a saved page of Summ's
+  results and LP Ranger's records.
 
 ## A wallet's history
 

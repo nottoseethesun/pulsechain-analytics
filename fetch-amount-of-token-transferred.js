@@ -24,7 +24,8 @@
  * - Counts a Transfer event only when the token's own contract emitted it, with the sender and receiver indexed and the
  *   amount in its data, as ERC-20 has it. An NFT's Transfer event, whose third indexed value is the token id, is not counted.
  * - Returns 0 when the transaction transferred none of the token to the wallet. When a read fails, or the transaction is
- *   not found, it throws, so a failure is never mistaken for an amount.
+ *   not found, it throws, so a failure is never mistaken for an amount; so it does, before it asks the chain, for a token
+ *   or wallet that is not 0x and 40 hex digits, naming it.
  * - The amount is cut off at 7 decimal places and returned as a number, as the Sheets script returns it. A number keeps
  *   all 7 places for an amount below 2^29, 536,870,912 tokens; from there up, the conversion can round the 7th place.
  * - Assumes the token is ERC-20 compliant with the `decimals()` function and the Transfer event.
@@ -37,6 +38,26 @@ const TRANSFER_TOPIC = ethers.id("Transfer(address,address,uint256)");
 
 /** The decimal places of the amount returned. */
 const DECIMAL_PLACES_RETURNED = 7;
+
+/** An address as a caller writes it: 0x and 40 hex digits, in any case. */
+const ADDRESS_FORM = /^0x[0-9a-fA-F]{40}$/;
+
+/**
+ * Refuses a token or a wallet that is not an address, naming it, as the Sheets copy does, so a mistyped address is
+ * never taken for one that received nothing.
+ *
+ * @param {string} what - What the address is, such as "wallet"
+ * @param {string} address - The address given
+ * @throws {Error} When it is not 0x and 40 hex digits
+ */
+function checkAddress(what, address) {
+  const text = String(address).trim();
+  if (!ADDRESS_FORM.test(text)) {
+    throw new Error(
+      `The ${what} ${text} is not an address: 0x and 40 hex digits`,
+    );
+  }
+}
 
 /**
  * Adds up the token's Transfer events to the wallet among a receipt's logs.
@@ -103,6 +124,8 @@ function cutOffDecimals(wholeTokens) {
  * @throws {Error} When a read fails or the transaction is not found.
  */
 export async function getTokenTransferred(txId, tokenAddress, walletAddress) {
+  checkAddress("token", tokenAddress);
+  checkAddress("wallet", walletAddress);
   const provider = new ethers.JsonRpcProvider(
     "https://rpc-pulsechain.g4mm4.io",
   );
