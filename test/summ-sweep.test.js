@@ -318,7 +318,49 @@ describe("tokenLegs", () => {
       logs: odd,
     });
     assert.deepEqual(legs, []);
-    assert.deepEqual(oddTransferLogs(odd), odd);
+    assert.deepEqual(
+      oddTransferLogs(odd, facts).map((one) => [one.log, one.problem]),
+      [
+        [
+          odd[0],
+          "has 2 topics and 32 bytes of data, a shape no ERC-20 or NFT Transfer has",
+        ],
+        [
+          odd[1],
+          "has 3 topics and 0 bytes of data, a shape no ERC-20 or NFT Transfer has",
+        ],
+      ],
+    );
+  });
+
+  it("reads no leg from a four-topic Transfer whose contract gives decimals, as an ERC-20's does and no ERC-721 contract's does, and lists it for the sweep to report", () => {
+    const fourTopics = [
+      log(
+        0,
+        HEX,
+        [
+          TRANSFER_TOPIC,
+          addressTopic(POOL),
+          addressTopic(WALLET),
+          ethers.toBeHex(5n, 32),
+        ],
+        "0x",
+      ),
+    ];
+    const legs = tokenLegs({
+      wallet: WALLET,
+      wrappedCoin: WPLS,
+      tokens: facts,
+      times: new Map([[10, TIME]]),
+      logs: fourTopics,
+    });
+    assert.deepEqual(legs, []);
+    assert.deepEqual(
+      oddTransferLogs(fourTopics, facts).map((one) => one.problem),
+      [
+        "has 4 topics, as an NFT's Transfer has, but its contract gives decimals, which ERC-721 defines none of, so it may be an ERC-20 that puts its amount in a topic",
+      ],
+    );
   });
 });
 

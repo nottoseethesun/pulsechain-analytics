@@ -134,7 +134,8 @@ function xAxisLine(interval, chronologicalTimestamps, width) {
 
 /**
  * The height asciichart is given. It draws one row more, 31, from the
- * highest ratio's row to the lowest's.
+ * highest ratio's row to the lowest's; a series whose ratios are all the
+ * same, one row.
  */
 const CHART_HEIGHT = 30;
 
@@ -174,15 +175,21 @@ function printChart(interval, chronologicalRatios, chronologicalTimestamps) {
   const maxRatio = Math.max(...chronologicalRatios);
   const formatYRaw = yLabelFormat(maxRatio - minRatio);
 
+  // asciichart draws a series whose ratios are all the same in one row,
+  // which it labels with its own number for the row, the ratio rounded to
+  // a whole number, so that row is labelled with the ratio itself
+  const flat = maxRatio === minRatio;
+  const labelValues = flat
+    ? [minRatio]
+    : drawnLabelValues(minRatio, maxRatio, CHART_HEIGHT);
+
   // Every label is padded to the longest asciichart draws, so the axis
   // stands in one column
-  const rawLabels = drawnLabelValues(minRatio, maxRatio, CHART_HEIGHT).map(
-    formatYRaw,
-  );
+  const rawLabels = labelValues.map(formatYRaw);
   const maxLabelLength = Math.max(...rawLabels.map((l) => l.length), 1);
 
   const formatY = (value) => {
-    const raw = formatYRaw(value);
+    const raw = formatYRaw(flat ? minRatio : value);
     return raw.padEnd(maxLabelLength, " ");
   };
 

@@ -439,4 +439,29 @@ describe("the chart's y-axis", () => {
       `axis columns ${[...new Set(columns)]}`,
     );
   });
+
+  it("labels a series whose ratios are all the same with that ratio, not with asciichart's number for its one row", () => {
+    const ratios = [0.5, 0.5, 0.5, 0.5];
+    const lines = [];
+    const log = console.log;
+    console.log = (line = "") => lines.push(...String(line).split("\n"));
+    try {
+      printRatios(
+        { interval: "daily", tokenA: "0xA", tokenB: "0xB", saveCsv: false },
+        ["A", "B"],
+        "GeckoTerminal",
+        {
+          rows: ratios.map((ratio) => ({ date: "", ratio: String(ratio) })),
+          ratios,
+          timestamps: ratios.map((_, at) => Date.UTC(2026, 0, 1 + at)),
+        },
+      );
+    } finally {
+      console.log = log;
+    }
+    const axis = lines.filter((line) => /[┤┼]/.test(line));
+    assert.equal(axis.length, 1);
+    const label = axis[0].slice(0, axis[0].search(/[┤┼]/)).trim();
+    assert.equal(Number(label), 0.5);
+  });
 });
