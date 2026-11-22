@@ -10,10 +10,10 @@ tokens at a block or a day, the ratio chart, which charts the ratio of two
 tokens' prices over time, a wallet's history, and the Summ sweep, which
 compares a wallet's history with its records in Summ, the owner's crypto tax
 calculator. For how the tools work, see
-[`docs/architecture.md`](architecture.md); for every command the repo's
-`package.json` gives npm, the package manager of Node, the program that runs
-JavaScript outside a browser, to run, see
-[`docs/npm-project-commands.md`](npm-project-commands.md).
+[`docs/architecture.md`](architecture.md); for every command, those the
+repo's `package.json` files give npm, the package manager of Node, the
+program that runs JavaScript outside a browser, to run and those run with
+`node` or `source`, see [`docs/project-commands.md`](project-commands.md).
 
 The repo follows the coding standards of LP Ranger, the owner's bot that
 manages his 9mm V3 liquidity positions: its `CLAUDE.md` and
@@ -153,7 +153,7 @@ owner's key file or password.
 | `pulse-token-ratio-moralis.test.js` | The ratio chart reading Moralis's candles, against a stand-in Moralis, GeckoTerminal and DexTools, with the Moralis and DexTools keys from key files of the test's own: the deepest active pair that lists each token first, the two years of daily candles it reads unless `--moralis-days` names another span, its hourly and weekly charts, its fallback to DexTools when Moralis's candles price another token, and its stop when no pair lists a token first; and the choice of the source (`ratio-source.js`): the question asked when a Moralis key is saved, Enter taking Moralis, an answer asked again, `--source` in its place, the stop with no terminal to ask at, and `--source` refused with `--useDexToolsOnly` or with no Moralis key saved; and the question answered in a pseudo-terminal, on Linux: Enter taking Moralis, then the password, which the terminal never shows, and 2 taking GeckoTerminal, opening no key. |
 | `command-line-help.test.js` | Every command line's help, `--help` and `-h`, and its help into a pipe closed before it is written, which must end with exit code 0 and nothing on stderr: the Summ sweep's, the ratio chart's, the balance checker's, the Sheets script's Node version's, the key manager's, and those of the bins of crypto-price-fetchers the npm targets run, its versions tool and `run-actionlint`, each with its options, examples and exit codes, by crypto-price-fetchers' checks (`crypto-price-fetchers/lib/command-line-help`); and that its list holds every command line the repo runs, every bin of crypto-price-fetchers among them. |
 | `api-keys.test.js` | The keys `config.json` lists, the key manager, which saves and lists the api keys, and the copy of `unlock-api-keys.sh`, the script that keeps the password for a terminal. |
-| `repo-checks.test.js` | The repo's tracked files, by crypto-price-fetchers' checks (`crypto-price-fetchers/lib/repo-checks`): every EVM address in EIP-55's form, every npm target named in `docs/npm-project-commands.md`, every test file and helper named in this doc or `CLAUDE.md`, and every link and path in a doc pointing at a file, folder or heading the repo keeps. |
+| `repo-checks.test.js` | The repo's tracked files, by crypto-price-fetchers' checks (`crypto-price-fetchers/lib/repo-checks`): every EVM address in EIP-55's form, every npm target named in `docs/project-commands.md`, every test file and helper named in this doc or `CLAUDE.md`, and every link and path in a doc pointing at a file, folder or heading the repo keeps. |
 | `dependencies.test.js` | crypto-price-fetchers installed from GitHub, following its main branch or its latest release, by the ratio chart and the balance checker too, with the same ref, and `npm run github-project-deps` running its versions tool. |
 | `wallet-history.test.js` | The paced provider, the blocks of a range, the logs that name a wallet, the transactions it sent, their receipts and its tokens' facts, against a stand-in chain. |
 | `wallet-history-coin.test.js` | The PLS a wallet moved: the calls of a trace that pay it, the flows of its own transactions, and the payments from elsewhere its balance reveals, against a stand-in chain whose balances are worked out apart from the code tested. |
