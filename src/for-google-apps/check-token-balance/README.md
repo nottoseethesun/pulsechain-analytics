@@ -13,12 +13,12 @@ it. `wrapper.gs` is what a sheet pastes into its own project to call it.
 ## Pre-requisites
 
 See the Google Apps Script prerequisites in the repo's
-[README](../../README.md#prerequisites).
+[README](../../../README.md#prerequisites).
 
 ## Installation
 
 The script is added to a sheet as a library, as
-[Adding the Library](../../README.md#adding-the-library), in the repo's
+[Adding the Library](../../../README.md#adding-the-library), in the repo's
 README, describes. Apps Script
 asks for the library's script ID, which is:
 
@@ -37,7 +37,8 @@ Library URL:  https://script.google.com/macros/library/d/1HFXEAhRh3-fSqNLzi9i-oM
 
 ## The Node Version
 
-`fetch-amount-of-token-transferred.js`, beside the script, runs
+`bin/fetch-amount-of-token-transferred.js`, in the repo's `bin/`, the
+folder of the programs a reader runs, runs
 `fetch-amount-of-token-transferred.gs` itself, unchanged, under Node, the
 program that runs JavaScript outside a browser, so it answers as
 `getTokenTransferred` does in a sheet, from a Node program or the command
@@ -47,17 +48,17 @@ package manager, installs the repo's packages.
 From the repo's top folder, after `npm ci` (Node 24 or later):
 
 ```bash
-node for-google-apps/check-token-balance/fetch-amount-of-token-transferred.js <transaction> <token> <wallet>
+node bin/fetch-amount-of-token-transferred.js <transaction> <token> <wallet>
 ```
 
 It prints the amount. `--help` lists the options, with examples and the
 exit codes. The PulseChain rpc endpoint, the json-rpc api of the node it
-asks, can go in `config.json` here, which git, the version-control
-program, ignores;
-`config-example.json` shows the shape. From Node:
+asks, can go in `config.json` here, beside the script, which git, the
+version-control program, ignores; `config-example.json` shows the shape.
+From a Node program in the repo's top folder:
 
 ```js
-import { openTokenTransferFetcher } from './for-google-apps/check-token-balance/fetch-amount-of-token-transferred.js';
+import { openTokenTransferFetcher } from './bin/fetch-amount-of-token-transferred.js';
 
 const fetcher = await openTokenTransferFetcher();
 const amount = await fetcher.getTokenTransferred(txId, tokenAddress, walletAddress);
@@ -89,7 +90,7 @@ library for talking to Ethereum-style chains, keep no cache.
 
 ## Contributing
 
-See the info on Contributing at `../../README.md`.
+See the info on Contributing at `../../../README.md`.
 
 ### Development Notes
 

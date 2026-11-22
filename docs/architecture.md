@@ -49,19 +49,22 @@ Two companion references sit alongside this one:
 
 Six tools answer the five questions. Two of them work out the same
 amount, one with ethers, a library for talking to Ethereum-style chains
-such as PulseChain, and one as a Sheets script. Each command line is
-declared with commander, the package that parses a command line, and
-answers `--help` with its options, examples of its common uses and its
-exit codes.
+such as PulseChain, and one as a Sheets script. The programs a reader
+runs from a terminal are in `bin/`: each is a program of its own or a
+start file that loads a tool's program from the tool's folder, whose
+packages it uses. The Sheets scripts are in `src/for-google-apps/`. Each
+command line is declared with commander, the package that parses a
+command line, and answers `--help` with its options, examples of its
+common uses and its exit codes.
 
 | Tool | Where | What it answers |
 | ---- | ----- | --------------- |
 | The amount a transaction sent, on ethers | `fetch-amount-of-token-transferred.js` | How much of a token one transaction sent a wallet. |
-| The same, as a Sheets script | `for-google-apps/check-token-balance/` | The same, in a sheet's cell, and from Node through the script's Node version. |
-| The balance checker | `check-token-balance/` | A wallet's balances of tokens, PLS among them, at a block or a date. A package of its own. |
-| The ratio chart | `chart-price-ratio/` | The ratio of two tokens' prices over time, as a chart in the terminal. A package of its own. |
+| The same, as a Sheets script | `src/for-google-apps/check-token-balance/`, with its Node version in `bin/fetch-amount-of-token-transferred.js` | The same, in a sheet's cell, and from Node through the script's Node version. |
+| The balance checker | `check-token-balance/`, run by `bin/check-token-balance.js` | A wallet's balances of tokens, PLS among them, at a block or a date. A package of its own. |
+| The ratio chart | `chart-price-ratio/`, run by `bin/pulse-token-ratio.js` | The ratio of two tokens' prices over time, as a chart in the terminal. A package of its own. |
 | A wallet's history | `wallet-history/` | Every token and every PLS a wallet moved over a range of blocks, from the chain alone: functions a program calls, with no command line of their own. |
-| The Summ sweep | `summ-sweep/`, run by `npm run summ-sweep` | What Summ lacks or holds wrongly of the tokens a wallet moved over a range of days: the withdrawals from 9mm V3 positions to fix in Summ, a csv of rows for what Summ lacks, and questions for the owner about the legs no rule books. |
+| The Summ sweep | `summ-sweep/`, run by `bin/summ-sweep.js`, which `npm run summ-sweep` runs | What Summ lacks or holds wrongly of the tokens a wallet moved over a range of days: the withdrawals from 9mm V3 positions to fix in Summ, a csv of rows for what Summ lacks, and questions for the owner about the legs no rule books. |
 
 ---
 
@@ -90,8 +93,8 @@ function without the cache. Neither catches the library's error, so a
 failed read shows in the cell as an error, as it does from the script
 itself.
 
-`for-google-apps/check-token-balance/fetch-amount-of-token-transferred.js`
-is the script's Node version: it runs the `.gs` unchanged, so a fix in
+`bin/fetch-amount-of-token-transferred.js` is the script's Node version:
+it runs the `.gs` unchanged, so a fix in
 the `.gs` fixes both. It does so through the runner of
 crypto-price-fetchers, the owner's repo of code his projects share, which
 this repo installs ([crypto-price-fetchers](#crypto-price-fetchers)); the
@@ -103,7 +106,8 @@ Script's services. The tests hold the two copies to the same answers
 
 ## The Balance Checker
 
-`check-token-balance/index.js` reads a wallet's balance of each token named,
+`check-token-balance/index.js`, which `bin/check-token-balance.js` loads,
+reads a wallet's balance of each token named,
 PLS or ERC-20, at a block, or at the start of a UTC date: after the last
 block made before that midnight, whose state is the chain's when the day
 starts, since a block made at midnight or after holds the day's
@@ -125,8 +129,9 @@ node, since other nodes keep only the chain's recent state.
 
 ## The Ratio Chart
 
-`chart-price-ratio/pulse-token-ratio.js` charts the ratio of two tokens'
-prices, even when no pool holds both. A run reads its candles, the open,
+`chart-price-ratio/pulse-token-ratio.js`, which `bin/pulse-token-ratio.js`
+loads, charts the ratio of two tokens' prices, even when no pool holds
+both. A run reads its candles, the open,
 high, low and close prices of each period, from one of two sources, and
 from that one alone:
 
@@ -638,7 +643,7 @@ config.json → colour is not a setting this tool reads
 | `check-token-balance/config.json`, beside the checker's files | `SETTINGS_SCHEMA` (`check-token-balance/settings.js`): `defaultRpc`, an http or https url | `defaultRpcFrom`; no file gives g4mm4's endpoint, with a notice |
 | The top `config.json` | `CHAIN_SETTINGS_SCHEMA` (`summ-sweep/settings.js`): the chain's facts under `pulsechain`, each required, its two contracts in EIP-55's form | The Summ sweep, and crypto-price-fetchers' key store for `apiKeys` |
 | `summ-sweep/config.json` | `OWNER_SETTINGS_SCHEMA` (`summ-sweep/settings.js`): the template's and LP Ranger's paths, required, and the owner's lists, whose addresses may be in lower case | The Summ sweep |
-| `for-google-apps/check-token-balance/config.json` | `CONFIG_SCHEMAS` in `for-google-apps/check-token-balance/fetch-amount-of-token-transferred.js`: an http or https url as `config.rpcUrl`, which the script reads each time it is called, and no other field. crypto-price-fetchers' `configSchemaProblems` holds the schema to the script in the tests | The script's Node version, through crypto-price-fetchers' runner, before the script opens |
+| `src/for-google-apps/check-token-balance/config.json` | `CONFIG_SCHEMAS` in `bin/fetch-amount-of-token-transferred.js`: an http or https url as `config.rpcUrl`, which the script reads each time it is called, and no other field. crypto-price-fetchers' `configSchemaProblems` holds the schema to the script in the tests | The script's Node version, through crypto-price-fetchers' runner, before the script opens |
 
 A command line whose options take their defaults from a settings file
 makes each option's parser from the kind the schema gives the same
@@ -667,7 +672,7 @@ for keeping keys:
 - `npm run api-keys`, this repo's command for the key store's manager,
   lists the keys, saved or not, never showing a key's characters, and
   saves each key typed once its service takes it.
-- `source ./unlock-api-keys.sh`, a script in this repo's top folder, asks
+- `source ./bin/unlock-api-keys.sh`, a script in this repo's `bin/`, asks
   for the password once, checks that it opens the keys saved, and keeps it
   for that terminal in `API_KEYS_PASSWORD`. The script is a copy of
   crypto-price-fetchers', which a test holds it to.

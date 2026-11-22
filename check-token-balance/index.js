@@ -1,6 +1,7 @@
 /**
  * Prints a PulseChain wallet's balances of tokens, PLS among them, at a
- * block or at the start of a day in UTC: the balance checker's entry point.
+ * block or at the start of a day in UTC: the balance checker's program,
+ * which its start file, `bin/check-token-balance.js`, loads.
  * @module check-token-balance
  *
  * What: for each token named, the wallet's balance at the block, first with

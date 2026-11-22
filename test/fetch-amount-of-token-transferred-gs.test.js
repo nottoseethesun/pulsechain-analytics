@@ -81,7 +81,7 @@ describe("wrapper.gs, which a sheet's cells call", () => {
    */
   function loadWrapper(answer) {
     const wrapper = new URL(
-      "../for-google-apps/check-token-balance/wrapper.gs",
+      "../src/for-google-apps/check-token-balance/wrapper.gs",
       import.meta.url,
     );
     return loadAppsScript(

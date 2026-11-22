@@ -1,5 +1,5 @@
 /**
- * pulse-token-ratio.js
+ * pulse-token-ratio.js, run through its start file, bin/pulse-token-ratio.js
  *
  * Charts the ratio of two PulseChain tokens' prices (Token A / Token B) over
  * time, in one ASCII chart in the terminal, whether or not a pool pairs the
@@ -69,7 +69,7 @@
  *      Moralis api key, and for the DexTools fallback, a DexTools api key,
  *      in the repo's top folder: npm run api-keys. The chart opens each the
  *      first time it asks that service, with the password that
- *      `source ./unlock-api-keys.sh` keeps for the terminal, or one it asks
+ *      `source ./bin/unlock-api-keys.sh` keeps for the terminal, or one it asks
  *      for.
  *
  * Configuration:
@@ -79,7 +79,7 @@
  *     name, or a value of the wrong kind, stops the run, with every problem
  *     listed.
  *   - Command-line options override them for one run:
- *     node pulse-token-ratio.js --help lists them, each with its default.
+ *     node bin/pulse-token-ratio.js --help lists them, each with its default.
  *     A typed option meets the rule its setting meets in config.json, and
  *     `--source` is refused beside a `useDexToolsOnly` the file sets.
  *
@@ -87,28 +87,28 @@
  *   Node.js v24+ (native fetch, ESM support)
  *   npm install, for asciichart, commander and crypto-price-fetchers' key store and clients
  *
- * Usage Examples:
+ * Usage Examples, from the repo's top folder:
  *   # Basic: daily ratio (default) for two tokens
- *   node pulse-token-ratio.js 0x50F1ca62e6Fb8Adf438ca1F50067AB83670094A6 0x94534EeEe131840b1c0F61847c572228bdfDDE93
+ *   node bin/pulse-token-ratio.js 0x50F1ca62e6Fb8Adf438ca1F50067AB83670094A6 0x94534EeEe131840b1c0F61847c572228bdfDDE93
  *
  *   # Specify interval
- *   node pulse-token-ratio.js <tokenA> <tokenB> daily
- *   node pulse-token-ratio.js <tokenA> <tokenB> hourly
+ *   node bin/pulse-token-ratio.js <tokenA> <tokenB> daily
+ *   node bin/pulse-token-ratio.js <tokenA> <tokenB> hourly
  *
  *   # With CSV export
- *   node pulse-token-ratio.js <tokenA> <tokenB> daily --csv
+ *   node bin/pulse-token-ratio.js <tokenA> <tokenB> daily --csv
  *
  *   # Two years of daily candles from Moralis, without the question of the source
- *   node pulse-token-ratio.js <tokenA> <tokenB> --source moralis
+ *   node bin/pulse-token-ratio.js <tokenA> <tokenB> --source moralis
  *
  *   # Test DexTools fallback directly
- *   node pulse-token-ratio.js <tokenA> <tokenB> --useDexToolsOnly
+ *   node bin/pulse-token-ratio.js <tokenA> <tokenB> --useDexToolsOnly
  *
  *   # Override config values via flags
- *   node pulse-token-ratio.js <tokenA> <tokenB> --network=eth --csv-filename=custom.csv --csv
+ *   node bin/pulse-token-ratio.js <tokenA> <tokenB> --network=eth --csv-filename=custom.csv --csv
  *
  *   # Combine interval and overrides
- *   node pulse-token-ratio.js <tokenA> <tokenB> hourly --max-candles=500 --csv
+ *   node bin/pulse-token-ratio.js <tokenA> <tokenB> hourly --max-candles=500 --csv
  *
  * Notes:
  *  - Token addresses are 0x and 40 hex digits, in either case.

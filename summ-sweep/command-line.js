@@ -30,7 +30,7 @@
  * writes neither. A report's amounts, which are BigInts, are written as
  * decimal text, json having no BigInt.
  *
- * Fit: `summ-sweep.js` at the repo's top runs `runSummSweep`. The tests
+ * Fit: `bin/summ-sweep.js` runs `runSummSweep`. The tests
  * give it a stand-in chain and a stand-in LP Ranger.
  */
 

@@ -3,9 +3,9 @@
 api-keys.json
 api-keys.json.tmp
 
-# The config file of the Node version of the Sheets script, beside its
-# committed config-example.json
-/for-google-apps/check-token-balance/config.json
+# The config file of the Node version of the Sheets script, beside the
+# script and its committed config-example.json
+/src/for-google-apps/check-token-balance/config.json
 
 # The owner's settings of the sweep against Summ (his paths and token
 # lists), beside its committed config-example.json

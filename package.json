@@ -4,8 +4,8 @@
   "description": "Utilities for PulseChain: how much of a token one transaction sent a wallet, wallet balances at a block, the price ratio of two tokens, a wallet's history from the chain alone, and its sweep against Summ",
   "type": "module",
   "scripts": {
-    "api-keys": "node manage-api-keys.js",
-    "summ-sweep": "node summ-sweep.js",
+    "api-keys": "node bin/manage-api-keys.js",
+    "summ-sweep": "node bin/summ-sweep.js",
     "github-project-deps": "github-project-deps",
     "prepare": "husky",
     "lint": "eslint . --max-warnings 0 && markdownlint-cli2 && npm run format:check && run-actionlint .github/workflows/*.yml && npm run knip:files",

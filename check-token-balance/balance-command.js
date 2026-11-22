@@ -39,18 +39,20 @@ export const NATIVE_TOKEN = "Pulse_Native_Gas_Token";
 
 /** What the help says after the options: examples and exit codes. */
 const HELP_AFTER = `
-The rpc endpoint's default comes from config.json beside index.js. When
+The rpc endpoint's default comes from config.json in check-token-balance/,
+beside the checker's files, whichever folder it runs in. When
 config.json is refused, the help shows g4mm4's endpoint, the default
 written in settings.js, and any other run stops: on a mistake in its
 options when it has one, else on the file's problems. A balance at a past
 block needs an endpoint that keeps past state.
 
 Examples:
-  A wallet's PLS and HEX at the start of 1 November 2026, UTC:
-    $ node index.js --address <wallet> --date 2026-11-01 --tokens ${NATIVE_TOKEN},0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39
+  A wallet's PLS and HEX at the start of 1 November 2026, UTC, from the
+  repo's top folder:
+    $ node bin/check-token-balance.js --address <wallet> --date 2026-11-01 --tokens ${NATIVE_TOKEN},0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39
   The same wallet's PLS at one block, from another rpc endpoint that keeps
   past state:
-    $ node index.js --address <wallet> --block 22000000 --tokens ${NATIVE_TOKEN} --rpc https://rpc.pulsechain.com
+    $ node bin/check-token-balance.js --address <wallet> --block 22000000 --tokens ${NATIVE_TOKEN} --rpc https://rpc.pulsechain.com
 
 Exit codes:
   0  each balance was printed
