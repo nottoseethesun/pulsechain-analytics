@@ -267,8 +267,9 @@ holds the stand-ins:
 
 - `stand-in-chain.js` is a PulseChain rpc endpoint held in memory, with
   options for the other cases: a failed read, a transaction it doesn't know,
-  more Transfer events in the receipt, or another transfer in the same block.
-  `standInChainFetch` hands it the requests of the Node version.
+  more Transfer events in the receipt, another transfer in the same block,
+  or a token of other decimals. `standInChainFetch` hands it the requests
+  of the Node version.
 - `transfer-cases.js` lists the cases both copies of `getTokenTransferred` are
   tested on, so the two give the same answers.
 - `ethers-stand-in.js` routes ethers' http requests to a stand-in chain.
@@ -353,7 +354,12 @@ beside it shows the shape.
 
 ## Known bugs
 
-None is known. When one is found, it gets a test in
+Three are known, each with its test in `test/known-bugs.test.js`: the
+Node copy of `getTokenTransferred` stops on a token whose decimals are
+above 80, as the balance checker's formatting does, and on a token or a
+wallet written with spaces around it, both of which the Sheets copy
+takes.
+When one is found, it gets a test in
 `test/known-bugs.test.js`, declared with `knownBug`, so the test passes while
 the bug is present. The bug's fix makes its test fail; declare that test with
 `it` instead, in the same change, among the tests of the code it is about.

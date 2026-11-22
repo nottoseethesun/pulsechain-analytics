@@ -169,8 +169,9 @@ owner's key file or password.
 
 - `stand-in-chain.js`: a PulseChain rpc endpoint held in memory, with
   options for the other cases: a failed read, a transaction it doesn't
-  know, more Transfer events in the receipt, or another transfer in the
-  same block. `standInChainFetch` hands it the Node version's requests.
+  know, more Transfer events in the receipt, another transfer in the same
+  block, or a token of other decimals. `standInChainFetch` hands it the
+  Node version's requests.
 - `transfer-cases.js`: the cases both copies of `getTokenTransferred` are
   tested on, so the two give the same answers.
 - `ethers-stand-in.js`: routes ethers' http requests to a stand-in chain.
@@ -310,7 +311,12 @@ deleted. The steps from a branch to `main` are LP Ranger's eight, in its
 
 ## Known Bugs
 
-None is known. A bug found gets a test in `test/known-bugs.test.js`,
+Three are known, each with its test in `test/known-bugs.test.js`: the
+Node copy of `getTokenTransferred` stops on a token whose decimals are
+above 80, as the balance checker's formatting does, and on a token or a
+wallet written with spaces around it, both of which the Sheets copy
+takes.
+A bug found gets a test in `test/known-bugs.test.js`,
 declared with `knownBug` (`test/helpers/known-bug.js`), so the test passes
 while the bug is present. The bug's fix makes its test fail; the same change
 declares the test with `it`, among the tests of the code it is about.

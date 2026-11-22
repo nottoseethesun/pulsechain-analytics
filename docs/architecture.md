@@ -258,13 +258,18 @@ keeps:
    transactions do not explain, and reads each block left for those
    payments: its trace, its withdrawals, and its tips. A block whose
    payments still do not explain its change is reported, never guessed
-   at.
+   at. A transaction in the block that the endpoint could not trace, such
+   as one whose tracer ran out of time, stops the sweep, with an error
+   that names it, since the PLS it paid cannot be read.
 
 `readReceipts` reads each receipt once, and `tokenFacts` asks each token's
 contract once for its symbol and decimals. A contract refuses a call with
 a revert, or with an error of the EVM, the Ethereum Virtual Machine that
 runs a contract's code, such as an invalid opcode, which stops the code;
-either way it gives no symbol or no decimals. ethers, the library the
+either way it gives no symbol or no decimals. A decimals answer above
+255, more than the uint8 that `decimals()` gives holds, as a contract that
+follows no standard can give, counts as no decimals too, so the sweep asks
+the owner about the token's legs rather than read them. ethers, the library the
 sweep reads the chain with, throws the same kind of error, a
 CALL_EXCEPTION, when the endpoint fails the call, so `contract-calls.js`
 tells the contract's refusal apart: a revert by its data or its message,

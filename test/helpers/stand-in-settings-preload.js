@@ -33,11 +33,12 @@ const STAND_INS = new Map(
 const readFileSync = fs.readFileSync;
 
 /*-
- *  TEST-ONLY swap: the tools read their settings with `fs.readFileSync`,
- *  through crypto-price-fetchers' `readSettingsFile`, at paths fixed
- *  beside their own files, and offer no seam for them. This file runs only
- *  in a child process a test starts for one run of a command line, so the
- *  swap is never seen outside that process, and it ends with the process.
+ *  TEST-ONLY global swap: the tools read their settings with
+ *  `fs.readFileSync`, through crypto-price-fetchers' `readSettingsFile`, at
+ *  paths fixed beside their own files, and offer no seam for them. This
+ *  file runs only in a child process a test starts for one run of a
+ *  command line, so the swap is never seen outside that process, and it
+ *  ends with the process.
  */
 fs.readFileSync = (file, ...rest) => {
   const asPath = file instanceof URL ? fileURLToPath(file) : String(file);
