@@ -71,6 +71,18 @@ export const TRANSFER_CASES = [
     amount: 250,
   },
   {
+    name: "gives the amount of a token whose decimals are above 80",
+    chain: () => standInChain(10n ** 59n, { decimals: 81 }),
+    amount: 0.0001,
+  },
+  {
+    name: "takes a token and a wallet written with spaces around them, as a cell may hold them",
+    chain: () => standInChain(250n),
+    token: ` ${TOKEN} `,
+    wallet: ` ${WALLET}\t`,
+    amount: 250,
+  },
+  {
     name: "gives an error, not a number, when the receipt cannot be read",
     chain: () => standInChain(250n, { fail: "receipt" }),
     error: /Cannot read the receipt of 0x/,

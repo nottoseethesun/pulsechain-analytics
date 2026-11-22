@@ -74,7 +74,9 @@ and json-rpc. Both read the transaction's own receipt and add up the
 token's Transfer events to the wallet in it. A receipt holds that
 transaction's events alone, so another transaction in the same block never
 counts. And no archive node is needed, since no past balance is read. A
-read that fails throws, so a failure is never taken for an amount.
+read that fails throws, so a failure is never taken for an amount. Both
+take a token or a wallet written with spaces around it, as a cell may hold
+it, and the amount of a token of any decimals from 0 to 255.
 
 The owner deploys the Sheets script as a library. A cell cannot call a
 library's functions directly, only those of the sheet's own project, so a
@@ -258,13 +260,18 @@ keeps:
    transactions do not explain, and reads each block left for those
    payments: its trace, its withdrawals, and its tips. A block whose
    payments still do not explain its change is reported, never guessed
-   at.
+   at. A transaction in the block that the endpoint could not trace, such
+   as one whose tracer ran out of time, stops the sweep, with an error
+   that names it, since the PLS it paid cannot be read.
 
 `readReceipts` reads each receipt once, and `tokenFacts` asks each token's
 contract once for its symbol and decimals. A contract refuses a call with
 a revert, or with an error of the EVM, the Ethereum Virtual Machine that
 runs a contract's code, such as an invalid opcode, which stops the code;
-either way it gives no symbol or no decimals. ethers, the library the
+either way it gives no symbol or no decimals. A decimals answer above
+255, more than the uint8 that `decimals()` gives holds, as a contract that
+follows no standard can give, counts as no decimals too, so the sweep asks
+the owner about the token's legs rather than read them. ethers, the library the
 sweep reads the chain with, throws the same kind of error, a
 CALL_EXCEPTION, when the endpoint fails the call, so `contract-calls.js`
 tells the contract's refusal apart: a revert by its data or its message,
@@ -672,7 +679,10 @@ GeckoTerminal, Moralis and DexTools through
 full and send a request refused as too many again after their waits, the
 GeckoTerminal client within a budget of requests, the Summ csv utility the
 Summ sweep writes its
-csv through (`crypto-price-fetchers/summ-csv`), `messageOf`, which gives
+csv through (`crypto-price-fetchers/summ-csv`), whose `decimalFromRaw`
+also writes the amounts of `fetch-amount-of-token-transferred.js` and the
+balance checker for any decimals from 0 to 255, as a token's uint8 holds
+them, `messageOf`, which gives
 the Summ sweep's command line the message of what it catches
 (`crypto-price-fetchers/lib/message-of`), the lint rules against printing
 a secret (`crypto-price-fetchers/eslint-rules/no-secret-logging`) and

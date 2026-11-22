@@ -13,9 +13,12 @@
  * or through `standInChainFetch`, a fetch for the Node version of the
  * Sheets script.
  *
- * Three options make the other cases. `otherInBlock` is a second transfer
- * to the wallet, from another transaction in the same block: the wallet's
- * balance at the block shows it, and this transaction's receipt does not.
+ * Four options make the other cases. `decimals` is the token's decimals
+ * the chain gives, 18 unless set; the amounts stay in units of 18
+ * decimals, so more decimals make what a script reads smaller.
+ * `otherInBlock` is a second transfer to the wallet, from another
+ * transaction in the same block: the wallet's balance at the block shows
+ * it, and this transaction's receipt does not.
  * `extraTransfers` are more Transfer events in this transaction's receipt:
  * of the token to the wallet, which its balance shows too, or of another
  * token, to another address, or an NFT's Transfer from the token's address,
@@ -106,11 +109,12 @@ function sentToWallet(transfers) {
  * @param {bigint} [options.otherInBlock=0n] - Whole tokens another transaction in the same block sends the wallet
  * @param {Array<Object>} [options.extraTransfers=[]] - More Transfer events in the receipt, as `transferLog` takes them
  * @param {?string} [options.fail=null] - The read that fails: 'receipt', 'decimals', 'before' or 'no-receipt'
+ * @param {number} [options.decimals=18] - The token's decimals the chain gives
  * @returns {{answer: function(Object): Object}} The chain
  */
 export function standInChain(
   received,
-  { otherInBlock = 0n, extraTransfers = [], fail = null } = {},
+  { otherInBlock = 0n, extraTransfers = [], fail = null, decimals = 18 } = {},
 ) {
   const transfers =
     received === 0n
@@ -158,7 +162,7 @@ export function standInChain(
           return fail === "receipt" ? busy : reply(receipt);
         case "eth_call": {
           if (request.params[0].data === DECIMALS_SELECTOR)
-            return fail === "decimals" ? busy : reply(word(18));
+            return fail === "decimals" ? busy : reply(word(decimals));
           const blockTag = request.params[1];
           if (fail === "before" && blockTag === blockBefore) return busy;
           return reply(word(balanceAt(blockTag)));
