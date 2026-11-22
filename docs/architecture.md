@@ -127,11 +127,17 @@ prices, even when no pool holds both:
    the pool with the longest history instead, provided that pool has at
    least a tenth of the top pool's liquidity.
 2. It fetches each token's candles in its pool at the interval asked,
-   hourly, daily, or daily resampled to weeks. A pool holds two tokens, and
-   its candles price the one GeckoTerminal calls its base unless a request
-   names the other, so each request names the chart's token by its
-   address, whichever side of the pool it is on. Both tokens' candles are
-   priced in USD, so the ratio of the two is the ratio of the tokens.
+   hourly, daily, the default, or daily resampled to weeks. A pool holds
+   two tokens, and its candles price the one GeckoTerminal calls its base
+   unless a request names the other, so each request names the chart's
+   token by its address, whichever side of the pool it is on. Both tokens'
+   candles are priced in USD, so the ratio of the two is the ratio of the
+   tokens. GeckoTerminal lists the candles newest first, and the chart
+   reads them oldest first. It makes no candle for a period in which
+   nothing traded, so a pool can lack a time the other has: the chart
+   divides the two tokens' prices of the same time, at the times both
+   pools have, and makes weekly points from the days both pools have, so
+   both series' weeks start on one day.
 3. When GeckoTerminal has no candles, it falls back to each token's current
    USD price from DexTools, a second such service, which takes an api key
    (`dextools.js`): one point. DexTools has 30 seconds to answer each
@@ -146,7 +152,9 @@ under its columns, each ten characters wide, or sixteen with the hour, and
 fewer points leave them no room. A run with more than one point and fewer
 than 90 stops before it prints anything, saying so, and naming the
 interval that gives more points; one point, a current price, prints no
-chart.
+chart. GeckoTerminal's public api serves about the last 184 days of
+candles, which make 184 daily points but at most 27 weekly ones, so the
+weekly interval charts only from an api that serves more history.
 
 `pulse-token-ratio.js` reads `config.json` and runs the command line, which
 `ratio-command.js` declares with commander, the package that reads a

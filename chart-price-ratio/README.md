@@ -32,7 +32,12 @@ gives the details.
   the same.
 - **X-axis:** dates, or dates with the hour, each under the column it
   labels.
-- **Intervals:** hourly, daily, or weekly.
+- **Intervals:** hourly, daily, the default, or weekly. GeckoTerminal's
+  public api serves about the last 184 days of candles, which make 184
+  daily points but at most 27 weekly ones, fewer than a chart needs.
+- **Pairing:** each ratio divides the two tokens' prices of the same time,
+  at the times both pools have a candle for, since GeckoTerminal makes no
+  candle for a period in which nothing traded.
 - **CSV:** it writes the ratios to a CSV file when asked.
 - **DexTools fallback:** it needs a saved DexTools key. Without one, the
   chart says so, and charts from GeckoTerminal alone.
@@ -73,7 +78,7 @@ Edit `config.json` to set defaults:
     "version": "v2"
   },
   "csvFilename": "token_ratio.csv",
-  "interval": "weekly",
+  "interval": "daily",
   "maxCandles": 1000,
   "weeklyResampleDays": 7
 }
@@ -107,7 +112,7 @@ The chart needs at least 90 points, since its x-axis needs that many
 columns to space its dates. With fewer, it says so and stops before
 printing anything; a shorter interval gives more points.
 
-### Basic: weekly ratio (default)
+### Basic: daily ratio (default)
 
 `node pulse-token-ratio.js <tokenA> <tokenB>`
 
@@ -118,13 +123,13 @@ printing anything; a shorter interval gives more points.
 ### Specify Interval
 
 ```bash
-node pulse-token-ratio.js <tokenA> <tokenB> --interval=daily
 node pulse-token-ratio.js <tokenA> <tokenB> --interval=hourly
+node pulse-token-ratio.js <tokenA> <tokenB> --interval=weekly
 ```
 
 ### Export to CSV
 
-`node pulse-token-ratio.js <tokenA> <tokenB> --interval=weekly --csv`
+`node pulse-token-ratio.js <tokenA> <tokenB> --interval=daily --csv`
 
 ## Output Example
 

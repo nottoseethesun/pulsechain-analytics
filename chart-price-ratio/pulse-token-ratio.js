@@ -59,7 +59,7 @@
  *   npm install, for asciichart, commander and crypto-price-fetchers' key store
  *
  * Usage Examples:
- *   # Basic: weekly ratio (default) for two tokens
+ *   # Basic: daily ratio (default) for two tokens
  *   node pulse-token-ratio.js 0x50F1ca62e6Fb8Adf438ca1F50067AB83670094A6 0x94534EeEe131840b1c0F61847c572228bdfDDE93
  *
  *   # Specify interval
@@ -67,7 +67,7 @@
  *   node pulse-token-ratio.js <tokenA> <tokenB> hourly
  *
  *   # With CSV export
- *   node pulse-token-ratio.js <tokenA> <tokenB> weekly --csv
+ *   node pulse-token-ratio.js <tokenA> <tokenB> daily --csv
  *
  *   # Test DexTools fallback directly
  *   node pulse-token-ratio.js <tokenA> <tokenB> --useDexToolsOnly
@@ -76,7 +76,7 @@
  *   node pulse-token-ratio.js <tokenA> <tokenB> --network=eth --csv-filename=custom.csv --csv
  *
  *   # Combine interval and overrides
- *   node pulse-token-ratio.js <tokenA> <tokenB> weekly --max-candles=500 --weekly-days=14 --csv
+ *   node pulse-token-ratio.js <tokenA> <tokenB> hourly --max-candles=500 --csv
  *
  * Notes:
  *  - Token addresses are 0x and 40 hex digits, in either case.
@@ -84,7 +84,12 @@
  *  - Intervals finer than 'hourly' are not supported by GeckoTerminal, and are refused.
  *  - A chart needs at least 90 points (MIN_CHART_POINTS, ratio-output.js). Fewer
  *    stop the run with a message, before anything is printed; a shorter
- *    interval gives more points.
+ *    interval gives more points. GeckoTerminal's public api serves about
+ *    the last 184 days of candles: 184 daily points, but at most 27 weekly
+ *    ones, so the weekly interval charts only from an api that serves more.
+ *  - GeckoTerminal makes no candle for a period in which nothing traded, so
+ *    a point is a time both pools have a candle for; the two tokens' prices
+ *    are paired by time.
  *  - Y-scale automatically computes unique tick values using a nice number algorithm.
  *  - X-scale shows sparse timestamps perfectly aligned with chart columns — chronological order (oldest left → newest right).
  *  - CSV includes columns: date, price_tokenA, price_tokenB, ratio.

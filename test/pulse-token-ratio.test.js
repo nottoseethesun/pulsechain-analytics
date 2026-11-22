@@ -196,6 +196,75 @@ describe("pulse-token-ratio.js", () => {
   });
 });
 
+describe("pulse-token-ratio.js, reading GeckoTerminal's candles, which come newest first", () => {
+  /** The newest day of the closes, the hundredth from 2026-01-01. */
+  const NEWEST_DAY = "2026-04-10";
+
+  it("prints the newest ratios as its recent ones, the newest last, and the newest as its current ratio", () => {
+    const run = runChart([TOKEN_A, TOKEN_B, "daily"], {
+      answers: geckoAnswers(CLOSES_A, CLOSES_B),
+    });
+    assert.equal(run.status, 0, run.stderr);
+    const current = (CLOSES_A[99] / CLOSES_B[99]).toFixed(12);
+    assert.ok(
+      run.stdout.includes(`${NEWEST_DAY}: ${current}\n\nCurrent ratio: `),
+      run.stdout,
+    );
+    assert.ok(run.stdout.includes(`Current ratio: ${current}\n`));
+  });
+
+  it("draws the oldest ratio at the left of its x-axis and the newest at the right", () => {
+    const run = runChart([TOKEN_A, TOKEN_B, "daily"], {
+      answers: geckoAnswers(CLOSES_A, CLOSES_B),
+    });
+    assert.equal(run.status, 0, run.stderr);
+    const axis = run.stdout
+      .split("\n")
+      .find((line) => /^ +\d{4}-\d{2}-\d{2}/.test(line));
+    const dates = axis.trim().split(/ +/);
+    assert.equal(dates[0], "2026-01-01");
+    assert.equal(dates[dates.length - 1], NEWEST_DAY);
+  });
+
+  it("divides each token's price by the other's of the same day, when one pool has no candle for a day", () => {
+    // Token B's pool traded nothing on day 50, so GeckoTerminal makes no candle for it
+    const closesB = CLOSES_B.map((close, day) => (day === 50 ? null : close));
+    const csv = path.join(folder, "paired.csv");
+    const run = runChart(
+      [TOKEN_A, TOKEN_B, "daily", "--csv", `--csv-filename=${csv}`],
+      { answers: geckoAnswers(CLOSES_A, closesB) },
+    );
+    assert.equal(run.status, 0, run.stderr);
+    const rows = fs.readFileSync(csv, "utf8").trim().split("\n").slice(1);
+    assert.equal(rows.length, 99);
+    for (const row of rows) {
+      const [date, priceA, priceB] = row.split(",");
+      const day = (Date.parse(date) - Date.UTC(2026, 0, 1)) / 86400000;
+      assert.notEqual(closesB[day], null, `${row}: B has no close that day`);
+      assert.equal(priceA, CLOSES_A[day].toFixed(12), row);
+      assert.equal(priceB, closesB[day].toFixed(12), row);
+    }
+  });
+
+  it("makes its weekly points from the days both pools have, so both series' weeks start on one day", () => {
+    // Token B's pool has no candle on day 7, where token A's second week starts
+    const closesB = CLOSES_B.map((close, day) => (day === 7 ? null : close));
+    const run = runChart([TOKEN_A, TOKEN_B, "weekly"], {
+      answers: geckoAnswers(CLOSES_A, closesB),
+    });
+    assert.equal(run.status, 1);
+    assert.match(run.stderr, /Only 15 points could be worked out/);
+  });
+
+  it("charts day by day when no interval is given, as config.json sets", () => {
+    const run = runChart([TOKEN_A, TOKEN_B], {
+      answers: geckoAnswers(CLOSES_A, CLOSES_B),
+    });
+    assert.equal(run.status, 0, run.stderr);
+    assert.match(run.stdout, /ratio \(daily, 100 points\)/);
+  });
+});
+
 describe("pulse-token-ratio.js, with too few points to chart", () => {
   /**
    * A number of days' closes for each token's pool.

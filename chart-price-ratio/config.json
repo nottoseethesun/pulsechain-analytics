@@ -7,7 +7,7 @@
     "version": "v2"
   },
   "csvFilename": "token_ratio.csv",
-  "interval": "weekly",
+  "interval": "daily",
   "maxCandles": 1000,
   "weeklyResampleDays": 7,
   "useDexToolsOnly": false

@@ -111,14 +111,10 @@ function xAxisLine(interval, chronologicalRatios, chronologicalTimestamps) {
  * Prints the chart of the ratios, oldest left, newest right.
  *
  * @param {string} interval - The interval
- * @param {Array<number>} ratios - The ratios, newest first
- * @param {Array<number>} timestamps - Their times, newest first
+ * @param {Array<number>} chronologicalRatios - The ratios, oldest first
+ * @param {Array<number>} chronologicalTimestamps - Their times, oldest first
  */
-function printChart(interval, ratios, timestamps) {
-  // Reverse data for chronological order (oldest left → newest right)
-  const chronologicalRatios = ratios.slice().reverse();
-  const chronologicalTimestamps = timestamps.slice().reverse();
-
+function printChart(interval, chronologicalRatios, chronologicalTimestamps) {
   const minRatio = Math.min(...chronologicalRatios);
   const maxRatio = Math.max(...chronologicalRatios);
   const formatYRaw = yLabelFormat(maxRatio - minRatio);
