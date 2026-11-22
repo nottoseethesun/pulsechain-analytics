@@ -354,7 +354,15 @@ beside it shows the shape.
 
 ## Known bugs
 
-None is known. When one is found, it gets a test in
+Five are known, each with its test in `test/known-bugs.test.js`: the Summ
+sweep books a row the Summ csv utility refuses, which stops the run, for a
+token whose contract's symbol is blank or the chain's own coin's, in a
+gap or as a position's fee; it passes over a collect that paid nothing of
+a coin with principal waiting, and forgets that principal; the ratio
+chart writes a price or a ratio below a millionth as 0; and the Node copy
+of `getTokenTransferred` refuses an address written with 0X, which the
+Sheets copy takes.
+When one is found, it gets a test in
 `test/known-bugs.test.js`, declared with `knownBug`, so the test passes while
 the bug is present. The bug's fix makes its test fail; declare that test with
 `it` instead, in the same change, among the tests of the code it is about.
