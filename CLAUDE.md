@@ -325,7 +325,10 @@ beside it shows the shape.
 
 ## Known bugs
 
-None is known. When one is found, it gets a test in
+One is known: the Summ sweep refuses a token's empty list of symbols in
+Summ, in `summSymbols`, saying it "must be a list of symbols, each once",
+words an empty list meets; the schema asks for one or more. When one is
+found, it gets a test in
 `test/known-bugs.test.js`, declared with `knownBug`, so the test passes while
 the bug is present. The bug's fix makes its test fail; declare that test with
 `it` instead, in the same change, among the tests of the code it is about.
