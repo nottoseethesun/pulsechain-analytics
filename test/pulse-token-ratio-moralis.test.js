@@ -49,8 +49,10 @@ before(async () => {
   keys = await saveStandInKeys();
 });
 
+// A test-name pattern that selects none of this file's tests skips the
+// before, so no keys were saved
 after(() => {
-  keys.remove();
+  if (keys !== undefined) keys.remove();
 });
 
 describe("pulse-token-ratio.js, reading Moralis's candles", () => {

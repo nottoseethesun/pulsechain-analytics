@@ -3,8 +3,9 @@
  * sorts the splits of withdrawals from 9mm V3 positions into Summ's cases
  * (`splits.js`), and reads what each position was owed when the range
  * began (`owed.js`). `summ-sweep-positions.test.js` tests the split
- * itself, `summ-sweep.test.js` the reading and the match, and
- * `summ-sweep-run.test.js` the whole sweep and its command line.
+ * itself, `summ-sweep.test.js` the reading and the match,
+ * `summ-sweep-run.test.js` the whole sweep, and
+ * `summ-sweep-command.test.js` its command line.
  * @module test/summ-sweep-splits.test
  *
  * The withdrawals are those of `helpers/summ-sweep-case.js`, and LP
