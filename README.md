@@ -16,21 +16,23 @@ Tools that answer questions about PulseChain:
   `check-token-balance/`);
 - how two tokens' prices compare over time, charted in the terminal (the
   ratio chart, `chart-price-ratio/`);
-- what a wallet moved over a range of blocks, read from the chain alone
-  (`wallet-history/`), and what of those moves Summ, the crypto tax
-  calculator the owner keeps his books in, lacks or holds wrongly (the
-  Summ sweep, `summ-sweep/`).
+- what of a wallet's moves over a range of days Summ, the crypto tax
+  calculator the repo's owner, nottoseethesun on GitHub, keeps his books
+  in, lacks or holds wrongly (the Summ sweep, `summ-sweep/`), reading what
+  the wallet moved from the chain alone (`wallet-history/`, the sweep's
+  module, which has no command of its own).
 
 The tools run on Node, the program that runs JavaScript outside a
 browser. The first also comes as a script for Google Sheets, written in
 Apps Script, Google's platform for scripts that run inside its apps, so
 that a sheet's cell can call it. Apps Script cannot import npm packages,
 such as ethers, a library for talking to Ethereum-style chains such as
-PulseChain. So the Apps Script version does by hand, with `UrlFetchApp`,
-Apps Script's service for web requests, and json-rpc, the protocol a
-chain's rpc endpoint answers, what the module at the repo's top folder,
-`fetch-amount-of-token-transferred.js`, does with ethers for other Node
-code; its code is longer and looks different.
+PulseChain. So the script does by hand what the module at the repo's top
+folder, `fetch-amount-of-token-transferred.js`, does with ethers: it asks
+the chain's rpc endpoint in json-rpc, the protocol such an endpoint
+answers, through `UrlFetchApp`, Apps Script's service for web requests.
+The module has no command; other Node code imports it, and running it
+does nothing.
 
 ## Table of Contents
 
@@ -82,7 +84,9 @@ anything else.
 ## Screenshot
 
 The ratio chart, charting the daily ratio of $808's price to $pTGC's on
-PulseChain in the terminal:
+PulseChain in the terminal. The picture comes from an older version,
+which said "PLS-based" and listed its oldest ratios under "Recent
+ratios"; the chart now says "USD-based" and lists the newest ten.
 
 ![The ratio chart's output: the daily ratio of $808 to $pTGC, as a line chart in the terminal](chart-price-ratio/pulse-token-ratio-output.png)
 
@@ -99,13 +103,18 @@ PulseChain in the terminal:
 - git, the version-control program, to clone the repo from GitHub, the
   website that hosts it.
 - For the amount a transaction sent in a cell: a Google account and a
-  spreadsheet in Google Sheets. Apps Script has no versions to choose
-  from: every script runs on the current one. When a script stops
+  spreadsheet in Google Sheets. Apps Script itself has no versions to
+  choose from: every script runs on the current one. When a script stops
   working, [Google's release notes](https://developers.google.com/apps-script/release-notes)
   may say what changed.
 - For a balance at a past block: an rpc endpoint that keeps past state,
   such as the default, g4mm4's, a PulseChain node operator's public
   endpoint.
+- For the Summ sweep: an rpc endpoint that keeps past state and offers
+  the debug methods `debug_traceTransaction` and `debug_traceBlockByNumber`,
+  as g4mm4's does; a checkout of LP Ranger, the owner's bot that manages
+  his 9mm V3 liquidity positions, whose bookkeeping tool the sweep runs;
+  and a copy of Summ's csv template.
 - Optional: the api keys of the ratio chart ([Api Keys](#api-keys)).
 
 ---
@@ -133,23 +142,26 @@ npm ci --prefix check-token-balance
 
 Each installs crypto-price-fetchers, the owner's repo of code his
 projects share, from GitHub: it runs the Sheets script under Node, keeps
-the api keys, asks GeckoTerminal, a service that lists the pools of
-decentralized exchanges with their prices and candles, Moralis and
-DexTools for the ratio chart, and writes the Summ sweep's csv.
+the api keys, writes the Summ sweep's csv, and asks, for the ratio chart,
+GeckoTerminal, a service that lists the pools of decentralized exchanges
+with their prices and candles, and Moralis and DexTools, two services
+that price tokens from those pools.
 
 ### Google Sheets
 
 A sheet can run the Sheets script, `fetch-amount-of-token-transferred.gs`
 in `for-google-apps/check-token-balance/`, two ways: as a library, the
-owner's deployed copy, which he updates, or as a copy pasted into the
-sheet's own project, which does not change when the repo does.
+owner's deployed copy, which he updates and which keeps each answer in a
+cache, or as a copy pasted into the sheet's own project, which does not
+change when the repo does and keeps no cache. A sheet with a pasted copy
+needs no wrapper: its cells call the copy's `getTokenTransferred`.
 
 #### Adding the Library
 
-A sheet's project adds the library by the script's ID, the part of its
-library URL before the final `/n`, where `n` is the version number. The
+A sheet's project adds the library by the script's ID, which the
 [README beside the script](for-google-apps/check-token-balance/README.md)
-gives the ID, and the full deployment info, such as:
+gives: the part of the library's URL after `/d/`, before the version
+number. That README gives the full deployment info too, such as:
 
 ```terminal
 Version 5 on Nov 21, 2025, 4:07 PM
@@ -159,10 +171,11 @@ Library URL:  https://script.google.com/macros/library/d/1HFXEAhRh3-fSqNLzi9i-oM
 
 1. Copy the script's ID from the README beside the script.
 2. In the sheet, choose **Extensions → Apps Script**.
-3. On the left, click **Libraries**, and paste the ID into the dialog's
-   first field.
-4. Click **Look Up**, choose the latest version (the highest number), and
-   click **Add**.
+3. On the left, click **+** beside **Libraries**, and paste the ID into
+   **Script ID**.
+4. Click **Look up**, choose the latest version (the highest number),
+   keep the identifier `FetchTokenAmountTransferredSA`, which `wrapper.gs`
+   calls, and click **Add**.
 
 A cell cannot call a library's functions directly, only those of the
 sheet's own Apps Script project. So the project also needs a wrapper: a
@@ -179,21 +192,20 @@ the library, is pasted into the sheet's own project:
 1. On GitHub, open the file, and copy it with the **Copy raw file**
    button.
 2. In the sheet, choose **Extensions → Apps Script**.
-3. Select all the code in the editor (Ctrl+A, or Cmd+A on a Mac), and paste
-   over it (Ctrl+V, or Cmd+V).
-4. Save (Ctrl+S, or Cmd+S), and name the file. Apps Script adds `.gs` to
-   the name itself.
+3. Open the project's file `Code.gs`, or make a new one: click **+**
+   beside **Files**, choose **Script**, and type its name, to which Apps
+   Script adds `.gs`.
+4. Select all of the file's code (Ctrl+A, or Cmd+A on a Mac), paste over
+   it (Ctrl+V, or Cmd+V), and save (Ctrl+S, or Cmd+S).
 
 ### Api Keys
 
 The ratio chart sends two api keys: Moralis's, to read two years of daily
 candles from Moralis, and DexTools', to fall back to current prices when
-the candles cannot be had. Moralis and DexTools are services that price
-tokens from the pools of decentralized exchanges. The keys are kept in
+the candles cannot be had. The keys are kept in
 `api-keys.json` in the repo's top folder, which git ignores, encrypted
 with a password you choose, by crypto-price-fetchers' key store, which
-keeps keys as LP Ranger, the owner's bot that manages his 9mm V3
-liquidity positions, keeps its own. This repo's `npm run api-keys` runs
+keeps keys as LP Ranger keeps its own. This repo's `npm run api-keys` runs
 the store's key manager. To save the keys, from the repo's top folder:
 
 ```bash
@@ -202,8 +214,10 @@ npm run api-keys
 
 It lists each key the top `config.json` names, saved or not, never showing
 its characters, and asks for each one not saved: the key, then the
-password, twice the first time, showing nothing of what is typed. Each key
-is saved only once its service takes it.
+password, showing nothing of what is typed. The password is typed twice
+while no key is saved, once after that, and not at all when
+`unlock-api-keys.sh` kept it. Each key is saved only once its service
+takes it.
 [The Api Keys and Their Password](#the-api-keys-and-their-password) shows
 how to type the password once per terminal.
 
@@ -248,19 +262,22 @@ npm ci --prefix check-token-balance
 ```
 
 The api keys, in `api-keys.json`, and your settings in the files git
-ignores stay as they are. A sheet that added the library runs the version
-it chose: to take a newer one, choose it under **Libraries** in the
+ignores stay as they are. Three settings files are files git keeps: the
+top `config.json`, `chart-price-ratio/config.json` and
+`check-token-balance/config.json`. When you changed one and a newer
+commit changes it too, `git pull` stops rather than write over your
+change, and `git stash`, then `git pull`, then `git stash pop` carries
+your change across. A sheet that added the library runs the version it
+chose: to take a newer one, choose it under **Libraries** in the
 sheet's Apps Script project. A pasted copy changes only when it is pasted
 again.
 
 ### Versions of crypto-price-fetchers
 
-This step is optional: the lockfiles name the commit of
-crypto-price-fetchers each folder installs.
-
 The top folder, `chart-price-ratio/` and `check-token-balance/` install
 crypto-price-fetchers straight from its GitHub project, rather than from
-npm's registry. Each `package.json` names it with a ref: `#main`, its
+npm's registry, at the commit each lockfile names, so this step is
+optional. Each `package.json` names it with a ref: `#main`, its
 main branch, which this repo follows, or `#semver:*`, its latest release,
 its highest version tag. Each `package-lock.json` keeps the commit the ref
 named when the lockfile was made, and `npm ci` installs that commit.
@@ -269,12 +286,10 @@ crypto-price-fetchers also holds the tool that moves all three: its
 versions tool, which this repo runs as `npm run github-project-deps`. It
 sets the ref in the three `package.json` files, then makes each folder's
 `package-lock.json` again from a fresh `node_modules`, so the newest
-commit, or the newest release, is installed. If an install fails, as it
-does for a release whose top folder has no package.json, every
+commit, or the newest release, is installed. If an install fails, every
 `package.json` and `package-lock.json` goes back as it was, and
-`node_modules` is installed again from them. From the repo's top folder:
-
-The newest commit of main:
+`node_modules` is installed again from them. From the repo's top folder,
+the newest commit of main:
 
 ```bash
 npm run github-project-deps -- main
@@ -286,6 +301,11 @@ The latest release:
 npm run github-project-deps -- release
 ```
 
+No release can be installed yet: every release of crypto-price-fetchers,
+the newest being 1.3.0, came before its `package.json`, so `release`
+fails, and the files go back as they were. It works once a release with a
+`package.json` is tagged.
+
 ---
 
 ## Uninstall
@@ -295,7 +315,8 @@ npm run github-project-deps -- release
    wrapper, or the pasted copy of the script.
 2. In each terminal where `unlock-api-keys.sh` kept the password, run
    `unset API_KEYS_PASSWORD`, or close the terminal.
-3. Delete the repo's folder, which holds `api-keys.json`:
+3. From the folder that holds it, delete the repo's folder, which holds
+   `api-keys.json`:
 
    ```bash
    rm -rf pulsechain-analytics
@@ -308,22 +329,26 @@ npm run github-project-deps -- release
 ## Usage
 
 Each sub-section below covers one tool you run on its own, with examples.
-Each command line answers `--help` with its options, more examples and its
-exit codes, and [`docs/project-commands.md`](docs/project-commands.md)
+Each command line run with node or npm answers `--help` with its options,
+more examples and its exit codes, and [`docs/project-commands.md`](docs/project-commands.md)
 lists every command with its flags. Run the commands from the repo's top
 folder unless a sub-section says otherwise; `<wallet>` and
 `<transaction-hash>` stand for your own.
 
 ### The Amount a Transaction Sent, in a Cell
 
-Once the wrapper is in the sheet's project
-([Google Sheets](#google-sheets)), `getTokenTransferred(transaction,
-token, wallet)` gives how much of a token one PulseChain transaction sent
-a wallet: it reads the transaction's receipt and adds up the token's
-transfers to the wallet in it. The wrapper's `getTokenTransferred` asks
-the library's caching function, which answers a repeated call from its
-cache, since a transaction's amount does not change once it is on the
-chain; `getTokenTransferredNoCache` asks without the cache.
+`getTokenTransferred(transaction, token, wallet)` gives how much of a
+token one PulseChain transaction sent a wallet: it reads the
+transaction's receipt and adds up the token's transfers to the wallet in
+it, cut off at 7 decimal places rather than rounded. A failed read shows
+in the cell as an error. With the library and the wrapper in the sheet's
+project ([Google Sheets](#google-sheets)), the wrapper's
+`getTokenTransferred` asks the library's caching function, which answers
+a repeated call from its cache, since a transaction's amount does not
+change once it is on the chain, and `getTokenTransferredNoCache` asks
+without the cache. With the script pasted in, the cell calls the copy's
+`getTokenTransferred`, which keeps no cache, and there is no
+`getTokenTransferredNoCache`.
 
 The HEX that the transaction in cell A2 sent the wallet in cell B2:
 
@@ -331,7 +356,8 @@ The HEX that the transaction in cell A2 sent the wallet in cell B2:
 =getTokenTransferred(A2, "0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39", B2)
 ```
 
-The same, asked of the chain each time, without the cache:
+The same, through the wrapper, asked of the chain each time, without the
+cache:
 
 ```text
 =getTokenTransferredNoCache(A2, "0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39", B2)
@@ -341,8 +367,8 @@ The same, asked of the chain each time, without the cache:
 
 `fetch-amount-of-token-transferred.js`, beside the Sheets script, runs the
 script under Node, unchanged, and prints what its cell would show. It asks
-the rpc endpoint `config.json` beside it names
-([Configure](#configure)).
+the rpc endpoint the optional `config.json` beside it names, or else the
+one the script is written with, g4mm4's ([Configure](#configure)).
 
 How much HEX one transaction sent a wallet:
 
@@ -387,10 +413,10 @@ The ratio chart, `chart-price-ratio/pulse-token-ratio.js`, charts the
 ratio of two PulseChain tokens' prices (token A / token B) in the
 terminal, even when no pool trades one for the other: it prices each
 token in USD, from a pool of its own. It reads the candles of
-GeckoTerminal, which takes no key, or of Moralis, with a Moralis key
-saved, when it asks which, Enter taking Moralis, or when `--source` names
-one. When the candles cannot be had, it falls back to each token's
-current price from DexTools, with a DexTools key saved.
+GeckoTerminal, which takes no key, or of Moralis, which takes one. With a
+Moralis key saved, it asks which to read, Enter taking Moralis, unless
+`--source` names one. When the candles cannot be had, it falls back to
+each token's current price from DexTools, with a DexTools key saved.
 [Its README](chart-price-ratio/README.md) covers how it picks each pool.
 The examples run in its folder.
 
@@ -479,18 +505,20 @@ source ./unlock-api-keys.sh
 
 ## Configure
 
-The tools run as they come; a settings file changes how one runs. Each
-file is JSON, checked against its JSON Schema, a description of the keys
+The tools run as they come, but for the Summ sweep, which needs the
+owner's settings in `summ-sweep/config.json`, with the paths of his Summ
+csv template and his LP Ranger checkout set. A settings file changes how
+a tool runs. Each file is JSON, checked against its JSON Schema, a description of the keys
 the file may hold and the kind of value each takes, before the tool takes
 any setting: a key the tool does not read, or a value of the wrong kind,
 stops the run, with every problem listed, one line each.
 
 | File | Read by | Holds |
 | ---- | ------- | ----- |
-| `config.json`, at the repo's top | the key store and the Summ sweep | `apiKeys`, the services whose keys the project keeps, and `pulsechain`, the chain's facts the sweep reads: its id, its rpc endpoint, the position manager of 9mm V3, the wrapped coin and the pacing of requests |
+| `config.json`, at the repo's top | the key store and the Summ sweep | `apiKeys`, the services whose keys the project keeps, and `pulsechain`, the chain's facts the sweep reads: its id, its rpc endpoint, the position manager of 9mm V3, the wrapped coin, the widest log search in blocks, the spacing of requests and the most asked in one batch |
 | `chart-price-ratio/config.json` | the ratio chart | the default of each of its options |
 | `check-token-balance/config.json` | the balance checker | `defaultRpc`, the rpc endpoint it asks unless `--rpc` names another |
-| `for-google-apps/check-token-balance/config.json`, which git ignores | the Sheets script's Node version | `config.rpcUrl`, the rpc endpoint it asks; `config-example.json` beside it shows the shape |
+| `for-google-apps/check-token-balance/config.json`, optional, which git ignores | the Sheets script's Node version | `config.rpcUrl`, the rpc endpoint it asks, in place of g4mm4's, which the script is written with; `config-example.json` beside it shows the shape |
 | `summ-sweep/config.json`, which git ignores | the Summ sweep | the path of the Summ csv template, the path of an LP Ranger checkout, whose bookkeeping tool reads each withdrawal from a position, the owner's other wallets with their names, the tokens to book as spam and as income, and the symbols Summ and a csv give each token whose symbol differs from its contract's; `config-example.json` beside it shows the shape |
 
 [Settings Files](docs/architecture.md#settings-files) explains the
@@ -501,11 +529,14 @@ schemas.
 ## Lint & Test
 
 The gate, LP Ranger's, runs the lint, the tests and the security audits,
-and must pass before every commit and push. From the repo's top folder,
-after the installs of [Node](#node):
+and must pass before every commit and push. The lint runs ESLint, which
+checks JavaScript against rules; markdownlint, which checks the form of
+Markdown files; the check of Prettier, a program that formats code;
+actionlint; and knip, which finds files nothing uses. From the repo's top
+folder, after the installs of [Node](#node):
 
 ```bash
-npm run lint      # ESLint, markdownlint, Prettier's check, actionlint and knip
+npm run lint      # the linters above
 npm test          # the tests, on Node's test runner
 npm run check     # the whole gate, as CI runs it
 ```
@@ -556,8 +587,8 @@ The `docs/` folder holds three references:
 
 - [`docs/architecture.md`](docs/architecture.md): how the tools work.
 - [`docs/engineering.md`](docs/engineering.md): the files, the gates, the
-  tests and CI, the checks GitHub Actions, GitHub's service for running
-  them, runs at each push.
+  tests and CI: the checks GitHub runs, through its GitHub Actions
+  service, at each push.
 - [`docs/project-commands.md`](docs/project-commands.md): every command,
   with its flags and an example.
 
