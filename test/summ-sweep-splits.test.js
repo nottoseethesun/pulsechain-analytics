@@ -132,6 +132,50 @@ describe("splitCollects", () => {
     );
   });
 
+  it("splits a later collect of a position that a transaction collected from with another, though it was owed coins when the range began", () => {
+    const records = new Map([
+      [
+        hashOf(3),
+        {
+          liquidity: [
+            event("Collect", 9, 1n, 1n),
+            event("Collect", 11, 1n, 1n),
+          ],
+        },
+      ],
+      [
+        hashOf(4),
+        {
+          liquidity: [
+            event("DecreaseLiquidity", 9, 100n, 0n),
+            event("Collect", 9, 103n, 0n),
+          ],
+        },
+      ],
+    ]);
+    const { splits, problems } = splitCollects({
+      order: [hashOf(3), hashOf(4)],
+      records,
+      receivedIn: (hash) =>
+        hash === hashOf(4) ? new Map([[TKN, 103n]]) : new Map(),
+      owedAtStart: new Map([["9", [ONE, 0n]]]),
+    });
+    assert.deepEqual(
+      problems.map((one) => one.hash),
+      [hashOf(3)],
+    );
+    assert.deepEqual(splits, [
+      {
+        hash: hashOf(4),
+        nftId: "9",
+        token: TKN,
+        received: 103n,
+        principal: 100n,
+        fee: 3n,
+      },
+    ]);
+  });
+
   it("orders a pool's two coins by their addresses as numbers, whatever their case", () => {
     /*- OTHER, 0xbBbB…, is the lower number, while POOL, 0xCcCC…, comes
      * first as text, since capitals sort before small letters. */
@@ -332,17 +376,17 @@ describe("sortSplits", () => {
 
 describe("owedWhenRangeBegan", () => {
   it("gives the coins each position was owed at the block before the range, for those owed any", async () => {
-    const paced = pacedProvider(sweepChain({ 7: [0n, 0n], 9: [ONE, 0n] }), {
-      spacingMs: 0,
-    });
+    const chain = sweepChain({ 7: [0n, 0n], 9: [ONE, 0n] });
+    const paced = pacedProvider(chain, { spacingMs: 0 });
 
     const owed = await owedWhenRangeBegan(paced, {
       positionManager: PM,
       nftIds: ["7", "9", "12"],
-      fromBlock: 1,
+      fromBlock: 5,
     });
 
     assert.deepEqual([...owed], [["9", [ONE, 0n]]]);
+    assert.deepEqual(chain.callBlocks, [4, 4, 4]);
   });
 
   it("asks nothing for a range that starts at block 0", async () => {

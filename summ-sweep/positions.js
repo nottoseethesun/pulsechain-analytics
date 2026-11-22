@@ -163,6 +163,7 @@ export function splitCollects({
     const collects = collectsOf(hash, records.get(hash), waiting);
     if (collects.length === 0) continue;
     if (collects.length > 1) {
+      for (const one of collects) collected.add(one.nftId);
       problems.push({
         hash,
         problem:

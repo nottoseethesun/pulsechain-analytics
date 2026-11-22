@@ -172,10 +172,7 @@ async function printBalances(options) {
 
 endQuietlyWhenOutputCloses();
 await balanceCommand()
-  .action(async (options, command) => {
-    if (options.block === undefined && options.date === undefined) {
-      command.error("error: give --block or --date");
-    }
+  .action(async (options) => {
     try {
       await printBalances(options);
     } catch (error) {

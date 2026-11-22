@@ -10,7 +10,7 @@
  * runner crypto-price-fetchers provides
  * (`crypto-price-fetchers/apps-script-runner`, installed from GitHub). The
  * `.gs` file's header says what the function takes and returns: the
- * amount, with seven decimal places, or 0 when the transaction sent the
+ * amount, cut off at 7 decimal places, or 0 when the transaction sent the
  * wallet none. A failed read throws, so the call fails, and the command
  * line prints the error on stderr with exit code 1.
  *

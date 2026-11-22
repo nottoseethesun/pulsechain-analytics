@@ -139,8 +139,9 @@ function topicsMatch(topics, wanted) {
  *   at any block; it refuses `positions` for an NFT id it does not name,
  *   as the position manager does for one not minted
  * @param {number} [description.spanLimit] - The widest log search taken
- * @returns {object} The stand-in, with an ethers provider's methods, and
- *   `requests`, a count of the requests by method
+ * @returns {object} The stand-in, with an ethers provider's methods,
+ *   `requests`, a count of the requests by method, and `callBlocks`, the
+ *   block each contract call asked at, in order
  */
 export function standInWalletChain(description) {
   const byLowerCase = (object) =>
@@ -153,6 +154,7 @@ export function standInWalletChain(description) {
   const balances = byLowerCase(description.balances);
   const contracts = byLowerCase(description.contracts);
   const requests = {};
+  const callBlocks = [];
   const count = (method) => {
     requests[method] = (requests[method] ?? 0) + 1;
   };
@@ -233,6 +235,7 @@ export function standInWalletChain(description) {
 
   return {
     requests,
+    callBlocks,
     async getBlockNumber() {
       count("getBlockNumber");
       return description.latest;
@@ -310,8 +313,9 @@ export function standInWalletChain(description) {
       count(method);
       return answers[method](params);
     },
-    async call({ to, data }) {
+    async call({ to, data, blockTag }) {
       count("call");
+      callBlocks.push(blockTag);
       const contract = contracts[to.toLowerCase()];
       if (contract === undefined) return "0x";
       const refusal = Object.assign(new Error("execution reverted"), {

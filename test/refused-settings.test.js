@@ -118,4 +118,16 @@ describe("the balance checker, with config.json refused", () => {
       /check-token-balance\/config\.json → defaultRpc must be an http or https url/,
     );
   });
+
+  it("names a missing --block or --date before the file's problems", () => {
+    const stopped = run([
+      "--address",
+      TOKENS[0],
+      "--tokens",
+      "Pulse_Native_Gas_Token",
+    ]);
+    assert.equal(stopped.status, 1);
+    assert.match(stopped.stderr, /give --block or --date/);
+    assert.doesNotMatch(stopped.stderr, /defaultRpc/);
+  });
 });

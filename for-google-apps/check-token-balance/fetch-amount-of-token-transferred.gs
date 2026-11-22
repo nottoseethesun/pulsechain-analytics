@@ -9,8 +9,9 @@
  * the token's Transfer events to the wallet in it. The receipt holds that transaction's events alone, so another transaction
  * in the same block never counts, and it needs no archive node, since no past balance is read.
  *
- * The final amount is cut off at 7 decimal places, rather than rounded, and returned as a number, which a cell shows
- * without trailing zeros. If the
+ * The final amount is written with 7 decimal places, the rest cut off rather than rounded, and returned as a number, which
+ * a cell shows without trailing zeros. A number holds about 15 significant digits, so an amount of 100 million tokens or
+ * more can lose its 7th decimal place, which the conversion to a number rounds. If the
  * transaction transferred none of the token to the wallet, it returns 0. If a read fails, or the transaction is not
  * found, it throws, so the cell shows an error, never a number that could be mistaken for an amount.
  *
