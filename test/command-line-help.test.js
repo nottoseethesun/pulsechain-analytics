@@ -14,12 +14,17 @@
  * crypto-price-fetchers the npm targets run: its versions tool, which
  * `npm run github-project-deps` runs, and `run-actionlint`, which the lint
  * and `npm run audit:actionlint` run. A second test holds the list to the repo and the tools' own
- * packages, so a command line added later is held to the rule too.
+ * packages, so a command line added later is held to the rule too. A third
+ * runs each tool's start file in `bin/` with only the packages `npm ci`
+ * installs in the tool's folder, as a checkout has them when only that
+ * folder was installed.
  */
 
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -131,4 +136,49 @@ describe("the list of command lines", () => {
       );
     }
   });
+});
+
+/**
+ * Runs a tool's start file with `--help` as a checkout runs it after
+ * `npm ci` in the tool's folder alone: from a copy of the start file in the
+ * `bin/` of a temp folder, beside a link to the tool's folder, with no
+ * packages of the top folder's to resolve from.
+ *
+ * @param {string} startFile - The start file's name in `bin/`
+ * @param {string} toolFolder - The tool's folder, from the repo's top
+ * @returns {import('node:child_process').SpawnSyncReturns<string>} The run
+ */
+function helpWithToolPackagesOnly(startFile, toolFolder) {
+  const top = fs.mkdtempSync(path.join(os.tmpdir(), "pa-start-file-"));
+  const link = path.join(top, toolFolder);
+  try {
+    fs.writeFileSync(path.join(top, "package.json"), '{"type":"module"}\n');
+    fs.mkdirSync(path.join(top, "bin"));
+    fs.copyFileSync(
+      path.join(REPO_TOP, "bin", startFile),
+      path.join(top, "bin", startFile),
+    );
+    fs.symlinkSync(path.join(REPO_TOP, toolFolder), link, "dir");
+    return spawnSync(
+      process.execPath,
+      [path.join(top, "bin", startFile), "--help"],
+      { cwd: top, encoding: "utf8", timeout: 30000 },
+    );
+  } finally {
+    if (fs.existsSync(link)) fs.unlinkSync(link);
+    fs.rmSync(top, { recursive: true, force: true });
+  }
+}
+
+describe("the start files in bin/", () => {
+  for (const [startFile, toolFolder] of [
+    ["check-token-balance.js", "check-token-balance"],
+    ["pulse-token-ratio.js", "chart-price-ratio"],
+  ]) {
+    it(`bin/${startFile} runs its tool with only the packages npm ci installs in ${toolFolder}/`, () => {
+      const run = helpWithToolPackagesOnly(startFile, toolFolder);
+      assert.equal(run.status, 0, run.stderr);
+      assert.match(run.stdout, /^Usage: /);
+    });
+  }
 });
