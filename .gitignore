@@ -11,6 +11,15 @@ api-keys.json.tmp
 # lists), beside its committed config-example.json
 /summ-sweep/config.json
 
+# The owner's own files: those a tool reads from its input/ folder, and
+# those it writes in its output/ folder, by kind (output/csv/,
+# output/json/). Git keeps each folder by its .gitkeep, an empty file, and
+# nothing else in it.
+/chart-price-ratio/output/*/*
+/summ-sweep/input/*
+/summ-sweep/output/*/*
+!.gitkeep
+
 # Logs
 logs
 *.log

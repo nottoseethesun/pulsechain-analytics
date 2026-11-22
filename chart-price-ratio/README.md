@@ -80,7 +80,8 @@ crypto-price-fetchers is installed, and how to change it, is in the repo's
 
 ## Configuration
 
-Edit `config.json` to set defaults:
+Edit `config.json` to set defaults; `config-example.json`, beside it,
+holds the same settings with their defaults:
 
 ```json
 {
@@ -95,7 +96,7 @@ Edit `config.json` to set defaults:
     "chain": "0x171",
     "days": 730
   },
-  "csvFilename": "token_ratio.csv",
+  "csvFilename": "output/csv/token_ratio.csv",
   "interval": "daily",
   "maxCandles": 1000,
   "weeklyResampleDays": 7,
@@ -104,7 +105,10 @@ Edit `config.json` to set defaults:
 ```
 
 `moralis.chain` is Moralis's id for PulseChain, and `moralis.days` the
-days of daily candles a run reads from Moralis.
+days of daily candles a run reads from Moralis. `csvFilename` is a path
+read from this folder, so a run writes the CSV in `output/csv/` here
+wherever it runs; git keeps nothing in that folder but the folder. A
+path `--csv-filename` takes is read from the folder the chart runs in.
 
 The file is checked against its JSON Schema, `RATIO_SETTINGS_SCHEMA` in
 `ratio-command.js`, before any setting is taken: a key the schema does not
@@ -171,8 +175,7 @@ node bin/pulse-token-ratio.js <tokenA> <tokenB> --interval=weekly
 
 #### Export to CSV
 
-The ratios also written to `token_ratio.csv`, in the folder the chart
-runs in:
+The ratios also written to `output/csv/token_ratio.csv`, in this folder:
 
 `node bin/pulse-token-ratio.js <tokenA> <tokenB> --interval=daily --csv`
 

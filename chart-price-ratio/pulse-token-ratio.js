@@ -46,7 +46,10 @@
  *      longest, so the axis lines up.
  *    • The x-axis carries up to 10 dates, with the hour for the hourly
  *      interval, each under its column, the oldest at the left.
- *  - --csv also writes the ratios to a CSV file.
+ *  - --csv also writes the ratios to a CSV file: by default
+ *    output/csv/token_ratio.csv in this folder, where git keeps nothing
+ *    but the folder (config.json's csvFilename, a path read from this
+ *    folder).
  *  - --useDexToolsOnly, or useDexToolsOnly in config.json, asks DexTools
  *    alone, for the current prices, as the fallback below does.
  *
@@ -105,7 +108,7 @@
  *   node bin/pulse-token-ratio.js <tokenA> <tokenB> --useDexToolsOnly
  *
  *   # Override config values via flags
- *   node bin/pulse-token-ratio.js <tokenA> <tokenB> --network=eth --csv-filename=custom.csv --csv
+ *   node bin/pulse-token-ratio.js <tokenA> <tokenB> --network=eth --csv-filename=chart-price-ratio/output/csv/custom.csv --csv
  *
  *   # Combine interval and overrides
  *   node bin/pulse-token-ratio.js <tokenA> <tokenB> hourly --max-candles=500 --csv

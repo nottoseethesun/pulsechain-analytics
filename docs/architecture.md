@@ -224,6 +224,14 @@ them. The run ends with exit code 0 when it printed the ratios, and 1 when
 it did not: a mistake in the arguments or in `config.json`, no source
 chosen, no prices, or a request that failed.
 
+With `--csv`, a run also writes the ratios to a CSV file: by default at
+config.json's `csvFilename`, `output/csv/token_ratio.csv`, a path read
+from the chart's folder, so the file lands in the chart's own
+`output/csv/` wherever the chart runs. That folder holds the owner's
+files, so git keeps nothing in it but its `.gitkeep`, the empty file that
+keeps it in the repo. A path `--csv-filename` takes is read from the
+folder the chart runs in, as any path a command line takes.
+
 Each key is opened from the repo's key store the first time the chart asks
 its service (`api-keys.js`), so a run that reads GeckoTerminal's candles
 and never falls back asks for no password.
@@ -333,7 +341,11 @@ A mistake stops the run before it reads anything.
 
 Summ's connector for Claude, through which Claude reads and edits the
 owner's records in Summ, returns the rows a page at a time, and the pages
-are saved to files: `summ-results.js` reads them, and refuses a set with
+are saved to files, in the examples in `summ-sweep/input/`, beside which
+the sweep writes its csv in `summ-sweep/output/csv/` and its report in
+`summ-sweep/output/json/`; those files hold the owner's data, so git keeps
+nothing in those folders but their `.gitkeep`. `summ-results.js` reads
+the pages, and refuses a set with
 a page missing, given twice or past the last, a page holding fewer or
 more rows than it says it returned, two pages that name a different
 number of pages or a different total, or rows that do not add up to the
@@ -657,6 +669,19 @@ two conflicting options only when both are typed, so the ratio chart
 refuses, with crypto-price-fetchers' `checkConflicts`
 (`crypto-price-fetchers/lib/option-conflicts`), `--source` beside a
 `useDexToolsOnly` its file sets.
+
+Each kind of `config.json` ships with a `config-example.json` beside it,
+which git keeps and never ignores: the file's settings with their default
+values, so the owner sees every setting a file may hold and copies the
+example to make his own. A `config.json` git keeps, the top one, the ratio
+chart's and the balance checker's, holds the repo's defaults, so its
+example holds the same settings. The Summ sweep's and the Sheets script's
+Node version's files hold the owner's own settings, which git ignores,
+and their examples show the shape with made-up values. No program reads
+an example. crypto-price-fetchers' `configExampleProblems`
+(`crypto-price-fetchers/lib/repo-checks`), in `test/repo-checks.test.js`,
+finds a `config.json` with no example, and an example that differs from
+the committed `config.json` beside it.
 
 ---
 

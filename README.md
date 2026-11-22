@@ -518,7 +518,8 @@ line.
 #### Usage
 
 The same ratio hour by hour, also written to a CSV file,
-`token_ratio.csv`, in the folder it runs in:
+`chart-price-ratio/output/csv/token_ratio.csv`, where git keeps nothing
+but the folder:
 
 ```bash
 node bin/pulse-token-ratio.js 0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39 0xA1077a294dDE1B09bB078844df40758a5D0f9a27 hourly --csv
@@ -543,15 +544,19 @@ folder it runs in, the repo's top folder. It needs three things:
   ([Configure](#configure));
 - Summ's rows of the wallet, saved to files a page at a time from Summ's
   connector for Claude, Anthropic's AI assistant, which reaches Summ
-  through it;
+  through it, in `summ-sweep/input/`;
 - the time up to which Summ's sync has read the wallet's transactions,
   which `--summ-synced-to` takes, since Summ's connector gives an
   account's last sync as a date alone.
 
-A wallet's November 2026 swept against two saved pages of Summ's results:
+It writes the csv in `summ-sweep/output/csv/` and the report in
+`summ-sweep/output/json/`, as the examples name them. The files hold your
+own data, and the repo is public, so git keeps nothing in those folders
+but the folders. A wallet's November 2026 swept against two saved pages
+of Summ's results:
 
 ```bash
-npm run summ-sweep -- --wallet <wallet> --start-date 2026-11-01 --end-date 2026-11-30 --summ-synced-to "2026-11-30 23:59:59" --summ-results summ-results-1.json summ-results-2.json --out missing.csv --report report.json
+npm run summ-sweep -- --wallet <wallet> --start-date 2026-11-01 --end-date 2026-11-30 --summ-synced-to "2026-11-30 23:59:59" --summ-results summ-sweep/input/summ-results-1.json summ-sweep/input/summ-results-2.json --out summ-sweep/output/csv/missing.csv --report summ-sweep/output/json/report.json
 ```
 
 #### Usage
@@ -560,7 +565,7 @@ The same sweep run again after fixing a leg in Summ and saving Summ's
 results again, writing over the last run's files:
 
 ```bash
-npm run summ-sweep -- --wallet <wallet> --start-date 2026-11-01 --end-date 2026-11-30 --summ-synced-to "2026-11-30 23:59:59" --summ-results summ-results-1.json summ-results-2.json --out missing.csv --report report.json --replace
+npm run summ-sweep -- --wallet <wallet> --start-date 2026-11-01 --end-date 2026-11-30 --summ-synced-to "2026-11-30 23:59:59" --summ-results summ-sweep/input/summ-results-1.json summ-sweep/input/summ-results-2.json --out summ-sweep/output/csv/missing.csv --report summ-sweep/output/json/report.json --replace
 ```
 
 [The Summ Sweep](docs/architecture.md#the-summ-sweep) explains its rules.
@@ -613,11 +618,15 @@ stops the run, with every problem listed, one line each.
 | File | Read by | Holds |
 | ---- | ------- | ----- |
 | `config.json`, at the repo's top | the key store and the Summ sweep | `apiKeys`, the services whose keys the project keeps, and `pulsechain`, the chain's facts the sweep reads: its id, its rpc endpoint, the position manager of 9mm V3, the wrapped coin, the widest log search in blocks, the spacing of requests and the most asked in one batch |
-| `chart-price-ratio/config.json` | the ratio chart | the default of each of its options |
+| `chart-price-ratio/config.json` | the ratio chart | the default of each of its options; `csvFilename`, the CSV `--csv` writes, is a path read from `chart-price-ratio/` |
 | `check-token-balance/config.json` | the balance checker | `defaultRpc`, the rpc endpoint it asks unless `--rpc` names another |
 | `src/for-google-apps/check-token-balance/config.json`, optional, which git ignores | `bin/fetch-amount-of-token-transferred.js`, the Sheets script's Node version | `config.rpcUrl`, the rpc endpoint it asks, in place of g4mm4's, which the script is written with; `config-example.json` beside it shows the shape |
 | `summ-sweep/config.json`, which git ignores | the Summ sweep | the path of the Summ csv template, the path of an LP Ranger checkout, whose bookkeeping tool reads each withdrawal from a position, the owner's other wallets with their names, the tokens to book as spam and as income, and the symbols Summ and a csv give each token whose symbol differs from its contract's; `config-example.json` beside it shows the shape |
 
+Beside each `config.json` is a `config-example.json`, which git keeps,
+holding its settings with their default values, or, for your own
+settings, made-up ones that show the shape: copy it to `config.json`,
+beside it, and change what you need.
 [Settings Files](docs/architecture.md#settings-files) explains the
 schemas.
 
