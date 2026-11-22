@@ -10,8 +10,8 @@
  * in the same block never counts, and it needs no archive node, since no past balance is read.
  *
  * The final amount is written with 7 decimal places, the rest cut off rather than rounded, and returned as a number, which
- * a cell shows without trailing zeros. A number holds about 15 significant digits, so an amount of 100 million tokens or
- * more can lose its 7th decimal place, which the conversion to a number rounds. If the
+ * a cell shows without trailing zeros. A number keeps all 7 places for an amount below 2^29, 536,870,912 tokens; from
+ * there up, the conversion to a number can round the 7th place. If the
  * transaction transferred none of the token to the wallet, it returns 0. If a read fails, or the transaction is not
  * found, it throws, so the cell shows an error, never a number that could be mistaken for an amount.
  *
