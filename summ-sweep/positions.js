@@ -10,8 +10,10 @@
  * is owed: that principal, plus the fees the position earned. So the fees
  * of a collect are the coins it paid out, less every DecreaseLiquidity of
  * the same NFT since the NFT's last collect. A collect with no
- * DecreaseLiquidity before it is all fees. The owner books fees as income,
- * and principal as liquidity removed. The sweep reads one range of blocks:
+ * DecreaseLiquidity before it is all fees. A collect that pays out less of
+ * a coin than its principal, or none of it, leaves the rest owed: it is
+ * reported, and the rest waits for the next collect. The owner books fees
+ * as income, and principal as liquidity removed. The sweep reads one range of blocks:
  * a position owed coins when it began (`summ-sweep/owed.js`) may pay
  * principal from a DecreaseLiquidity before the range in its first collect
  * within it, so that collect is reported, never split.
@@ -191,16 +193,20 @@ export function splitCollects({
       });
       continue;
     }
+    const unpaid = [0n, 0n];
     sides.forEach((coin, side) => {
-      if (coin === null) return;
-      const got = received.get(coin);
       const principal = collect.principal[side];
-      if (got < principal)
+      const got = coin === null ? 0n : received.get(coin);
+      if (got < principal) {
+        unpaid[side] = principal - got;
         problems.push({
           hash,
-          problem: `it paid out less ${coin} than the principal its DecreaseLiquidity events name`,
+          problem:
+            coin === null
+              ? `it paid out nothing of the coin on side ${side} of position #${collect.nftId}, though its DecreaseLiquidity events name principal of it`
+              : `it paid out less ${coin} than the principal its DecreaseLiquidity events name`,
         });
-      else
+      } else if (coin !== null)
         splits.push({
           hash,
           nftId: collect.nftId,
@@ -210,6 +216,12 @@ export function splitCollects({
           fee: got - principal,
         });
     });
+    // The position still owes the principal it did not pay out
+    const waitingNow = waiting.get(collect.nftId) ?? [0n, 0n];
+    waiting.set(collect.nftId, [
+      waitingNow[0] + unpaid[0],
+      waitingNow[1] + unpaid[1],
+    ]);
   }
   return { splits, problems };
 }

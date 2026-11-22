@@ -90,6 +90,12 @@ export const TRANSFER_CASES = [
     amount: 250,
   },
   {
+    name: "takes an address written with 0X",
+    chain: () => standInChain(250n),
+    token: `0X${TOKEN.slice(2)}`,
+    amount: 250,
+  },
+  {
     name: "takes a transaction hash written with spaces around it",
     chain: () => standInChain(250n),
     transaction: ` ${TRANSACTION}\t`,

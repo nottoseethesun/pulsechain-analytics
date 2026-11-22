@@ -326,4 +326,38 @@ describe("the questions", () => {
       ["1 TKN", "1 TKN", "1 TKN", "1 TKN", "1 9MM-V3-POS", "1 TKN", null, null],
     );
   });
+
+  it("asks the owner about a token whose contract's symbol is blank or the chain's own coin's, as about one with no symbol, rather than book a row the Summ csv utility refuses", () => {
+    const spam = getAddress(`0x${"5a".repeat(20)}`);
+    const reasons = ["", "  ", "PLS"].map((symbol) => {
+      const leg = gapLeg({ n: 1, token: spam, symbol, counterparty: OTHER });
+      const found = runGaps({ legs: [leg], owner: { spamTokens: [spam] } });
+      assert.equal(found.rows.length, 0, JSON.stringify(symbol));
+      return found.questions.map((one) => one.reason);
+    });
+    assert.deepEqual(reasons, [
+      ["its contract gave a blank symbol, and the owner's settings give none"],
+      ["its contract gave a blank symbol, and the owner's settings give none"],
+      [
+        "its contract names itself PLS, the chain's own coin, and the owner's settings give none",
+      ],
+    ]);
+  });
+
+  it("books a token whose contract names itself PLS by the symbol the owner's settings give it", () => {
+    const spam = getAddress(`0x${"5a".repeat(20)}`);
+    const leg = gapLeg({
+      n: 1,
+      token: spam,
+      symbol: "PLS",
+      counterparty: OTHER,
+    });
+    const found = runGaps({
+      legs: [leg],
+      owner: { spamTokens: [spam], csvSymbols: { [spam]: "FAKEPLS" } },
+    });
+    assert.deepEqual(found.questions, []);
+    assert.equal(found.rows.length, 1);
+    assert.equal(found.rows[0].baseCurrency, "FAKEPLS");
+  });
 });

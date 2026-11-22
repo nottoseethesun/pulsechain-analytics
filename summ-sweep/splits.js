@@ -90,7 +90,8 @@ function feeRow(split, leg, wallet, symbol) {
  * @returns {{fixes: object[], rows: object[], parts: object[],
  *   splitLegs: Set<object>, paidAsCoin: object[]}} The splits to fix in
  *   Summ, each with Summ's leg; the income rows of their fees; the parts of
- *   the coins Summ did not hold whole, to be matched again; every leg of a
+ *   the coins Summ did not hold whole, to be matched again, and the fees
+ *   of those it did whose token has no symbol for the csv; every leg of a
  *   coin with principal, which the parts stand for where Summ did not hold
  *   it whole; and the coins paid as PLS, which have no leg
  */
@@ -112,10 +113,12 @@ export function sortSplits({ splits, legs, matches, wallet, csvSymbolOf }) {
     const summLeg = matches.get(first);
     if (summLeg !== undefined) {
       fixes.push({ ...split, decimals: first.decimals, summLeg });
-      if (split.fee > 0n)
-        rows.push(
-          feeRow(split, first, wallet, csvSymbolOf(first.token, first.symbol)),
-        );
+      if (split.fee === 0n) continue;
+      const symbol = csvSymbolOf(first.token, first.symbol);
+      // A fee with no symbol for the csv is left to be asked about
+      if (symbol === null)
+        parts.push({ ...first, amount: split.fee, part: "fee", split });
+      else rows.push(feeRow(split, first, wallet, symbol));
       continue;
     }
     parts.push({ ...first, amount: split.principal, part: "principal", split });

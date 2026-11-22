@@ -15,8 +15,9 @@
  * `blockTimes` reads the time of each block the logs fall in, once each.
  *
  * How: `blockAtOrAfter` halves the range from block 0 to the latest
- * block, reading the time of the block at the middle each time, about 22
- * reads for PulseChain's 26 million blocks.
+ * block, reading the time of the block at the middle each time, about 25
+ * reads for PulseChain's 26 million blocks, since each read halves the
+ * range.
  *
  * Fit: the entry point of a sweep turns its dates into blocks with
  * `blockAtOrAfter`; `walletTransferLogs` searches each span `spansOf`
