@@ -12,7 +12,9 @@
  * (`crypto-price-fetchers/lib/settings-schema`), as LP Ranger checks its
  * settings: a file that is not JSON, a setting missing, a key the schema
  * does not name, or a value of the wrong kind stops the sweep, with every
- * problem listed, before it reads the chain.
+ * problem listed, before it reads the chain. `ownWallets`, `summSymbols`
+ * and `csvSymbols` are keyed by addresses, so each takes any address as a
+ * key, and refuses a key that is no address.
  *
  * How: the chain's two contracts are held in EIP-55's mixed case, as the
  * sweep compares addresses as text. The owner's addresses may be written
@@ -133,7 +135,7 @@ export const OWNER_SETTINGS_SCHEMA = Object.freeze({
         minItems: 1,
         uniqueItems: true,
         items: KINDS.text,
-        description: "a list of symbols, each once",
+        description: "a list of one or more symbols, each once",
       },
       description: "each token's symbols in Summ, by its contract",
     },

@@ -79,7 +79,7 @@ that hold no key and none of the owner's own settings.
 | `api-keys.json` | no | The keys, each encrypted with the owner's password. `api-keys.json.tmp` is the file it is written through. `API_KEYS_FILE_PATH` names another, as the tests do. |
 | `chart-price-ratio/config.json` | yes | The ratio chart's settings, checked against `RATIO_SETTINGS_SCHEMA`: GeckoTerminal's network, DexTools' plan, Moralis's chain and the days a run reads from it, the interval, the CSV's name. No key. |
 | `check-token-balance/config.json` | yes | The balance checker's rpc endpoint, the json-rpc api of a PulseChain node it reads balances from, checked against `SETTINGS_SCHEMA` in `check-token-balance/settings.js`. |
-| `for-google-apps/check-token-balance/config.json` | no | The Node version's rpc endpoint; `config-example.json` beside it shows the shape. |
+| `for-google-apps/check-token-balance/config.json` | no | The Node version's rpc endpoint, an http or https url (`CONFIG_SCHEMAS`); `config-example.json` beside it shows the shape. |
 | `coverage/` | no | A test run's coverage report. |
 
 The Summ sweep writes its csv and its report at the paths its command line
@@ -144,7 +144,7 @@ owner's key file or password.
 | ---- | -------------- |
 | `fetch-amount-of-token-transferred.test.js` | The module on ethers, a library for talking to Ethereum-style chains, against a stand-in chain. |
 | `fetch-amount-of-token-transferred-gs.test.js` | The Sheets script, run unchanged under Node. |
-| `fetch-amount-of-token-transferred-node-version.test.js` | The Sheets script's Node version, its command line included. |
+| `fetch-amount-of-token-transferred-node-version.test.js` | The Sheets script's Node version, its command line included; its schema of the script's config object held to the script by crypto-price-fetchers' `configSchemaProblems`, and a `config.json` it refuses. |
 | `format-balance.test.js` | How the balance checker writes a balance. |
 | `check-token-balance.test.js` | The balance checker: its command line, each option checked as it is parsed, and a mistake refused, naming its option, before the chain is asked anything; and the real program, run against a stand-in PulseChain endpoint served on the computer: each balance read once at the block given, or at the last block made before the start of the date given, even when the day's first block is nearer that start, then written with commas and plain, and a failed read's exit code. |
 | `check-token-balance-settings.test.js` | The balance checker's settings (`check-token-balance/settings.js`): the committed `config.json` held to its schema, g4mm4's endpoint for a file that names none and, with a notice, for no file, a key no setting has and an endpoint that is no url refused, listing every problem; and a copy of the checker's files in a temp folder, run with a `config.json` beside it that is not JSON or names no url, stopping with exit code 1, naming the file or the setting, and reading the `config.json` beside it, not the one of the folder it runs in. |

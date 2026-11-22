@@ -250,6 +250,18 @@ describe("runSummSweep", () => {
     assert.equal(run.chainMade, false);
   });
 
+  it("refuses a token's empty list of symbols in Summ in words that ask for one or more", () => {
+    const top = repo();
+    const ownerFile = path.join(top, "summ-sweep", "config.json");
+    const owner = JSON.parse(fs.readFileSync(ownerFile));
+    owner.summSymbols = { [WPLS]: [] };
+    fs.writeFileSync(ownerFile, JSON.stringify(owner));
+
+    assert.throws(() => readSweepSettings(top), {
+      message: `summ-sweep/config.json → summSymbols.${WPLS} must be a list of one or more symbols, each once; it is []`,
+    });
+  });
+
   it("takes the committed top config.json and summ-sweep/config-example.json, which hold to their schemas", () => {
     const top = tempFolder("summ-sweep-committed-");
     fs.mkdirSync(path.join(top, "summ-sweep"));
