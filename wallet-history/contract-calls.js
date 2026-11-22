@@ -4,13 +4,18 @@
  * @module wallet-history/contract-calls
  *
  * What: ethers throws a CALL_EXCEPTION for every error answer an endpoint
- * gives to `eth_call` (`JsonRpcApiProvider.getRpcError`): a revert, which
- * is the contract's answer, and the endpoint's own failures, such as a
- * rate limit, a timeout or a past state it no longer holds, which say
- * nothing of the contract. `contractRefused` tells a revert apart: it
- * carries the data the contract reverted with, or the endpoint's message
- * says the call reverted. `endpointFailure` turns any other error into
- * one that names the call and gives the endpoint's own message.
+ * gives to `eth_call` (`JsonRpcApiProvider.getRpcError`). Two are the
+ * contract's answer: a revert, and an error of the EVM, the Ethereum
+ * Virtual Machine that runs a contract's code, such as an invalid opcode,
+ * which stops the code where it stands. The others are the endpoint's own
+ * failures, such as a rate limit, its limit on a call's time or a past
+ * state it no longer holds, which say nothing of the contract.
+ * `contractRefused` tells the contract's answers apart: a revert carries
+ * the data the contract reverted with, or the endpoint's message says the
+ * call reverted; an error of the EVM is the endpoint's message, worded as
+ * geth, the Ethereum node program that PulseChain's node, go-pulse, is
+ * built from, words it. `endpointFailure` turns any other error into one
+ * that names the call and gives the endpoint's own message.
  *
  * Fit: `wallet-history/receipts.js` reads a token's symbol and decimals
  * with them, and `summ-sweep/owed.js` the coins a position was owed.
@@ -32,10 +37,20 @@ function isRevertData(data) {
 }
 
 /**
- * Whether ethers' error for a call is the contract's refusal: a revert.
+ * The errors of the EVM that stop a contract's code, as geth words them:
+ * an invalid opcode, a jump to no jump destination, the gas run out, a
+ * stack too short or too deep, a write in a call that may not write, a
+ * read past the data a call returned, and calls nested past the limit.
+ */
+const EVM_ERRORS =
+  /^(invalid opcode|invalid jump destination|out of gas|stack underflow|stack limit reached|write protection|return data out of bounds|max call depth exceeded)/i;
+
+/**
+ * Whether ethers' error for a call is the contract's refusal: a revert, or
+ * an error of the EVM that stopped the contract's code.
  *
  * @param {*} thrown - What the call threw
- * @returns {boolean} True for a revert; false for any other error, an
+ * @returns {boolean} True for either; false for any other error, an
  *   endpoint's failure among them
  */
 export function contractRefused(thrown) {
@@ -43,7 +58,8 @@ export function contractRefused(thrown) {
   if (thrown.code !== "CALL_EXCEPTION") return false;
   if (isRevertData(thrown.data)) return true;
   const message = thrown.info?.error?.message;
-  return typeof message === "string" && /revert/i.test(message);
+  if (typeof message !== "string") return false;
+  return /revert/i.test(message) || EVM_ERRORS.test(message);
 }
 
 /**

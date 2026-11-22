@@ -119,6 +119,26 @@ function wrapLog(contract, topic, wallet) {
 }
 
 /**
+ * A provider whose every call the endpoint answers with an error that is
+ * no revert, as ethers throws it: a CALL_EXCEPTION with no revert data,
+ * the endpoint's message as given.
+ *
+ * @param {string} message - The endpoint's message
+ * @returns {{call: function}} The provider
+ */
+function evmErrorCalls(message) {
+  return {
+    call: async () => {
+      throw Object.assign(new Error("missing revert data"), {
+        code: "CALL_EXCEPTION",
+        data: null,
+        info: { error: { code: -32000, message } },
+      });
+    },
+  };
+}
+
+/**
  * A paced provider that waits for nothing.
  *
  * @param {object} chain - The stand-in endpoint
@@ -463,5 +483,28 @@ describe("tokenFacts", () => {
     assert.deepEqual(Object.fromEntries(facts), {
       [TOKEN]: { symbol: null, decimals: null },
     });
+  });
+
+  it("takes an error of the EVM that is no revert, such as an invalid opcode, as the contract's refusal: the call ran, and the contract's code stopped it", async () => {
+    for (const message of [
+      "invalid opcode: INVALID",
+      "invalid jump destination",
+      "out of gas",
+      "stack underflow (0 <=> 1)",
+    ]) {
+      const facts = await tokenFacts(unpaced(evmErrorCalls(message)), [TOKEN]);
+      assert.deepEqual(Object.fromEntries(facts), {
+        [TOKEN]: { symbol: null, decimals: null },
+      });
+    }
+  });
+
+  it("stops on the endpoint's limit on a call's time, which is no answer of the contract's", async () => {
+    await assert.rejects(
+      tokenFacts(unpaced(evmErrorCalls("execution aborted (timeout = 5s)")), [
+        TOKEN,
+      ]),
+      /The endpoint failed a call to .*: execution aborted \(timeout = 5s\)/,
+    );
   });
 });

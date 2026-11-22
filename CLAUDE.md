@@ -350,11 +350,7 @@ beside it shows the shape.
 
 ## Known bugs
 
-One is known, with its test in `test/known-bugs.test.js`:
-`wallet-history/contract-calls.js` takes an error of the EVM that is no
-revert, such as an invalid opcode, as the endpoint's failure, so the Summ
-sweep stops on a token whose symbol or decimals call stops in the EVM.
-When one is found, it gets a test in
+None is known. When one is found, it gets a test in
 `test/known-bugs.test.js`, declared with `knownBug`, so the test passes while
 the bug is present. The bug's fix makes its test fail; declare that test with
 `it` instead, in the same change, among the tests of the code it is about.

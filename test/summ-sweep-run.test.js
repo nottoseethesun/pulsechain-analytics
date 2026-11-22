@@ -19,6 +19,7 @@ import {
   CHAIN,
   HEX,
   ONE,
+  OTHER,
   PM,
   POOL,
   RECORDS,
@@ -224,6 +225,44 @@ describe("sweepWallet", () => {
         .map((one) => one.reason),
       [`the sweep could not split this collect: ${result.problems[0].problem}`],
     );
+  });
+
+  it("reports a Transfer log of a shape no ERC-20 or NFT Transfer has as a problem, and reads no leg from it", async () => {
+    const chain = standInWalletChain({
+      latest: 100,
+      contracts: { [TKN]: tokenAnswers("TKN") },
+      blocks: {
+        40: {
+          transactions: [
+            transaction(9, {
+              from: OTHER,
+              to: TKN,
+              logs: [{ ...paid(TKN, OTHER, 0n), data: "0x" }],
+            }),
+          ],
+        },
+      },
+    });
+
+    const result = await sweepWallet(pacedProvider(chain, { spacingMs: 0 }), {
+      wallet: WALLET,
+      fromBlock: 1,
+      toBlock: 100,
+      chain: CHAIN,
+      owner: { summSymbols: {}, csvSymbols: {} },
+      summRows: [],
+      syncedTo: SYNCED_TO,
+      readRecords: async () => new Map(),
+    });
+
+    assert.deepEqual(result.problems, [
+      {
+        hash: hashOf(9),
+        problem: `a Transfer log of ${TKN} has 3 topics and 0 bytes of data, a shape no ERC-20 or NFT Transfer has, so the sweep reads no leg from it`,
+      },
+    ]);
+    assert.deepEqual(result.rows, []);
+    assert.deepEqual(result.questions, []);
   });
 
   it("stops on a change of balance no payment explains", async () => {
