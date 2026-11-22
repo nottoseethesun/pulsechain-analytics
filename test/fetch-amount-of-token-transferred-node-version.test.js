@@ -17,9 +17,12 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { configSchemaProblems } from "crypto-price-fetchers/apps-script-runner";
 import {
+  CONFIG_SCHEMAS,
   openTokenTransferFetcher,
   runCommandLine,
+  SHEETS_SCRIPT,
 } from "../for-google-apps/check-token-balance/fetch-amount-of-token-transferred.js";
 import {
   standInChain,
@@ -126,6 +129,16 @@ describe("openTokenTransferFetcher", () => {
     });
     await fetcher.close();
   });
+
+  it("holds config.json to a schema that names the rpc endpoint, which the script reads each time it is called, and takes the script's own", () => {
+    assert.deepEqual(
+      configSchemaProblems({
+        files: [SHEETS_SCRIPT],
+        configSchemas: CONFIG_SCHEMAS,
+      }),
+      [],
+    );
+  });
 });
 
 describe("fetch-amount-of-token-transferred.js, the command line", () => {
@@ -200,6 +213,24 @@ describe("fetch-amount-of-token-transferred.js, the command line", () => {
       result.stderr,
       /invalid for argument 'wallet'\. It is not an address/,
     );
+  });
+
+  it("refuses a config file whose rpc endpoint is no http or https url, or that sets another field, before asking the chain", async () => {
+    const refused = path.join(folder, "refused.json");
+    fs.writeFileSync(
+      refused,
+      JSON.stringify({ config: { rpcUrl: "rpc.example", retries: 2 } }),
+    );
+    const result = await run([TRANSACTION, TOKEN, WALLET, "--config", refused]);
+    assert.deepEqual(result, {
+      exitCode: 1,
+      stdout: "",
+      stderr: [
+        `${refused} → config.retries is not a setting this tool reads`,
+        `${refused} → config.rpcUrl must be an http or https url; it is "rpc.example"`,
+        "",
+      ].join("\n"),
+    });
   });
 
   it("answers --help on stdout, with exit code 0", async () => {

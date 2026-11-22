@@ -22,7 +22,11 @@
  * - `config.json` beside this file, which git ignores, may set
  *   `config.rpcUrl`, the PulseChain rpc endpoint the script asks;
  *   `config-example.json` shows the shape. Without the file, the script
- *   asks the endpoint written in it.
+ *   asks the endpoint written in it. `CONFIG_SCHEMAS` holds the file to an
+ *   http or https url there, and to no other field, by crypto-price-fetchers'
+ *   kinds of value (`crypto-price-fetchers/lib/settings-schema`); the
+ *   runner checks the file against it before the script opens, and a
+ *   problem stops the run, every problem listed.
  * - The command line, `node fetch-amount-of-token-transferred.js
  *   <transaction> <token> <wallet>`, prints the amount (`--help` gives the
  *   rest).
@@ -46,6 +50,7 @@ import {
   runScriptCommandLine,
 } from "crypto-price-fetchers/apps-script-runner";
 import { endQuietlyWhenOutputCloses } from "crypto-price-fetchers/lib/closed-output";
+import { KINDS } from "crypto-price-fetchers/lib/settings-schema";
 
 /** The Sheets script this runs. */
 export const SHEETS_SCRIPT = new URL(
@@ -57,6 +62,20 @@ export const SHEETS_SCRIPT = new URL(
 export const DEFAULT_CONFIG_FILE = fileURLToPath(
   new URL("./config.json", import.meta.url),
 );
+
+/**
+ * The JSON Schema of the script's config object that `config.json` may
+ * set, by its name in the script: the rpc endpoint, which the script reads
+ * each time it is called.
+ */
+export const CONFIG_SCHEMAS = Object.freeze({
+  config: Object.freeze({
+    type: "object",
+    additionalProperties: false,
+    properties: { rpcUrl: KINDS.url },
+    description: "fields of config",
+  }),
+});
 
 /** A transaction hash: 0x and 64 hex digits. */
 const TRANSACTION_HASH = /^0x[0-9a-fA-F]{64}$/;
@@ -78,6 +97,7 @@ export function openTokenTransferFetcher(options = {}) {
   return openScriptFunctions(SHEETS_SCRIPT, ["getTokenTransferred"], {
     ...options,
     defaultConfigFile: DEFAULT_CONFIG_FILE,
+    configSchemas: CONFIG_SCHEMAS,
   });
 }
 
@@ -155,6 +175,7 @@ export function runCommandLine(argv, deps = {}) {
       argv,
       scriptPath: SHEETS_SCRIPT,
       defaultConfigFile: DEFAULT_CONFIG_FILE,
+      configSchemas: CONFIG_SCHEMAS,
       describe: describeCommandLine,
     },
     deps,

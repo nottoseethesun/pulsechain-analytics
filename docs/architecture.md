@@ -534,10 +534,12 @@ settings. crypto-price-fetchers' `readSettingsFile`
 schema is built from its kinds of value
 (`crypto-price-fetchers/lib/settings-schema`), each with the words a
 refusal uses, such as "a whole number above 0". Ajv, an npm package that
-checks JSON against a schema, checks them on draft 2020-12, strict, with
-every object refusing a key its schema does not name. A file that is not
-JSON, a key the schema does not name, or a value of the wrong kind stops
-the run, with every problem listed, one line each:
+checks JSON against a schema, checks them on draft 2020-12, strict. An
+object of settings refuses a key its schema does not name; the Summ
+sweep's `ownWallets`, `summSymbols` and `csvSymbols`, keyed by addresses,
+take any address as a key and refuse any other. A file that is not JSON,
+a key refused, or a value of the wrong kind stops the run, with every
+problem listed, one line each:
 
 ```text
 config.json → maxCandles must be a whole number above 0; it is 0
@@ -550,7 +552,7 @@ config.json → colour is not a setting this tool reads
 | `check-token-balance/config.json`, beside the checker's files | `SETTINGS_SCHEMA` (`check-token-balance/settings.js`): `defaultRpc`, an http or https url | `defaultRpcFrom`; no file gives g4mm4's endpoint, with a notice |
 | The top `config.json` | `CHAIN_SETTINGS_SCHEMA` (`summ-sweep/settings.js`): the chain's facts under `pulsechain`, each required, its two contracts in EIP-55's form | The Summ sweep, and crypto-price-fetchers' key store for `apiKeys` |
 | `summ-sweep/config.json` | `OWNER_SETTINGS_SCHEMA` (`summ-sweep/settings.js`): the template's and LP Ranger's paths, required, and the owner's lists, whose addresses may be in lower case | The Summ sweep |
-| `for-google-apps/check-token-balance/config.json` | Built from the Sheets script's own config objects, by crypto-price-fetchers' runner | The script's Node version |
+| `for-google-apps/check-token-balance/config.json` | `CONFIG_SCHEMAS` in `for-google-apps/check-token-balance/fetch-amount-of-token-transferred.js`: an http or https url as `config.rpcUrl`, which the script reads each time it is called, and no other field. crypto-price-fetchers' `configSchemaProblems` holds the schema to the script in the tests | The script's Node version, through crypto-price-fetchers' runner, before the script opens |
 
 A command line whose options take their defaults from a settings file
 makes each option's parser from the kind the schema gives the same

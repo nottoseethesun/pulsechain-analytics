@@ -129,10 +129,13 @@ settings: crypto-price-fetchers' `readSettingsFile`
 (`crypto-price-fetchers/lib/settings-file`) reads the file, and each
 schema is built from its kinds of value
 (`crypto-price-fetchers/lib/settings-schema`), checked by Ajv, an npm
-package that checks JSON against a schema, on draft 2020-12, strict. A
-file that is not JSON, a key its schema does not name, or a value of the
-wrong kind stops the run, with every problem listed, one line each; a
-value is refused, never corrected. The schemas:
+package that checks JSON against a schema, on draft 2020-12, strict. An
+object of settings refuses a key its schema does not name; the Summ
+sweep's `ownWallets`, `summSymbols` and `csvSymbols`, keyed by addresses,
+take any address as a key and refuse any other. A file that is not JSON,
+a key refused, or a value of the wrong kind stops the run, with every
+problem listed, one line each; a value is refused, never corrected. The
+schemas:
 
 - `chart-price-ratio/config.json`: `RATIO_SETTINGS_SCHEMA`, which
   `buildRatioCommand` (`chart-price-ratio/ratio-command.js`) checks before
@@ -146,8 +149,13 @@ value is refused, never corrected. The schemas:
   `check-token-balance/settings.js`.
 - The top `config.json`'s `pulsechain` and `summ-sweep/config.json`:
   `summ-sweep/settings.js`.
-- The Sheets script's Node version's `config.json`: crypto-price-fetchers'
-  runner holds it to a schema built from the script's own config objects.
+- The Sheets script's Node version's `config.json`: `CONFIG_SCHEMAS` in
+  `for-google-apps/check-token-balance/fetch-amount-of-token-transferred.js`,
+  an http or https url as `config.rpcUrl` and no other field, which
+  crypto-price-fetchers' runner checks before the script opens. The
+  runner's `configSchemaProblems`, which the Node version's tests run,
+  holds the schema to the script: it names every field the script reads
+  each time it is called, and none it reads as it loads.
 
 A schema names only the keys its file is read for; a key is added to one
 with the owner's go-ahead.
@@ -325,10 +333,7 @@ beside it shows the shape.
 
 ## Known bugs
 
-One is known: the Summ sweep refuses a token's empty list of symbols in
-Summ, in `summSymbols`, saying it "must be a list of symbols, each once",
-words an empty list meets; the schema asks for one or more. When one is
-found, it gets a test in
+None is known. When one is found, it gets a test in
 `test/known-bugs.test.js`, declared with `knownBug`, so the test passes while
 the bug is present. The bug's fix makes its test fail; declare that test with
 `it` instead, in the same change, among the tests of the code it is about.
