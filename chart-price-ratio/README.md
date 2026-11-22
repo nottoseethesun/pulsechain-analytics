@@ -47,7 +47,7 @@ gives the details.
   labels.
 - **Intervals:** hourly, daily, the default, or weekly. GeckoTerminal's
   184 days of candles make 184 daily points but at most 27 weekly ones;
-  Moralis's two years make about 730 daily points and 104 weekly ones.
+  Moralis's two years make about 730 daily points and 105 weekly ones.
 - **Pairing:** each ratio divides the two tokens' prices of the same time,
   at the times both pools have a candle for, since GeckoTerminal makes no
   candle for a period in which nothing traded.
