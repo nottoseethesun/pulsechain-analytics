@@ -67,7 +67,7 @@ export async function readReceipts(paced, hashes, { batchSize }) {
 
 /**
  * A contract's answer to a call, or `null` when the contract refuses it,
- * with a revert (`contract-calls.js`).
+ * with a revert or an error of the EVM (`contract-calls.js`).
  *
  * @param {{ask: function}} paced - The paced provider
  * @param {string} address - The contract

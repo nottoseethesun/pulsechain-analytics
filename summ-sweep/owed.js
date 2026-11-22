@@ -16,7 +16,8 @@
  *
  * How: each position is asked at the block before the range, which needs
  * an endpoint that keeps past state. A call the position manager refuses,
- * a revert, or answers with nothing, as it does for an NFT not yet minted,
+ * with a revert or an error of the EVM, or answers with nothing, as it
+ * does for an NFT not yet minted,
  * means the position was owed nothing; any other error is the endpoint
  * failing, and stops the sweep (`wallet-history/contract-calls.js`).
  *

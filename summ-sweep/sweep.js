@@ -18,7 +18,8 @@
  * sweep matches token legs only; so is a position's first collect in the
  * range when the position was owed coins as the range began
  * (`summ-sweep/owed.js`), since part of it may be principal from before
- * the range.
+ * the range; and so is a Transfer log of a shape no ERC-20 or NFT Transfer
+ * has, from which `summ-sweep/legs.js` reads no leg.
  *
  * How: the steps run in the order each needs the last: the logs and the
  * wallet's own transactions first, then their receipts, the PLS each moved

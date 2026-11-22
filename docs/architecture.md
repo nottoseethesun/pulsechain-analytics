@@ -179,10 +179,12 @@ input is a pipe, stops and names `--source` (`ratio-source.js`).
    candles, a request that runs out of time means the candles cannot be
    had: the chart falls back to DexTools, or, with no DexTools key saved,
    ends with exit code 1.
-4. It prints the chart, with labels on both axes, the y-axis' the values
-   asciichart, the package that draws the chart, gives its rows, evenly
-   spaced from the highest ratio to the lowest, the last ten ratios and
-   the current one, and writes a CSV when asked.
+4. It prints the chart, with labels on both axes, then the last ten
+   ratios and the current one, and writes a CSV when asked. asciichart,
+   an npm package that draws a line chart in text, draws the chart in 31
+   rows, one more than the height of 30 it is given, and works out each
+   row's value: the highest ratio on the top row, the lowest on the bottom
+   one, and evenly spaced values between. Each row's label is its value.
 
 The chart spans at least 90 columns: its x-axis spaces four to ten dates
 under its columns, each ten characters wide, or sixteen with the hour, and
@@ -253,12 +255,16 @@ keeps:
    at.
 
 `readReceipts` reads each receipt once, and `tokenFacts` asks each token's
-contract once for its symbol and decimals. A contract that refuses a call,
-with a revert, gives no symbol or no decimals; ethers, the library the
+contract once for its symbol and decimals. A contract refuses a call with
+a revert, or with an error of the EVM, the Ethereum Virtual Machine that
+runs a contract's code, such as an invalid opcode, which stops the code;
+either way it gives no symbol or no decimals. ethers, the library the
 sweep reads the chain with, throws the same kind of error, a
 CALL_EXCEPTION, when the endpoint fails the call, so `contract-calls.js`
-tells a revert apart, by its data or its message, and any other error
-stops the sweep. `summ-sweep/owed.js` reads a position's coins owed the
+tells the contract's refusal apart: a revert by its data or its message,
+and an error of the EVM by its message, worded as geth, the Ethereum node
+program that PulseChain's node, go-pulse, is built from, words it. Any
+other error stops the sweep. `summ-sweep/owed.js` reads a position's coins owed the
 same way. Every request goes through a
 paced provider (`paced-provider.js`), a set time after the one before, as
 LP Ranger, the owner's bot that manages his 9mm V3 liquidity positions and
@@ -334,7 +340,13 @@ history.
 A leg is one token in or out of one transaction. `legs.js` makes the
 chain's legs from the history's logs: a Transfer of a token, a position's
 NFT as a leg of 1, and wrapping or unwrapping PLS as a leg of WPLS. A
-transfer from the wallet to itself is two legs, one out and one in. A
+transfer from the wallet to itself is two legs, one out and one in. An
+ERC-20 Transfer has three topics, the event and the two addresses, and
+its amount as one 32-byte word of data; an NFT's has a fourth topic, the
+token's id. A Transfer log of any other shape, as a contract that follows
+neither standard can emit, gives no leg: the sweep reports it among its
+problems, with its transaction, since the history then holds a move it
+cannot read. A
 leg's time is its block's: the search for the wallet's transactions has
 already read the block of each one the wallet sent, so the sweep reads
 only the other blocks the logs name.
@@ -488,12 +500,15 @@ effect, and a token on the spam list that comes in as a swap's other side
 is booked as a Buy, as the owner's skill books the incoming side of a
 swap.
 
-Every other leg is a question: a token sent to or received from an
-address on none of the owner's lists, a burn or a mint outside the
-position manager, an NFT sent or received other than as the position
-manager mints or burns it in a transaction the wallet sent it, a
-transfer from the wallet to itself, a coin of a collect the sweep could not split, and a token whose
-contract gave no decimals, or no symbol that the settings do not give.
+Every other leg is a question: a token or an NFT sent to or received
+from an address on none of the owner's lists, a token burned or minted
+outside a transaction to the position manager, an NFT minted or burned
+outside a transaction the wallet sent to the position manager, a transfer
+from the wallet to itself, a coin of a collect the sweep could not split,
+a coin the position manager paid that no collect in the transaction
+accounts for, a swap's token whose legs Summ lacks, in and out, add up to
+nothing, and a token whose contract gave no decimals, or no symbol that
+the settings do not give.
 The legs of one token, one direction and one NFT id make one row, and the
 row says how many legs it adds up.
 

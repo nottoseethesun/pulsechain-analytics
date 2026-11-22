@@ -30,10 +30,11 @@
  *  - Each point's ratio is price_A_in_USD / price_B_in_USD.
  *  - The intervals are hourly, daily and weekly.
  *  - The chart (ratio-output.js):
- *    • The y-axis labels each of the chart's 30 rows with its value: the
+ *    • The y-axis labels each of the chart's 31 rows with its value: the
  *      highest ratio on the top row, the lowest on the bottom one, and
  *      evenly spaced values between, as asciichart, the package that draws
- *      the chart, works them out; each rounded to 6, 8, 10 or 12 decimals,
+ *      the chart, works them out, in one row more than the height of 30 it
+ *      is given; each rounded to 6, 8, 10 or 12 decimals,
  *      more for a narrower range, with trailing zeros dropped; the labels
  *      of a range under 0.00001 are written in scientific notation.
  *    • Each y-axis label is padded with spaces to the length of the

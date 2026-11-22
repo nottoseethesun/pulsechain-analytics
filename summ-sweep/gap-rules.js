@@ -28,12 +28,15 @@
  *    Send.
  * 7. A token on the owner's list of income tokens, coming in: Income.
  *
- * Any other leg is a question for the owner, never a guess: a token sent
- * to or received from an address on none of his lists, a burn or a mint
- * outside the position manager, an NFT sent or received other than as the
- * position manager mints or burns it, a transfer from the
- * wallet to itself, a coin of a collect the sweep could not split, and a
- * token whose contract gave no symbol or no decimals.
+ * Any other leg is a question for the owner, never a guess: a token or an
+ * NFT sent to or received from an address on none of his lists, a token
+ * burned or minted outside a transaction to the position manager, an NFT
+ * minted or burned outside a transaction the wallet sent to the position
+ * manager, a transfer from the wallet to itself, a coin of a collect the
+ * sweep could not split, a coin the position manager paid that no collect
+ * in the transaction accounts for, a swap's token whose legs Summ lacks,
+ * in and out, add up to nothing, and a token whose contract gave no
+ * decimals, or no symbol that the owner's settings do not give.
  *
  * How: the swap rule runs first, on the whole transaction, since it needs
  * every leg the wallet has in it, matched or not, and the PLS it sent and

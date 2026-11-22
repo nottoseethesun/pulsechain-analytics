@@ -132,7 +132,10 @@ function xAxisLine(interval, chronologicalTimestamps, width) {
   return xAxis;
 }
 
-/** The rows the chart is drawn in. */
+/**
+ * The height asciichart is given. It draws one row more, 31, from the
+ * highest ratio's row to the lowest's.
+ */
 const CHART_HEIGHT = 30;
 
 /**
@@ -142,7 +145,8 @@ const CHART_HEIGHT = 30;
  *
  * @param {number} min - The lowest ratio
  * @param {number} max - The highest ratio
- * @param {number} height - The chart's height, in rows
+ * @param {number} height - The height asciichart is given, in rows; it
+ *   draws one row more
  * @returns {Array<number>} Each row's value, top first
  */
 function drawnLabelValues(min, max, height) {
