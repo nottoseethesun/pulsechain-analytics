@@ -97,7 +97,7 @@ line whose output is piped into a program that stops reading, such as
 that of each command line, and `test/repo-checks.test.js` holds the
 tracked files to its repo checks (`crypto-price-fetchers/lib/repo-checks`):
 every EVM address in EIP-55's form, every npm target named in
-`docs/npm-project-commands.md`, every test file and helper named in the
+`docs/project-commands.md`, every test file and helper named in the
 docs, and every link and path in a doc pointing at a file, folder or
 heading the repo keeps.
 
@@ -165,8 +165,9 @@ with the owner's go-ahead.
 `docs/architecture.md` says how the tools work, `docs/engineering.md`
 covers the files, the gates, the tests and CI (the gates, run by GitHub
 Actions at each push), and
-`docs/npm-project-commands.md` lists every npm command, as LP Ranger's
-`docs/` does. A change keeps them true.
+`docs/project-commands.md` lists every command, those npm runs and those
+run with `node` or `source`, as LP Ranger's `docs/` does. A change keeps
+them true.
 
 Every doc passes the owner's documentation audit: it tells no story of an
 old bug, leads every topic and sub-topic with the context it needs,
@@ -188,9 +189,9 @@ exit codes. An npm target that runs one passes the flag through, as
 that parses command lines, so the options its help lists come from the
 declaration the program parses; the examples and exit codes go in the
 help's closing text (`addHelpText("after", …)`).
-`docs/npm-project-commands.md` lists every npm target, including those
-that run other tools, such as `lint` and `check`, with its flags and an
-example. LP Ranger's rules do not yet ask for the examples; this repo does.
+`docs/project-commands.md` lists every npm target, including those
+that run other tools, such as `lint` and `check`, and every command line
+run with `node`, each with its flags and an example. LP Ranger's rules do not yet ask for the examples; this repo does.
 
 ## Gates and CI
 
@@ -221,7 +222,7 @@ and no branch is deleted. LP Ranger's eight steps in
 The repo supports two major versions of Node: the newest LTS (long-term
 support) version, today 26, and the version two majors before it, today 24.
 Every tool, every test and every npm command, each a target a `package.json`
-names (`docs/npm-project-commands.md` lists them), runs on both. `engines` in
+names (`docs/project-commands.md` lists them), runs on both. `engines` in
 `package.json` names only the oldest supported major as a minimum, `>=24`,
 raised to a minor version, such as `>=24.15`, only when the code needs what
 that version added; no file pins or requires one exact version of Node.

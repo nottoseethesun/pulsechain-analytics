@@ -75,7 +75,7 @@ npm install
 `npm install` installs what the chart needs, crypto-price-fetchers among
 it, for its key store and its GeckoTerminal, Moralis and DexTools clients. Which version of
 crypto-price-fetchers is installed, and how to change it, is in the repo's
-[README](../README.md#choosing-versions-of-dependencies-that-are-raw-github-projects).
+[README](../README.md#versions-of-crypto-price-fetchers).
 
 ## Configuration
 

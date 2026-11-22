@@ -17,8 +17,9 @@ See the Google Apps Script prerequisites in the repo's
 
 ## Installation
 
-The script is added to a sheet as a library, as the Installation section
-of the repo's [README](../../README.md#installation) describes. Apps Script
+The script is added to a sheet as a library, as
+[Adding the Library](../../README.md#adding-the-library), in the repo's
+README, describes. Apps Script
 asks for the library's script ID, which is:
 
 ```terminal

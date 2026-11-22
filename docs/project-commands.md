@@ -1,11 +1,12 @@
-# pulsechain-analytics — `npm` Project Commands
+# pulsechain-analytics — Project Commands
 
 Every command of pulsechain-analytics, the owner's tools for questions about
-PulseChain, that npm, the package manager of Node, the program that runs
-JavaScript outside a browser, runs from a `package.json`: those its top
-`package.json` defines, which run from the repo's top folder, and those of
-the packages of `chart-price-ratio/` and `check-token-balance/`, with what
-each does and what to type. Two of the top folder's commands run tools of
+PulseChain, with what each does and what to type. Most run through npm, the
+package manager of Node, the program that runs JavaScript outside a
+browser, from a `package.json`: those its top `package.json` defines, which
+run from the repo's top folder, and the ratio chart's, in
+`chart-price-ratio/`. The rest run with `node`, or `source`, at a terminal
+([Commands Run Without npm](#commands-run-without-npm)). Two of the top folder's commands run tools of
 crypto-price-fetchers, the owner's repo of code his projects share, which
 this repo installs from GitHub, the website that hosts his code: `api-keys`,
 its key manager, which saves and lists the api keys, and
@@ -31,6 +32,7 @@ gates work. This file covers how to drive them.
 - [Test](#test)
 - [Commands That Are Usually Not Run Alone](#commands-that-are-usually-not-run-alone)
 - [The Tools' Own Packages](#the-tools-own-packages)
+- [Commands Run Without npm](#commands-run-without-npm)
 - [See Also](#see-also)
 
 ---
@@ -67,8 +69,8 @@ exchanges. One command runs the store's key manager.
 | ------- | ----- | ----------- | ------- |
 | `api-keys` | `set <service>`, `check-password`, `--help` | The key manager, crypto-price-fetchers'. Lists each key the top `config.json` names, saved or not, never showing a key's characters, and asks for each one not saved: the key, then the password. Each key is saved, encrypted, once its service takes it. `set <service>` replaces one key. `check-password` says, by its exit code, whether the password in `API_KEYS_PASSWORD` opens every key saved; `unlock-api-keys.sh`, the script that keeps the password for a terminal, runs it. | `npm run api-keys` · `npm run api-keys -- set moralis` |
 
-`source ./unlock-api-keys.sh`, which is no npm command, keeps the password
-for a terminal: see [the README](../README.md#api-keys).
+`source ./unlock-api-keys.sh`, a script in the repo's top folder, keeps the
+password for a terminal ([Commands Run Without npm](#commands-run-without-npm)).
 
 ---
 
@@ -147,9 +149,24 @@ their own: run `npm install` in the folder before using the tool there.
 | ------ | ------- | ----------- | ------- |
 | `chart-price-ratio/` | `start`, `ratio` | Run the ratio chart. With a Moralis key saved, a run asks which source to read, Moralis or GeckoTerminal, unless `--source` names one. `npm start -- --help` lists its options, each with its default from `config.json`, examples of its common uses, and its exit codes. | `npm start -- <tokenA> <tokenB> daily` · `npm start -- <tokenA> <tokenB> --source moralis` |
 
-The balance checker has no npm command: `node index.js --help`, in its
-folder, lists its options, with examples of its common uses and its exit
-codes.
+The balance checker has no npm command: it runs with `node`
+([Commands Run Without npm](#commands-run-without-npm)).
+
+---
+
+## Commands Run Without npm
+
+These command lines run with `node`, or, for the password script,
+`source`, at a terminal. Each Node command line answers `--help` with its
+options, examples of its common uses and its exit codes;
+[the README's Usage](../README.md#usage) shows each at work.
+
+| Command | Flags | Description | Example |
+| ------- | ----- | ----------- | ------- |
+| `node fetch-amount-of-token-transferred.js` | `<transaction> <token> <wallet>`, `--config <file>`, `--verbose`, `--help` | The Node version of the Sheets script, in `for-google-apps/check-token-balance/`: how much of a token one PulseChain transaction sent a wallet, read from the rpc endpoint its `config.json` names. From another folder, give the file's path. | `node for-google-apps/check-token-balance/fetch-amount-of-token-transferred.js <transaction-hash> 0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39 <wallet>` |
+| `node index.js` | `--address <address>`, `--block <block>` or `--date <date>`, `--tokens <tokens>`, `--rpc <url>`, `--help` | The balance checker, in `check-token-balance/`: a wallet's balance of each token named, PLS as `Pulse_Native_Gas_Token`, at a block or at the start of a day in UTC. | `node index.js --address <wallet> --date 2026-11-01 --tokens Pulse_Native_Gas_Token` |
+| `node pulse-token-ratio.js` | `<tokenA> <tokenB> [interval]` and the options of `start` above | The ratio chart, in `chart-price-ratio/`, as `npm start` runs it. | `node pulse-token-ratio.js <tokenA> <tokenB> --source geckoterminal` |
+| `source ./unlock-api-keys.sh` | — | Asks for the key store's password, showing nothing typed, checks that it opens every key saved, and keeps it in `API_KEYS_PASSWORD` for the terminal, so the programs open their keys without asking. Runs in bash or zsh. | `source ./unlock-api-keys.sh` |
 
 ---
 
