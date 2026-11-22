@@ -4,10 +4,20 @@
  * @module chart-price-ratio/ratio-command
  *
  * `buildRatioCommand` builds the command anew for each parse, so a test
- * can parse several argument lists. Each value is checked as it is parsed,
- * so a mistake names its argument or option, on stderr, and stops the run,
- * with exit code 1, before GeckoTerminal, Moralis or DexTools is asked
- * anything.
+ * can parse several argument lists. It first checks config.json's settings
+ * against `RATIO_SETTINGS_SCHEMA`, their JSON Schema, built from
+ * crypto-price-fetchers' kinds of value
+ * (`crypto-price-fetchers/lib/settings-schema`), as LP Ranger checks its
+ * settings: a key the schema does not name, or a value of the wrong kind,
+ * is refused, with every problem listed, before any default is taken. Each
+ * typed value is checked as it is parsed, by a parser made from the kind
+ * the schema gives the same setting, so a mistake names its argument or
+ * option, on stderr, and stops the run, with exit code 1, before
+ * GeckoTerminal, Moralis or DexTools is asked anything. Commander refuses
+ * two conflicting options only when both are typed, so a hook before the
+ * action refuses, with crypto-price-fetchers' `checkConflicts`
+ * (`crypto-price-fetchers/lib/option-conflicts`), `--source` beside a
+ * `useDexToolsOnly` that config.json sets.
  * `--help` prints the help on stdout, with exit code 0. The message for an
  * option it does not know names the option alone, without what follows its
  * `=`, which may be a secret, such as an api key typed where none is taken.
@@ -15,11 +25,68 @@
  */
 
 import { Argument, Command, InvalidArgumentError, Option } from "commander";
-import { isHttpUrl } from "crypto-price-fetchers/lib/http-url";
+import { checkConflicts } from "crypto-price-fetchers/lib/option-conflicts";
+import {
+  asWholeNumber,
+  compileSettingsSchema,
+  KINDS,
+  kindParser,
+  settingsProblems,
+} from "crypto-price-fetchers/lib/settings-schema";
 import { SOURCES } from "./ratio-source.js";
 
 /** The intervals GeckoTerminal's candles serve. */
 export const INTERVALS = Object.freeze(["hourly", "daily", "weekly"]);
+
+/**
+ * The JSON Schema of config.json: each setting the chart reads, of its
+ * kind, every one of which may be left out for its default, and no other
+ * key.
+ */
+export const RATIO_SETTINGS_SCHEMA = Object.freeze({
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    network: KINDS.text,
+    chain: KINDS.text,
+    dextools: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        subscription: KINDS.text,
+        host: KINDS.url,
+        version: KINDS.text,
+      },
+      description: "DexTools' plan, address and version",
+    },
+    moralis: {
+      type: "object",
+      additionalProperties: false,
+      properties: { chain: KINDS.text, days: KINDS.wholeAbove0 },
+      description: "Moralis's chain and days",
+    },
+    csvFilename: KINDS.text,
+    interval: {
+      enum: [...INTERVALS],
+      description: `one of ${INTERVALS.join(", ")}`,
+    },
+    maxCandles: KINDS.wholeAbove0,
+    weeklyResampleDays: KINDS.wholeAbove0,
+    useDexToolsOnly: KINDS.bool,
+  },
+});
+
+/** `RATIO_SETTINGS_SCHEMA`, compiled. */
+const checkSettings = compileSettingsSchema(RATIO_SETTINGS_SCHEMA);
+
+/**
+ * The parsers of the options that take a number or an url, made from the
+ * kinds config.json's schema gives the same settings.
+ */
+const PARSE = Object.freeze({
+  wholeAbove0: kindParser(KINDS.wholeAbove0, asWholeNumber),
+  url: kindParser(KINDS.url),
+});
 
 /** What the help says after the options. */
 const HELP_AFTER = `
@@ -71,40 +138,18 @@ function contractAddress(value) {
 }
 
 /**
- * Checks a whole number above 0, as commander parses it.
- *
- * @param {string} value - The number typed
- * @returns {number} The number
- * @throws {InvalidArgumentError} When it is not a whole number above 0
- */
-function positiveInteger(value) {
-  if (!/^[1-9][0-9]*$/.test(value)) {
-    throw new InvalidArgumentError("Not a whole number above 0.");
-  }
-  return Number(value);
-}
-
-/**
- * Checks DexTools' api address, as commander parses it.
- *
- * @param {string} value - The address typed
- * @returns {string} The address
- * @throws {InvalidArgumentError} When it is not an http or https url
- */
-function httpUrl(value) {
-  if (!isHttpUrl(value)) {
-    throw new InvalidArgumentError("Not an http or https url.");
-  }
-  return value;
-}
-
-/**
- * Builds the command line.
+ * Builds the command line, once config.json's settings hold to
+ * `RATIO_SETTINGS_SCHEMA`.
  *
  * @param {Object} config - config.json's settings, the options' defaults
  * @returns {import('commander').Command} The command, without its action
+ * @throws {Error} When the settings have a problem the schema finds, every problem listed
  */
 export function buildRatioCommand(config) {
+  const problems = settingsProblems("config.json", checkSettings, config);
+  if (problems.length > 0) {
+    throw Object.assign(new Error(problems.join("\n")), { problems });
+  }
   const dextools = config.dextools ?? {};
   const moralis = config.moralis ?? {};
   return new Command("pulse-token-ratio")
@@ -141,7 +186,7 @@ export function buildRatioCommand(config) {
     .option(
       "--useDexToolsOnly",
       "ask DexTools alone, for the current prices",
-      config.useDexToolsOnly === true,
+      config.useDexToolsOnly ?? false,
     )
     .option(
       "--network <network>",
@@ -161,7 +206,7 @@ export function buildRatioCommand(config) {
     .option(
       "--moralis-days <number>",
       "the days of daily candles a run reads from Moralis",
-      positiveInteger,
+      PARSE.wholeAbove0,
       moralis.days ?? 730,
     )
     .option(
@@ -172,7 +217,7 @@ export function buildRatioCommand(config) {
     .option(
       "--host <url>",
       "DexTools' api address",
-      httpUrl,
+      PARSE.url,
       dextools.host ?? "https://public-api.dextools.io",
     )
     .option(
@@ -183,15 +228,16 @@ export function buildRatioCommand(config) {
     .option(
       "--max-candles <number>",
       "the most candles to fetch from each pool at GeckoTerminal, and the hours an hourly run reads from Moralis",
-      positiveInteger,
+      PARSE.wholeAbove0,
       config.maxCandles ?? 1000,
     )
     .option(
       "--weekly-days <number>",
       "the days in each point of the weekly chart",
-      positiveInteger,
+      PARSE.wholeAbove0,
       config.weeklyResampleDays ?? 7,
     )
+    .hook("preAction", (command) => checkConflicts(command, "config.json"))
     .addHelpText("after", HELP_AFTER)
     .configureOutput({
       outputError: (message, write) =>

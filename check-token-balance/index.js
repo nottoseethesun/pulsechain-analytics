@@ -21,12 +21,12 @@
  *   block's time is later than the time of the block before it.
  * - A balance at a past block needs an rpc endpoint, the json-rpc api of a
  *   PulseChain node, that keeps past state. The default endpoint is
- *   `defaultRpc` in config.json in the folder the command runs in, else
- *   g4mm4's public endpoint.
+ *   `defaultRpc` in the config.json beside this file, else g4mm4's public
+ *   endpoint; `settings.js` checks the file against its JSON Schema before
+ *   the checker takes it.
  * - Each balance is read once, then written in both forms.
  */
 
-import fs from "node:fs";
 import { ethers } from "ethers";
 import { buildBalanceCommand, NATIVE_TOKEN } from "./balance-command.js";
 import {
@@ -34,9 +34,7 @@ import {
   formatBalanceWithCommas,
 } from "./format-balance.js";
 import { endQuietlyWhenOutputCloses } from "crypto-price-fetchers/lib/closed-output";
-
-/** The rpc endpoint when config.json names none: g4mm4's public PulseChain endpoint. */
-const FALLBACK_RPC = "https://rpc-pulsechain.g4mm4.io";
+import { defaultRpcFrom } from "./settings.js";
 
 /** The two calls of an ERC-20 contract the checker makes. */
 const ERC20_ABI = Object.freeze([
@@ -45,25 +43,19 @@ const ERC20_ABI = Object.freeze([
 ]);
 
 /**
- * The default rpc endpoint: `defaultRpc` in config.json in the folder the
- * command runs in, else g4mm4's public endpoint, with a warning when
- * config.json cannot be read.
+ * The rpc endpoint `--rpc` defaults to (`settings.js`), or the end of the
+ * run, with exit code 1 and every problem of config.json, when the file
+ * cannot be taken.
  *
  * @returns {string} The endpoint's url
  */
 function defaultRpc() {
-  let config;
   try {
-    config = JSON.parse(fs.readFileSync("config.json", "utf8"));
-  } catch {
-    console.warn(
-      "Warning: config.json not found or invalid. Using fallback default RPC.",
-    );
-    return FALLBACK_RPC;
+    return defaultRpcFrom();
+  } catch (error) {
+    console.error(`Error: ${error.message}`);
+    process.exit(1);
   }
-  return typeof config?.defaultRpc === "string" && config.defaultRpc !== ""
-    ? config.defaultRpc
-    : FALLBACK_RPC;
 }
 
 /**

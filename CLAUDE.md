@@ -86,8 +86,10 @@ installs.
 
 The command lines check a day with crypto-price-fetchers' `dayStartSeconds`
 (`crypto-price-fetchers/lib/calendar-day`), which refuses a day the
-calendar does not have, and an url with its `isHttpUrl`
-(`crypto-price-fetchers/lib/http-url`), as commander parses them; each
+calendar does not have, and an url or a number with a parser made from
+its kinds of value (`crypto-price-fetchers/lib/settings-schema`), the
+kinds the settings files' schemas give the same settings (Settings,
+below), as commander parses them; each
 entry point calls its `endQuietlyWhenOutputCloses`
 (`crypto-price-fetchers/lib/closed-output`) before it starts, so a command
 line whose output is piped into a program that stops reading, such as
@@ -117,6 +119,38 @@ from both; with a Moralis key saved it asks at the terminal which, unless
 stays the fallback of either. Moralis's candles of a pair price the token
 the pair lists first, so a run from Moralis reads, for each token, the
 deepest active pair that lists it first.
+
+## Settings
+
+Each settings file in JSON is checked against its JSON Schema, a
+description in JSON of the keys the file may hold and the kind of value
+each takes, before a tool takes a setting, as LP Ranger checks its
+settings: crypto-price-fetchers' `readSettingsFile`
+(`crypto-price-fetchers/lib/settings-file`) reads the file, and each
+schema is built from its kinds of value
+(`crypto-price-fetchers/lib/settings-schema`), checked by Ajv, an npm
+package that checks JSON against a schema, on draft 2020-12, strict. A
+file that is not JSON, a key its schema does not name, or a value of the
+wrong kind stops the run, with every problem listed, one line each; a
+value is refused, never corrected. The schemas:
+
+- `chart-price-ratio/config.json`: `RATIO_SETTINGS_SCHEMA`, which
+  `buildRatioCommand` (`chart-price-ratio/ratio-command.js`) checks before
+  it takes a default. Commander refuses two conflicting options only when
+  both are typed, so a hook before the action refuses, with
+  crypto-price-fetchers' `checkConflicts`
+  (`crypto-price-fetchers/lib/option-conflicts`), `--source` beside a
+  `useDexToolsOnly` the file sets.
+- `check-token-balance/config.json`, read beside the checker's files, so a
+  run from the top folder never reads the top `config.json`:
+  `check-token-balance/settings.js`.
+- The top `config.json`'s `pulsechain` and `summ-sweep/config.json`:
+  `summ-sweep/settings.js`.
+- The Sheets script's Node version's `config.json`: crypto-price-fetchers'
+  runner holds it to a schema built from the script's own config objects.
+
+A schema names only the keys its file is read for; a key is added to one
+with the owner's go-ahead.
 
 ## Docs
 
