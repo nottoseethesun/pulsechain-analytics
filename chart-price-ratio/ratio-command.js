@@ -38,8 +38,8 @@ Examples:
 
 Exit codes:
   0  the ratios were printed
-  1  no ratios were printed: a mistake in the arguments, fewer points than
-     the chart needs, no prices to be had, or a request that failed`;
+  1  no ratios were printed: a mistake in the arguments, no prices to be
+     had, or a request that failed`;
 
 /**
  * Checks a contract address, as commander parses it.

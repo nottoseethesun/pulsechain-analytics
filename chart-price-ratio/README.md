@@ -33,8 +33,8 @@ gives the details.
 - **X-axis:** dates, or dates with the hour, each under the column it
   labels.
 - **Intervals:** hourly, daily, the default, or weekly. GeckoTerminal's
-  public api serves about the last 184 days of candles, which make 184
-  daily points but at most 27 weekly ones, fewer than a chart needs.
+  free api serves about the last 184 days of candles, which make 184
+  daily points but at most 27 weekly ones.
 - **Pairing:** each ratio divides the two tokens' prices of the same time,
   at the times both pools have a candle for, since GeckoTerminal makes no
   candle for a period in which nothing traded.
@@ -108,9 +108,11 @@ password. See the repo's [README](../README.md#api-keys).
 default from `config.json`, and the exit codes: 0 when the ratios were
 printed, 1 when they were not.
 
-The chart needs at least 90 points, since its x-axis needs that many
-columns to space its dates. With fewer, it says so and stops before
-printing anything; a shorter interval gives more points.
+The chart spans at least 90 columns, so its x-axis has room to space its
+dates. A series of fewer points is drawn with each point widened over
+several columns, the points joined by straight lines. A weekly run from
+GeckoTerminal says first that GeckoTerminal's free api serves about the
+last 184 days, so its chart shows at most 27 points.
 
 ### Basic: daily ratio (default)
 

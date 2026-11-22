@@ -82,11 +82,11 @@
  *  - Token addresses are 0x and 40 hex digits, in either case.
  *  - For DexTools fallback, save a DexTools api key with npm run api-keys, in the repo's top folder.
  *  - Intervals finer than 'hourly' are not supported by GeckoTerminal, and are refused.
- *  - A chart needs at least 90 points (MIN_CHART_POINTS, ratio-output.js). Fewer
- *    stop the run with a message, before anything is printed; a shorter
- *    interval gives more points. GeckoTerminal's public api serves about
- *    the last 184 days of candles: 184 daily points, but at most 27 weekly
- *    ones, so the weekly interval charts only from an api that serves more.
+ *  - The chart spans at least 90 columns (MIN_CHART_COLUMNS, ratio-output.js),
+ *    for its dates' room: a series of fewer points is drawn with each point
+ *    widened, joined by straight lines. GeckoTerminal's free api serves
+ *    about the last 184 days of candles: 184 daily points, but at most 27
+ *    weekly ones, which a weekly run says before its chart.
  *  - GeckoTerminal makes no candle for a period in which nothing traded, so
  *    a point is a time both pools have a candle for; the two tokens' prices
  *    are paired by time.
@@ -95,7 +95,7 @@
  *  - CSV includes columns: date, price_tokenA, price_tokenB, ratio.
  *  - Edit config.json for persistent changes; use flags for one-off overrides.
  *  - Exit codes: 0 when the ratios were printed; 1 when none were, from a
- *    mistake in the arguments, too few points, no prices, or a failed request.
+ *    mistake in the arguments, no prices, or a failed request.
  */
 
 import fs from "fs";
@@ -112,11 +112,7 @@ import {
   INTERVALS,
   ratioSettings,
 } from "./ratio-command.js";
-import {
-  MIN_CHART_POINTS,
-  printRatios,
-  tooFewPointsMessage,
-} from "./ratio-output.js";
+import { printRatios } from "./ratio-output.js";
 import { fetchSeries, ratioRows, tokenNames } from "./ratio-series.js";
 import { endQuietlyWhenOutputCloses } from "crypto-price-fetchers/lib/closed-output";
 
@@ -184,13 +180,8 @@ async function chartRatio(settings) {
   if (series === null) return false;
 
   const ratioSeries = ratioRows(series.dataA, series.dataB);
-  const count = ratioSeries.ratios.length;
-  if (count === 0) {
+  if (ratioSeries.ratios.length === 0) {
     console.error("No valid ratio data could be computed.");
-    return false;
-  }
-  if (count > 1 && count < MIN_CHART_POINTS) {
-    console.error(tooFewPointsMessage(count, run.interval));
     return false;
   }
 
