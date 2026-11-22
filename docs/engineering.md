@@ -45,9 +45,11 @@ support) version, today 26, and the version two majors before it, today
 the gate on each (below).
 
 A working copy needs Node 24 or later, the packages of the repo and of its
-two tools that have packages of their own, and the key of DexTools, a
-service that prices tokens from the pools of decentralized exchanges,
-which the ratio chart sends. The key is kept by the key store of
+two tools that have packages of their own, and the keys the ratio chart
+sends: DexTools', for its fallback to current prices, and, for two years
+of daily candles, Moralis's. DexTools and Moralis are services that price
+tokens from the pools of decentralized exchanges. The keys are kept by the
+key store of
 crypto-price-fetchers, the owner's repo of code his projects share, which
 `npm ci` installs from GitHub, at the commit `package-lock.json` keeps: no
 other step installs it. This repo's `npm run api-keys` runs the key
@@ -58,7 +60,7 @@ top folder:
 npm ci
 npm ci --prefix chart-price-ratio
 npm ci --prefix check-token-balance
-npm run api-keys     # save the DexTools key, once, for the ratio chart
+npm run api-keys     # save the DexTools and Moralis keys, once, for the ratio chart
 npm run check        # the gate
 ```
 
@@ -75,7 +77,7 @@ that hold no key and none of the owner's own settings.
 | `config.json` | yes | The services whose keys the programs send, under `apiKeys`, and the chain's facts the Summ sweep reads, under `pulsechain`. No key. |
 | `summ-sweep/config.json` | no | The owner's settings for the Summ sweep: the path of his Summ template and of his LP Ranger checkout, his own wallets with their names, his spam and income tokens, and each token's symbols in Summ and in a csv. `summ-sweep/config-example.json` beside it shows the shape, with made-up addresses. |
 | `api-keys.json` | no | The keys, each encrypted with the owner's password. `api-keys.json.tmp` is the file it is written through. `API_KEYS_FILE_PATH` names another, as the tests do. |
-| `chart-price-ratio/config.json` | yes | The ratio chart's settings: network, DexTools' plan, the interval, the CSV's name. No key. |
+| `chart-price-ratio/config.json` | yes | The ratio chart's settings: GeckoTerminal's network, DexTools' plan, Moralis's chain and the days a run reads from it, the interval, the CSV's name. No key. |
 | `check-token-balance/config.json` | yes | The balance checker's rpc endpoint, the json-rpc api of a PulseChain node it reads balances from. |
 | `for-google-apps/check-token-balance/config.json` | no | The Node version's rpc endpoint; `config-example.json` beside it shows the shape. |
 | `coverage/` | no | A test run's coverage report. |
@@ -133,7 +135,7 @@ over 500 lines is split, not excused.
 
 The tests are in `test/`, on Node's test runner. They run the tools against
 stand-ins for PulseChain; GeckoTerminal, a service that lists the pools of
-decentralized exchanges with their prices and candles; DexTools; and LP
+decentralized exchanges with their prices and candles; Moralis; DexTools; and LP
 Ranger's bookkeeping tool, which prints what one transaction moved for a
 wallet; so they ask nothing outside the computer. They never read the
 owner's key file or password.
@@ -145,7 +147,8 @@ owner's key file or password.
 | `fetch-amount-of-token-transferred-node-version.test.js` | The Sheets script's Node version, its command line included. |
 | `format-balance.test.js` | How the balance checker writes a balance. |
 | `check-token-balance.test.js` | The balance checker: its command line, each option checked as it is parsed, and a mistake refused, naming its option, before the chain is asked anything; and the real program, run against a stand-in PulseChain endpoint served on the computer: each balance read once at the block given, or at the last block made before the start of the date given, even when the day's first block is nearer that start, then written with commas and plain, and a failed read's exit code. |
-| `pulse-token-ratio.test.js` | The ratio chart, run as its owner runs it, against a stand-in GeckoTerminal, which lists candles newest first and makes none for a day in which nothing traded, as GeckoTerminal does, and a stand-in DexTools, with the DexTools key from a key file of the test's own: its prices, read oldest first, its recent and current ratios, its weekly points, its pairing of the two tokens' prices by time, a token's own prices when it is its pool's quote token, its fallback, its command line, its default interval, its exit codes, a series of few points drawn with each point widened, and the most points a weekly chart from GeckoTerminal can have, which a weekly run says; and its DexTools client, which gives up on a DexTools that does not answer within its time limit. |
+| `pulse-token-ratio.test.js` | The ratio chart, run as its owner runs it, reading GeckoTerminal's candles, against a stand-in GeckoTerminal, which lists candles newest first and makes none for a day in which nothing traded, as GeckoTerminal does, and a stand-in DexTools, with the DexTools key from a key file of the test's own: its prices, read oldest first, its recent and current ratios, its weekly points, its pairing of the two tokens' prices by time, a token's own prices when it is its pool's quote token, its fallback, its command line, its default interval, its exit codes, a series of few points drawn with each point widened, and the most points a weekly chart from GeckoTerminal can have, which a weekly run says. |
+| `pulse-token-ratio-moralis.test.js` | The ratio chart reading Moralis's candles, against a stand-in Moralis, GeckoTerminal and DexTools, with the Moralis and DexTools keys from key files of the test's own: the deepest active pair that lists each token first, the two years of daily candles it reads unless `--moralis-days` names another span, its hourly and weekly charts, its fallback to DexTools when Moralis's candles price another token, and its stop when no pair lists a token first; and the choice of the source (`ratio-source.js`): the question asked when a Moralis key is saved, Enter taking Moralis, an answer asked again, `--source` in its place, the stop with no terminal to ask at, and `--source` refused with `--useDexToolsOnly` or with no Moralis key saved. |
 | `command-line-help.test.js` | Every command line's help, `--help` and `-h`, and its help into a pipe closed before it is written, which must end with exit code 0 and nothing on stderr: the Summ sweep's, the ratio chart's, the balance checker's, the Sheets script's Node version's, the key manager's, and those of the bins of crypto-price-fetchers the npm targets run, its versions tool and `run-actionlint`, each with its options, examples and exit codes, by crypto-price-fetchers' checks (`crypto-price-fetchers/lib/command-line-help`); and that its list holds every command line the repo runs, every bin of crypto-price-fetchers among them. |
 | `api-keys.test.js` | The keys `config.json` lists, the key manager, which saves and lists the api keys, and the copy of `unlock-api-keys.sh`, the script that keeps the password for a terminal. |
 | `repo-checks.test.js` | The repo's tracked files, by crypto-price-fetchers' checks (`crypto-price-fetchers/lib/repo-checks`): every EVM address in EIP-55's form, every npm target named in `docs/npm-project-commands.md`, every test file and helper named in this doc or `CLAUDE.md`, and every link and path in a doc pointing at a file, folder or heading the repo keeps. |
@@ -172,10 +175,13 @@ owner's key file or password.
   runner's services, its `UrlFetchApp` answering from a stand-in chain.
 - `stand-in-web-preload.js`: a preload for `node --import` that replaces
   `fetch` in a program a test starts with answers from a file the test
-  writes, and logs each request without any key.
+  writes, each for a url or for every url that starts with a text, and
+  logs each request without any key.
 - `ratio-chart.js`: runs the ratio chart in a child process with that
-  preload, and builds GeckoTerminal's and DexTools' answers, among them a
-  pool whose base token is not the chart's token (`quoteSideAnswers`).
+  preload, and builds GeckoTerminal's, Moralis's and DexTools' answers,
+  among them a pool whose base token is not the chart's token
+  (`quoteSideAnswers`) and a deeper pair at Moralis that lists a token
+  second (`moralisAnswers`).
 - `known-bug.js`: declares a known-bug test.
 - `stand-in-wallet-chain.js`: a PulseChain endpoint held in memory for
   `wallet-history/`, built from the blocks a test describes: their

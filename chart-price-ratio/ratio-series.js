@@ -1,30 +1,44 @@
 /**
- * The ratio chart's prices: the two tokens' names, their prices over time
- * from GeckoTerminal's best pools, oldest first, or their current prices
- * from DexTools, and the ratio at each time both tokens have a price for.
+ * The ratio chart's prices: the two tokens' names, their prices over time,
+ * oldest first, from the candles of the source the run reads, Moralis or
+ * GeckoTerminal, or their current prices from DexTools, and the ratio at
+ * each time both tokens have a price for.
  * @module chart-price-ratio/ratio-series
  *
  * Each function takes the run: its settings (`ratioSettings`, in
- * `ratio-command.js`) and `dexToolsKey`, which opens the DexTools key the
- * first time it is called, so a run that never asks DexTools asks for no
- * password.
+ * `ratio-command.js`), its source (`ratio-source.js`), and `moralisKey` and
+ * `dexToolsKey`, which open the Moralis and DexTools keys the first time
+ * each is called, so a run that never asks a service opens no key of it.
+ * DexTools is asked through crypto-price-fetchers' DexTools client
+ * (`crypto-price-fetchers/dex-prices/dextools`), whose time limit and
+ * waits after a 429 every request of the shared clients gets.
  */
 
 import {
-  dexToolsKeySaved,
-  getCurrentUsdPriceDexTools,
-  SAVE_KEY_HELP,
-} from "./dextools.js";
+  currentUsdPrice,
+  dexToolsSettings,
+} from "crypto-price-fetchers/dex-prices/dextools";
+import { keySaved, SAVE_KEY_HELP } from "./api-keys.js";
 import { getClosesGecko, getTokenInfo } from "./gecko-terminal.js";
+import {
+  getClosesMoralis,
+  MORALIS_TIMEFRAMES,
+  moralisPair,
+} from "./moralis.js";
 import { getBestPoolWithHistory } from "./pool-selector.js";
 
+/** Seconds in an hour, and in a day, for the span a run reads from Moralis. */
+const HOUR_SECONDS = 60 * 60;
+const DAY_SECONDS = 24 * HOUR_SECONDS;
+
 /**
- * Fetches the two tokens' names, as the chart's title shows them.
+ * Fetches the two tokens' names from GeckoTerminal, as the chart's title
+ * shows them.
  *
  * @param {Object} run - The run
  * @returns {Promise<Array<string>>} Token A's name and token B's
  */
-export async function tokenNames(run) {
+async function tokenNames(run) {
   const unknown = () => ({ name: "Unknown Token", symbol: "???" });
   const infos = await Promise.all([
     getTokenInfo(run.network, run.tokenA).catch(unknown),
@@ -61,6 +75,29 @@ function resampleToWeekly(dailyData, weeklyResampleDays) {
 }
 
 /**
+ * Fetches a token's current USD price from DexTools, and says it.
+ *
+ * @param {Object} run - The run
+ * @param {string} apiKey - The DexTools key
+ * @param {string} token - The token's address
+ * @returns {Promise<number>} The price
+ * @throws {Error} When DexTools does not answer in time, answers with an error, or gives no price
+ */
+async function dexToolsPrice(run, apiKey, token) {
+  const price = await currentUsdPrice(
+    { chain: run.dexTools.chain, token },
+    apiKey,
+    dexToolsSettings({
+      host: run.dexTools.host,
+      plan: run.dexTools.subscription,
+      version: run.dexTools.version,
+    }),
+  );
+  console.log(`DexTools USD price for ${token.slice(0, 8)}...: $${price}`);
+  return price;
+}
+
+/**
  * Fetches the two tokens' current USD prices from DexTools, as one point
  * each, with the key saved, which it opens the first time.
  *
@@ -69,16 +106,8 @@ function resampleToWeekly(dailyData, weeklyResampleDays) {
  */
 async function dexToolsSeries(run) {
   const apiKey = await run.dexToolsKey();
-  const priceA = await getCurrentUsdPriceDexTools(
-    run.dexTools,
-    apiKey,
-    run.tokenA,
-  );
-  const priceB = await getCurrentUsdPriceDexTools(
-    run.dexTools,
-    apiKey,
-    run.tokenB,
-  );
+  const priceA = await dexToolsPrice(run, apiKey, run.tokenA);
+  const priceB = await dexToolsPrice(run, apiKey, run.tokenB);
   const now = Date.now();
   return {
     dataA: [{ timestamp: now, close: priceA }],
@@ -88,38 +117,85 @@ async function dexToolsSeries(run) {
 }
 
 /**
- * Fetches each token's closing prices in its pool from GeckoTerminal at
- * the interval asked, resampling daily ones to weeks.
+ * Fetches each token's closing prices at the run's interval, resampling
+ * daily ones to weeks for the weekly chart.
  *
  * @param {Object} run - The run
- * @param {{address: string, token: string}} poolA - Token A's pool, and token A
- * @param {{address: string, token: string}} poolB - Token B's pool, and token B
+ * @param {function(string, string): Promise<Array<{timestamp: number, close: number}>>} closesOf - Fetches a token's closes, given 'A' or 'B' and the interval, 'hourly' or 'daily'
  * @returns {Promise<{dataA: Array, dataB: Array}>} The two series
  */
-async function geckoCloses(run, poolA, poolB) {
-  const closes = (pool, timeframe) =>
-    getClosesGecko({
-      network: run.network,
-      pool: pool.address,
-      token: pool.token,
-      timeframe,
-      limit: run.maxCandles,
-    });
+async function intervalCloses(run, closesOf) {
   if (run.interval === "weekly") {
     console.log("Fetching daily data for weekly resampling...");
     // The days both pools have, so both series' weeks start on one day
     const [dailyA, dailyB] = sameTimes(
-      await closes(poolA, "day"),
-      await closes(poolB, "day"),
+      await closesOf("A", "daily"),
+      await closesOf("B", "daily"),
     );
     return {
       dataA: resampleToWeekly(dailyA, run.weeklyResampleDays),
       dataB: resampleToWeekly(dailyB, run.weeklyResampleDays),
     };
   }
-  const tf = run.interval === "hourly" ? "hour" : "day";
   console.log(`Fetching ${run.interval} data...`);
-  return { dataA: await closes(poolA, tf), dataB: await closes(poolB, tf) };
+  return {
+    dataA: await closesOf("A", run.interval),
+    dataB: await closesOf("B", run.interval),
+  };
+}
+
+/**
+ * Fetches each token's closing prices in its pool from GeckoTerminal at
+ * the interval asked.
+ *
+ * @param {Object} run - The run
+ * @param {{address: string, token: string}} poolA - Token A's pool, and token A
+ * @param {{address: string, token: string}} poolB - Token B's pool, and token B
+ * @returns {Promise<{dataA: Array, dataB: Array}>} The two series
+ */
+function geckoCloses(run, poolA, poolB) {
+  const pools = { A: poolA, B: poolB };
+  return intervalCloses(run, (side, interval) =>
+    getClosesGecko({
+      network: run.network,
+      pool: pools[side].address,
+      token: pools[side].token,
+      timeframe: interval === "hourly" ? "hour" : "day",
+      limit: run.maxCandles,
+    }),
+  );
+}
+
+/**
+ * Fetches each token's closing prices in its pair from Moralis at the
+ * interval asked: the hourly ones of the last `maxCandles` hours, the
+ * daily ones of the last `moralis.days` days.
+ *
+ * @param {Object} run - The run
+ * @param {string} apiKey - The Moralis key
+ * @param {{address: string, token: string}} pairA - Token A's pair, and token A
+ * @param {{address: string, token: string}} pairB - Token B's pair, and token B
+ * @returns {Promise<{dataA: Array, dataB: Array}>} The two series
+ */
+function moralisCloses(run, apiKey, pairA, pairB) {
+  const pairs = { A: pairA, B: pairB };
+  const toSeconds = Math.floor(Date.now() / 1000);
+  return intervalCloses(run, (side, interval) => {
+    const span =
+      interval === "hourly"
+        ? run.maxCandles * HOUR_SECONDS
+        : run.moralis.days * DAY_SECONDS;
+    return getClosesMoralis(
+      {
+        moralis: run.moralis,
+        pair: pairs[side],
+        timeframe: MORALIS_TIMEFRAMES[interval],
+        fromSeconds: toSeconds - span,
+        toSeconds,
+      },
+      apiKey,
+    );
+  });
 }
 
 /**
@@ -145,7 +221,7 @@ function sameTimes(dataA, dataB) {
  * @returns {Promise<?{dataA: Array, dataB: Array, source: string}>} The two series, or null when no key is saved, having said how to save one
  */
 async function dexToolsFallback(run) {
-  if (!dexToolsKeySaved()) {
+  if (!keySaved("dextools")) {
     console.error(
       "Cannot fall back to current prices: No DexTools API key is saved.",
     );
@@ -159,13 +235,14 @@ async function dexToolsFallback(run) {
 }
 
 /**
- * Fetches the two tokens' prices from GeckoTerminal's best pools, falling
- * back to DexTools when their candles cannot be had.
+ * Fetches the two tokens' names and prices from GeckoTerminal's best
+ * pools, falling back to DexTools when their candles cannot be had.
  *
  * @param {Object} run - The run
- * @returns {Promise<?{dataA: Array, dataB: Array, source: string}>} The two series, or null when there are none
+ * @returns {Promise<?{dataA: Array, dataB: Array, source: string, names: Array<string>}>} The two series, their source and the tokens' names, or null when there are none
  */
 async function geckoSeries(run) {
+  const names = await tokenNames(run);
   let poolA, poolB;
   try {
     poolA = await getBestPoolWithHistory(
@@ -184,31 +261,65 @@ async function geckoSeries(run) {
   }
   try {
     const closes = await geckoCloses(run, poolA, poolB);
-    return { ...closes, source: "GeckoTerminal (USD-based historical)" };
+    return {
+      ...closes,
+      names,
+      source: "GeckoTerminal (USD-based historical)",
+    };
   } catch (e) {
     console.warn(`GeckoTerminal historical data failed: ${e.message}`);
-    return dexToolsFallback(run);
+    const fallback = await dexToolsFallback(run);
+    return fallback === null ? null : { ...fallback, names };
   }
 }
 
 /**
- * Fetches the two tokens' prices: from DexTools alone in DexTools-only
- * mode, else from GeckoTerminal.
+ * Fetches the two tokens' names and prices from Moralis: each token's
+ * pair, from the pairs that list it first, then the pairs' candles,
+ * falling back to DexTools when those cannot be had.
  *
  * @param {Object} run - The run
- * @returns {Promise<?{dataA: Array, dataB: Array, source: string}>} The two series, or null when there are none
+ * @returns {Promise<?{dataA: Array, dataB: Array, source: string, names: Array<string>}>} The two series, their source and the tokens' names, or null when there are none
+ * @throws {Error} When no Moralis key is saved or it cannot be opened, or Moralis lists no pair whose candles price a token
+ */
+async function moralisSeries(run) {
+  if (!keySaved("moralis")) {
+    throw new Error(`No Moralis API key is saved. ${SAVE_KEY_HELP}`);
+  }
+  const apiKey = await run.moralisKey();
+  const pairA = await moralisPair(run.moralis, apiKey, run.tokenA);
+  const pairB = await moralisPair(run.moralis, apiKey, run.tokenB);
+  const names = [pairA.name, pairB.name];
+  try {
+    const closes = await moralisCloses(run, apiKey, pairA, pairB);
+    return { ...closes, names, source: "Moralis (USD-based historical)" };
+  } catch (e) {
+    console.warn(`Moralis historical data failed: ${e.message}`);
+    const fallback = await dexToolsFallback(run);
+    return fallback === null ? null : { ...fallback, names };
+  }
+}
+
+/**
+ * Fetches the two tokens' names and prices: from DexTools alone in
+ * DexTools-only mode, else from the run's source of candles.
+ *
+ * @param {Object} run - The run
+ * @returns {Promise<?{dataA: Array, dataB: Array, source: string, names: Array<string>}>} The two series, their source and the tokens' names, or null when there are none
  */
 export async function fetchSeries(run) {
-  if (!run.useDexToolsOnly) return geckoSeries(run);
+  if (!run.useDexToolsOnly) {
+    return run.source === "moralis" ? moralisSeries(run) : geckoSeries(run);
+  }
   console.log("DexTools-only mode enabled (forced via flag or config).");
-  if (!dexToolsKeySaved()) {
+  if (!keySaved("dextools")) {
     console.error(
       "Cannot use DexTools-only mode: No DexTools API key is saved.",
     );
     console.error(SAVE_KEY_HELP);
     return null;
   }
-  return dexToolsSeries(run);
+  return { ...(await dexToolsSeries(run)), names: ["Token A", "Token B"] };
 }
 
 /**

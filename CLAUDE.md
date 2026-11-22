@@ -51,21 +51,23 @@ other code imports its `getTokenTransferred`, and running it does nothing.
 
 ## Keys
 
-No api key is committed. The keys the programs send (that of DexTools, a
-service that prices tokens from the pools of decentralized exchanges, for
-the fallback of the ratio chart, which charts the ratio of two tokens'
-prices in the terminal, as the top `config.json` lists them under
-`apiKeys`) are kept in `api-keys.json` at the repo's top, which git
-ignores, encrypted with one password the owner types, by
-crypto-price-fetchers' key store (`crypto-price-fetchers/api-key-store`).
-`npm run api-keys` runs its manager (`manage-api-keys.js`), and
-`source ./unlock-api-keys.sh`, a script at the repo's top, keeps the
-password for a terminal in `API_KEYS_PASSWORD`. `unlock-api-keys.sh` is a copy of
+No api key is committed. The keys the programs send, as the top
+`config.json` lists them under `apiKeys`, are those of the ratio chart,
+which charts the ratio of two tokens' prices in the terminal: DexTools',
+for its fallback to current prices, and Moralis's, for its candles.
+DexTools and Moralis are services that price tokens from the pools of
+decentralized exchanges. The keys are kept in `api-keys.json` at the
+repo's top, which git ignores, encrypted with one password the owner
+types, by crypto-price-fetchers' key store
+(`crypto-price-fetchers/api-key-store`). `npm run api-keys` runs its
+manager (`manage-api-keys.js`), and `source ./unlock-api-keys.sh`, a
+script at the repo's top, keeps the password for a terminal in
+`API_KEYS_PASSWORD`. `unlock-api-keys.sh` is a copy of
 crypto-price-fetchers', which a test holds it to; a change to it is made
-there. The ratio chart opens the DexTools key the first time it asks
-DexTools (`chart-price-ratio/dextools.js`). A key is never a setting in a
-file git keeps, nor a command-line argument. A test names a key file of its
-own, never the owner's, and passes no `API_KEYS_PASSWORD` it did not set.
+there. The ratio chart opens each key the first time it asks that service
+(`chart-price-ratio/api-keys.js`). A key is never a setting in a file git
+keeps, nor a command-line argument. A test names a key file of its own,
+never the owner's, and passes no `API_KEYS_PASSWORD` it did not set.
 
 ## crypto-price-fetchers
 
@@ -103,11 +105,18 @@ crypto-price-fetchers' `messageOf` (`crypto-price-fetchers/lib/message-of`);
 this repo keeps no copy of it.
 
 The ratio chart asks GeckoTerminal, a service that lists the pools of
-decentralized exchanges with their prices and candles, through
-crypto-price-fetchers' client
-(`crypto-price-fetchers/dex-prices/geckoterminal`), which
-`chart-price-ratio/gecko-terminal.js` shapes for the chart; this repo keeps
-no GeckoTerminal client of its own.
+decentralized exchanges with their prices and candles, Moralis and
+DexTools through crypto-price-fetchers' clients
+(`crypto-price-fetchers/dex-prices/geckoterminal`, `…/moralis`,
+`…/dextools`), which `chart-price-ratio/gecko-terminal.js`,
+`chart-price-ratio/moralis.js` and `chart-price-ratio/ratio-series.js`
+shape for the chart; this repo keeps no client of its own for any of the
+three. A run reads its candles from GeckoTerminal or from Moralis, never
+from both; with a Moralis key saved it asks at the terminal which, unless
+`--source` names one (`chart-price-ratio/ratio-source.js`), and DexTools
+stays the fallback of either. Moralis's candles of a pair price the token
+the pair lists first, so a run from Moralis reads, for each token, the
+deepest active pair that lists it first.
 
 ## Docs
 
@@ -218,7 +227,7 @@ holds the stand-ins:
   runner's services, its `UrlFetchApp` answering from a stand-in chain.
 - `stand-in-web-preload.js` replaces `fetch` in a program a test starts,
   with answers from a file the test writes; `ratio-chart.js` runs the ratio
-  chart with it, against a stand-in GeckoTerminal and DexTools.
+  chart with it, against a stand-in GeckoTerminal, Moralis and DexTools.
 - `known-bug.js` declares a known-bug test, described below.
 - `stand-in-wallet-chain.js` is a PulseChain endpoint held in memory for
   `wallet-history/`, built from blocks a test describes. It works out

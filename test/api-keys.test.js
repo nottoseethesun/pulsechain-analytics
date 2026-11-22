@@ -21,10 +21,10 @@ import { readNeededKeys } from "crypto-price-fetchers/api-key-store";
 const REPO_TOP = fileURLToPath(new URL("..", import.meta.url));
 
 describe("the api keys", () => {
-  it("are DexTools', for the ratio chart's fallback, as config.json lists them", () => {
+  it("are DexTools', for the ratio chart's fallback, and Moralis's, for its candles, as config.json lists them", () => {
     assert.deepEqual(
       readNeededKeys(REPO_TOP).map(({ service }) => service),
-      ["dextools"],
+      ["dextools", "moralis"],
     );
   });
 
@@ -56,13 +56,20 @@ describe("the api keys", () => {
       const run = spawnSync(
         process.execPath,
         [path.join(REPO_TOP, "manage-api-keys.js")],
-        { env, input: "\n", encoding: "utf8", timeout: 15000 },
+        { env, input: "\n\n", encoding: "utf8", timeout: 15000 },
       );
       assert.equal(run.status, 0, run.stderr);
-      assert.match(run.stdout, / {2}DexTools {2}not saved\n$/);
+      assert.match(
+        run.stdout,
+        / {2}DexTools {2}not saved\n {2}Moralis {3}not saved\n$/,
+      );
       assert.match(
         run.stderr,
         /No DexTools api key was entered, so none was saved\./,
+      );
+      assert.match(
+        run.stderr,
+        /No Moralis api key was entered, so none was saved\./,
       );
     } finally {
       fs.rmSync(folder, { recursive: true, force: true });

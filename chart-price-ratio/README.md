@@ -7,12 +7,22 @@ prices each token in USD, from a pool of its own, whichever side of the
 pool the token is on, so the ratio of the two prices needs no pool between
 them.
 
-The prices come from **GeckoTerminal**, a service that lists the pools of
-decentralized exchanges with their prices and candles, and needs no api
-key. The chart asks it through the GeckoTerminal client of
+A run reads its prices from the candles of one of two sources, and from
+that one alone:
+
+- **GeckoTerminal**, a service that lists the pools of decentralized
+  exchanges with their prices and candles, and needs no api key. Its free
+  api serves about the last 184 days of candles.
+- **Moralis**, a service that prices tokens from the same pools, with a
+  Moralis api key: the last two years of daily candles, unless
+  `--moralis-days` names another span.
+
+With no Moralis key saved, a run reads GeckoTerminal's candles. With one
+saved, it asks which to read, Enter taking Moralis, unless `--source`
+names one. The chart asks both through the clients of
 crypto-price-fetchers, the owner's repo of code his projects share. When
-GeckoTerminal has no candles, the chart falls back to each token's current
-price from **DexTools**, a second such service, which takes an api key:
+the candles cannot be had, the chart falls back to each token's current
+price from **DexTools**, a third such service, which takes an api key:
 one point.
 
 IMPORTANT: Use at your own risk as defined in the included file, `../LICENSE`.
@@ -22,25 +32,28 @@ IMPORTANT: Use at your own risk as defined in the included file, `../LICENSE`.
 What the chart does, in brief. The file header of `pulse-token-ratio.js`
 gives the details.
 
-- **Pool choice:** for each token, it takes the most liquid of its five
-  most liquid pools. A new pool can be the most liquid, with little
-  history, so if that pool's history is less than half the longest among
-  the five, it takes the pool with the longest history instead, provided
-  that pool has at least a tenth of the top pool's liquidity.
+- **Pool choice:** from GeckoTerminal, for each token, it takes the most
+  liquid of its five most liquid pools. A new pool can be the most liquid,
+  with little history, so if that pool's history is less than half the
+  longest among the five, it takes the pool with the longest history
+  instead, provided that pool has at least a tenth of the top pool's
+  liquidity. From Moralis, it takes the deepest active pair that lists the
+  token first, since Moralis's candles of a pair price the token the pair
+  lists first, as in HEX / WPLS, which prices HEX.
 - **Names:** it shows each token's name, symbol and contract address.
 - **Y-axis:** it spans the lowest ratio to the highest, with no two labels
   the same.
 - **X-axis:** dates, or dates with the hour, each under the column it
   labels.
 - **Intervals:** hourly, daily, the default, or weekly. GeckoTerminal's
-  free api serves about the last 184 days of candles, which make 184
-  daily points but at most 27 weekly ones.
+  184 days of candles make 184 daily points but at most 27 weekly ones;
+  Moralis's two years make about 730 daily points and 104 weekly ones.
 - **Pairing:** each ratio divides the two tokens' prices of the same time,
   at the times both pools have a candle for, since GeckoTerminal makes no
   candle for a period in which nothing traded.
 - **CSV:** it writes the ratios to a CSV file when asked.
 - **DexTools fallback:** it needs a saved DexTools key. Without one, the
-  chart says so, and charts from GeckoTerminal alone.
+  chart says so, and charts from its source of candles alone.
 
 ## Pre-requisites
 
@@ -60,7 +73,7 @@ npm install
 ```
 
 `npm install` installs what the chart needs, crypto-price-fetchers among
-it, for its key store and its GeckoTerminal client. Which version of
+it, for its key store and its GeckoTerminal, Moralis and DexTools clients. Which version of
 crypto-price-fetchers is installed, and how to change it, is in the repo's
 [README](../README.md#choosing-versions-of-dependencies-that-are-raw-github-projects).
 
@@ -77,17 +90,26 @@ Edit `config.json` to set defaults:
     "host": "<https://public-api.dextools.io>",
     "version": "v2"
   },
+  "moralis": {
+    "chain": "0x171",
+    "days": 730
+  },
   "csvFilename": "token_ratio.csv",
   "interval": "daily",
   "maxCandles": 1000,
-  "weeklyResampleDays": 7
+  "weeklyResampleDays": 7,
+  "useDexToolsOnly": false
 }
 ```
 
-### DexTools API key
+`moralis.chain` is Moralis's id for PulseChain, and `moralis.days` the
+days of daily candles a run reads from Moralis.
 
-A DexTools API key enables the current-price fallback when GeckoTerminal
-data is unavailable. It is no setting and no command-line argument: save it
+### API keys
+
+A Moralis API key lets a run read two years of daily candles from Moralis,
+and a DexTools API key enables the current-price fallback when the candles
+cannot be had. A key is no setting and no command-line argument: save it
 encrypted, with a password you choose, in the repo's top folder, whose
 `npm run api-keys` runs crypto-price-fetchers' key manager:
 
@@ -97,10 +119,11 @@ npm install
 npm run api-keys
 ```
 
-The chart opens it the first time it asks DexTools, with the password that
-`source ./unlock-api-keys.sh`, in the repo's top folder, keeps for the
-terminal, or one it asks for. A run that never asks DexTools asks for no
-password. See the repo's [README](../README.md#api-keys).
+The chart opens each key the first time it asks that service, with the
+password that `source ./unlock-api-keys.sh`, in the repo's top folder,
+keeps for the terminal, or one it asks for. A run that reads
+GeckoTerminal's candles and never falls back asks for no password. See the
+repo's [README](../README.md#api-keys).
 
 ## Usage
 
@@ -132,6 +155,16 @@ node pulse-token-ratio.js <tokenA> <tokenB> --interval=weekly
 ### Export to CSV
 
 `node pulse-token-ratio.js <tokenA> <tokenB> --interval=daily --csv`
+
+### Choose the source without the question
+
+```bash
+node pulse-token-ratio.js <tokenA> <tokenB> --source moralis
+node pulse-token-ratio.js <tokenA> <tokenB> --source geckoterminal
+```
+
+A run with a Moralis key saved and no terminal to ask at, such as one
+whose input is a pipe, stops unless `--source` names one.
 
 ## Output Example
 

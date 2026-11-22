@@ -5,8 +5,11 @@
  *
  * `STAND_IN_WEB_ANSWERS` names a JSON file of answers, each
  * `{ url, status, body }`: the url asked, exactly, and the status and JSON
- * body answered. A url with no answer fails, as a request with no network
- * would, so a program never reaches the real web. `STAND_IN_WEB_LOG`, when
+ * body answered. An answer may give `urlStartsWith` in place of `url`, for
+ * a url whose end the test cannot know, such as one that names the time
+ * the program ran; it answers every url that starts with it. A url with no
+ * answer fails, as a request with no network would, so a program never
+ * reaches the real web. `STAND_IN_WEB_LOG`, when
  * set, names a file each request is added to, a line of JSON: its url, and
  * whether it sent the api key `STAND_IN_WEB_KEY` in `x-api-key`. The log
  * never holds a key.
@@ -21,8 +24,8 @@ const answers = JSON.parse(
 
 /*-
  *  TEST-ONLY global swap: the ratio chart is a command line that reaches
- *  GeckoTerminal and DexTools, and the key store's check of the DexTools
- *  key, only through the global fetch, at fixed addresses, and offers no
+ *  GeckoTerminal, Moralis and DexTools, and the key store's checks of their
+ *  keys, only through the global fetch, at fixed addresses, and offers no
  *  seam for it. This file runs only in a child process a test starts for
  *  one run of the chart, so the swap is never seen outside that process,
  *  and it ends with the process.
@@ -37,7 +40,11 @@ globalThis.fetch = async (url, init = {}) => {
       `${JSON.stringify(line)}\n`,
     );
   }
-  const answer = answers.find((candidate) => candidate.url === href);
+  const answer = answers.find((candidate) =>
+    candidate.urlStartsWith === undefined
+      ? candidate.url === href
+      : href.startsWith(candidate.urlStartsWith),
+  );
   if (!answer)
     throw new TypeError(`fetch failed: no stand-in answer for ${href}`);
   return new Response(JSON.stringify(answer.body), {

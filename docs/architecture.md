@@ -116,33 +116,54 @@ node, since other nodes keep only the chain's recent state.
 ## The Ratio Chart
 
 `chart-price-ratio/pulse-token-ratio.js` charts the ratio of two tokens'
-prices, even when no pool holds both:
+prices, even when no pool holds both. A run reads its candles, the open,
+high, low and close prices of each period, from one of two sources, and
+from that one alone:
 
-1. For each token, `pool-selector.js` looks at its five most liquid pools
-   on GeckoTerminal, a service that lists the pools of decentralized
-   exchanges with their prices and candles (`gecko-terminal.js` asks it
+- GeckoTerminal, a service that lists the pools of decentralized exchanges
+  with their prices and candles, and takes no key. Its free api serves
+  about the last 184 days of candles.
+- Moralis, a service that prices tokens from the same pools, with the
+  Moralis api key saved in the repo's key store. A run from Moralis reads
+  the last two years of daily candles, unless `moralis.days` in the
+  chart's `config.json`, or `--moralis-days`, names another span.
+
+With no Moralis key saved, a run reads GeckoTerminal's candles. With one
+saved, it asks at the terminal which to read, Enter taking Moralis, unless
+`--source` names one; a run with no terminal to ask at, such as one whose
+input is a pipe, stops and names `--source` (`ratio-source.js`).
+
+1. Each token's pool. From GeckoTerminal, `pool-selector.js` looks at the
+   token's five most liquid pools (`gecko-terminal.js` asks GeckoTerminal
    through crypto-price-fetchers' client), and takes the most liquid. A new
    pool can be the most liquid, with little history to chart. So if that
    pool's history is less than half the longest among the five, it takes
    the pool with the longest history instead, provided that pool has at
-   least a tenth of the top pool's liquidity.
+   least a tenth of the top pool's liquidity. From Moralis, `moralis.js`
+   lists the pairs that trade the token, through crypto-price-fetchers'
+   client, and takes the deepest active pair that lists the token first:
+   Moralis's candles of a pair price the token the pair lists first, as in
+   HEX / WPLS, which prices HEX. A token no active pair lists first stops
+   the run, which says to read GeckoTerminal's candles instead.
 2. It fetches each token's candles in its pool at the interval asked,
    hourly, daily, the default, or daily resampled to weeks. A pool holds
-   two tokens, and its candles price the one GeckoTerminal calls its base
-   unless a request names the other, so each request names the chart's
-   token by its address, whichever side of the pool it is on. Both tokens'
-   candles are priced in USD, so the ratio of the two is the ratio of the
-   tokens. GeckoTerminal lists the candles newest first, and the chart
-   reads them oldest first. It makes no candle for a period in which
-   nothing traded, so a pool can lack a time the other has: the chart
-   divides the two tokens' prices of the same time, at the times both
-   pools have, and makes weekly points from the days both pools have, so
-   both series' weeks start on one day.
-3. When GeckoTerminal has no candles, it falls back to each token's current
-   USD price from DexTools, a second such service, which takes an api key
-   (`dextools.js`): one point. DexTools has 30 seconds to answer each
-   request in full, as GeckoTerminal has through crypto-price-fetchers'
-   client, or the chart stops with the error.
+   two tokens. GeckoTerminal's candles price the one GeckoTerminal calls
+   its base unless a request names the other, so each request names the
+   chart's token by its address, whichever side of the pool it is on.
+   Moralis names in its answer the token its candles price, and the chart
+   checks that it is the chart's token. Both tokens' candles are priced in
+   USD, so the ratio of the two is the ratio of the tokens. A source can
+   list the candles newest first, as GeckoTerminal does, and the chart
+   reads them oldest first. GeckoTerminal makes no candle for a period in
+   which nothing traded, so a pool can lack a time the other has: the
+   chart divides the two tokens' prices of the same time, at the times
+   both pools have, and makes weekly points from the days both pools have,
+   so both series' weeks start on one day.
+3. When the candles cannot be had, the chart falls back to each token's
+   current USD price from DexTools, a third such service, which takes an
+   api key: one point. It asks DexTools through crypto-price-fetchers'
+   client. Every request of crypto-price-fetchers' clients has 30 seconds
+   to answer in full, or the chart stops with the error.
 4. It prints the chart, with labels on both axes (`generateNiceTicks.js`
    picks the y-axis' values), the last ten ratios and the current one, and
    writes a CSV when asked.
@@ -153,20 +174,21 @@ fewer columns leave them no room. A series of fewer points is drawn wider:
 each point takes the same number of columns, and the columns between two
 points step from the one's ratio to the other's, so the line joins them
 straight (`chartColumns`). One point, a current price, prints no chart.
-GeckoTerminal's free api serves about the last 184 days of candles, which
-make 184 daily points but at most 27 weekly ones; a weekly run from
-GeckoTerminal says so before its chart.
+GeckoTerminal's 184 days of candles make 184 daily points but at most 27
+weekly ones; a weekly run from GeckoTerminal says so before its chart.
 
 `pulse-token-ratio.js` reads `config.json` and runs the command line, which
 `ratio-command.js` declares with commander, the package that reads a
 command line's options and writes its help, with the settings' defaults
-from `config.json`; `ratio-series.js` fetches the prices and works out the
-ratios; `ratio-output.js` prints them. The run ends with exit code 0 when
-it printed the ratios, and 1 when it did not: a mistake in the arguments,
-from 2 to 89 points, no prices, or a request that failed.
+from `config.json`; `ratio-source.js` settles the source; `ratio-series.js`
+fetches the prices and works out the ratios; `ratio-output.js` prints
+them. The run ends with exit code 0 when it printed the ratios, and 1 when
+it did not: a mistake in the arguments, no source to read, no prices, or a
+request that failed.
 
-The DexTools key is opened from the repo's key store the first time the
-chart asks DexTools, so a run that never falls back asks for no password.
+Each key is opened from the repo's key store the first time the chart asks
+its service (`api-keys.js`), so a run that reads GeckoTerminal's candles
+and never falls back asks for no password.
 
 ---
 
@@ -481,7 +503,8 @@ would be compared as if it were whole.
 ## Api Keys
 
 The keys this repo's programs send are listed in its top `config.json`,
-under `apiKeys`: DexTools', for the ratio chart. They are kept in
+under `apiKeys`: DexTools', for the ratio chart's fallback to current
+prices, and Moralis's, for the ratio chart's candles. They are kept in
 `api-keys.json` beside it, which git ignores, encrypted with one password,
 by crypto-price-fetchers' key store, a module built on LP Ranger's design
 for keeping keys:
@@ -507,10 +530,13 @@ This repo installs [crypto-price-fetchers](https://github.com/nottoseethesun/cry
 from GitHub, as a dependency that `npm install` installs, at the top, in
 `chart-price-ratio/` and in `check-token-balance/`. It gives the runner that runs the Sheets script under
 Node (`crypto-price-fetchers/apps-script-runner`), the key store
-(`crypto-price-fetchers/api-key-store`), the GeckoTerminal client the ratio
-chart asks through (`crypto-price-fetchers/dex-prices/geckoterminal`),
-which keeps within a budget of requests and sends a request refused as too
-many again after its waits, the Summ csv utility the Summ sweep writes its
+(`crypto-price-fetchers/api-key-store`), the clients the ratio chart asks
+GeckoTerminal, Moralis and DexTools through
+(`crypto-price-fetchers/dex-prices/geckoterminal`, `…/dex-prices/moralis`,
+`…/dex-prices/dextools`), which give each request 30 seconds to answer in
+full and send a request refused as too many again after their waits, the
+GeckoTerminal client within a budget of requests, the Summ csv utility the
+Summ sweep writes its
 csv through (`crypto-price-fetchers/summ-csv`), `messageOf`, which gives
 the Summ sweep's command line the message of what it catches
 (`crypto-price-fetchers/lib/message-of`), the lint rules against printing

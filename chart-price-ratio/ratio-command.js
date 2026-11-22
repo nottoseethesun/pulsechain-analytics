@@ -6,7 +6,8 @@
  * `buildRatioCommand` builds the command anew for each parse, so a test
  * can parse several argument lists. Each value is checked as it is parsed,
  * so a mistake names its argument or option, on stderr, and stops the run,
- * with exit code 1, before GeckoTerminal or DexTools is asked anything.
+ * with exit code 1, before GeckoTerminal, Moralis or DexTools is asked
+ * anything.
  * `--help` prints the help on stdout, with exit code 0. The message for an
  * option it does not know names the option alone, without what follows its
  * `=`, which may be a secret, such as an api key typed where none is taken.
@@ -15,6 +16,7 @@
 
 import { Argument, Command, InvalidArgumentError, Option } from "commander";
 import { isHttpUrl } from "crypto-price-fetchers/lib/http-url";
+import { SOURCES } from "./ratio-source.js";
 
 /** The intervals GeckoTerminal's candles serve. */
 export const INTERVALS = Object.freeze(["hourly", "daily", "weekly"]);
@@ -23,8 +25,15 @@ export const INTERVALS = Object.freeze(["hourly", "daily", "weekly"]);
 const HELP_AFTER = `
 Each option's default is set in config.json, beside this file.
 
-The DexTools fallback asks with the DexTools api key saved, encrypted, in
-the repo's key store. To save one, in the repo's top folder:
+The candles come from GeckoTerminal, which takes no key, or from Moralis,
+which reads two years of daily candles unless --moralis-days names another
+span, with the Moralis api key saved, encrypted, in the repo's key store.
+With a Moralis key saved, a run asks at the terminal which of the two to
+read, Enter taking Moralis, unless --source names one; a run with no
+terminal to ask at stops unless --source names one. When the candles
+cannot be had, the chart falls back to DexTools' current prices, with the
+DexTools api key saved in the same store. To save a key, in the repo's top
+folder:
   npm run api-keys
 
 Examples:
@@ -35,6 +44,9 @@ Examples:
     $ node pulse-token-ratio.js 0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39 0xA1077a294dDE1B09bB078844df40758a5D0f9a27 hourly --csv
   The first chart, through npm, from this folder:
     $ npm start -- 0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39 0xA1077a294dDE1B09bB078844df40758a5D0f9a27
+  The daily ratio over the last two years, from Moralis, without the
+  question of the source:
+    $ node pulse-token-ratio.js 0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39 0xA1077a294dDE1B09bB078844df40758a5D0f9a27 --source moralis
 
 Exit codes:
   0  the ratios were printed
@@ -94,9 +106,10 @@ function httpUrl(value) {
  */
 export function buildRatioCommand(config) {
   const dextools = config.dextools ?? {};
+  const moralis = config.moralis ?? {};
   return new Command("pulse-token-ratio")
     .description(
-      "Charts the ratio of two PulseChain tokens' prices over time, in the terminal: from GeckoTerminal's candles, or, when those cannot be had, from DexTools' current prices.",
+      "Charts the ratio of two PulseChain tokens' prices over time, in the terminal: from Moralis's or GeckoTerminal's candles, or, when those cannot be had, from DexTools' current prices.",
     )
     .argument("<tokenA>", "token A's contract address", contractAddress)
     .argument("<tokenB>", "token B's contract address", contractAddress)
@@ -117,6 +130,14 @@ export function buildRatioCommand(config) {
       "the CSV file",
       config.csvFilename ?? "token_ratio.csv",
     )
+    .addOption(
+      new Option(
+        "--source <source>",
+        "where the candles come from, in place of the question a run asks when a Moralis api key is saved",
+      )
+        .choices(SOURCES)
+        .conflicts("useDexToolsOnly"),
+    )
     .option(
       "--useDexToolsOnly",
       "ask DexTools alone, for the current prices",
@@ -131,6 +152,17 @@ export function buildRatioCommand(config) {
       "--chain <chain>",
       "DexTools' name for the chain",
       config.chain ?? "pulse",
+    )
+    .option(
+      "--moralis-chain <chain>",
+      "Moralis's id for the chain",
+      moralis.chain ?? "0x171",
+    )
+    .option(
+      "--moralis-days <number>",
+      "the days of daily candles a run reads from Moralis",
+      positiveInteger,
+      moralis.days ?? 730,
     )
     .option(
       "--subscription <plan>",
@@ -174,7 +206,7 @@ export function buildRatioCommand(config) {
  * @param {string} tokenB - Token B's address
  * @param {string|undefined} interval - The interval given as an argument, if any
  * @param {Object} options - The options, as commander parsed them
- * @returns {Object} The settings: the tokens, the interval, the CSV, the mode, GeckoTerminal's network, DexTools' address, plan, version and chain, and the candles to fetch
+ * @returns {Object} The settings: the tokens, the interval, the CSV, the source asked for, if any, the mode, GeckoTerminal's network, Moralis's chain and days, DexTools' address, plan, version and chain, and the candles to fetch
  */
 export function ratioSettings(tokenA, tokenB, interval, options) {
   return {
@@ -183,8 +215,10 @@ export function ratioSettings(tokenA, tokenB, interval, options) {
     interval: interval ?? options.interval,
     saveCsv: options.csv,
     csvFilename: options.csvFilename,
+    source: options.source,
     useDexToolsOnly: options.useDexToolsOnly,
     network: options.network,
+    moralis: { chain: options.moralisChain, days: options.moralisDays },
     maxCandles: options.maxCandles,
     weeklyResampleDays: options.weeklyDays,
     dexTools: {

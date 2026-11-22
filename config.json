@@ -1,5 +1,5 @@
 {
-  "apiKeys": ["dextools"],
+  "apiKeys": ["dextools", "moralis"],
   "pulsechain": {
     "chainId": 369,
     "rpcEndpoint": "https://rpc-pulsechain.g4mm4.io",

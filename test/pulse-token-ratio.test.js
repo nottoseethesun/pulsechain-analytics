@@ -1,80 +1,56 @@
 /**
  * Tests for the ratio chart, `chart-price-ratio/pulse-token-ratio.js`, run
- * as its owner runs it, against a stand-in GeckoTerminal and DexTools
- * (`helpers/ratio-chart.js`).
+ * as its owner runs it, reading GeckoTerminal's candles, against a
+ * stand-in GeckoTerminal and DexTools (`helpers/ratio-chart.js`). A run
+ * from Moralis, and the choice of the source, are tested in
+ * `pulse-token-ratio-moralis.test.js`.
  * @module test/pulse-token-ratio.test
  *
  * The DexTools key comes from the repo's key store, never from a setting or
- * the command line: a test that needs one saves it in a key file of its own,
- * in a temp folder, removed afterwards. No output may hold it. The DexTools
- * client's time limit is tested on its own, against a stand-in DexTools
- * served on this computer that answers nothing.
+ * the command line: a test that needs one saves it in a key file of its
+ * own, in a temp folder, removed afterwards. No output may hold it. The
+ * DexTools client and its time limit are crypto-price-fetchers', and
+ * tested there.
  */
 
 import { after, before, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import http from "node:http";
-import os from "node:os";
 import path from "node:path";
-import { saveEncryptedKey } from "crypto-price-fetchers/api-key-store";
 import {
-  DEXTOOLS_TIMEOUT_MS,
-  getCurrentUsdPriceDexTools,
-} from "../chart-price-ratio/dextools.js";
-import {
+  assertKeysNotShown,
+  CLOSES_A,
+  CLOSES_B,
+  DEXTOOLS_ANSWERS,
   DEXTOOLS_CHECK_URL,
+  DEXTOOLS_KEY,
   dexToolsPriceUrl,
   geckoAnswers,
   hourlyRefused,
+  PASSWORD,
   quoteSideAnswers,
   runChart,
+  saveStandInKeys,
   TOKEN_A,
   TOKEN_B,
 } from "./helpers/ratio-chart.js";
 
-/** A stand-in DexTools key, and the password it is saved with. */
-const DEXTOOLS_KEY = "stand-in-dextools-key";
-const PASSWORD = "stand-in password";
-
-/** A hundred days' closes for each token's pool, and for WPLS. */
-const CLOSES_A = Array.from({ length: 100 }, (_, day) => 2 + day * 0.01);
-const CLOSES_B = Array.from({ length: 100 }, (_, day) => 1 + day * 0.001);
+/** A hundred days' closes for WPLS. */
 const WPLS_CLOSES = Array.from({ length: 100 }, () => 0.00003);
 
-/** DexTools' answers: its check takes the key, and each token's price. */
-const DEXTOOLS_ANSWERS = [
-  { url: DEXTOOLS_CHECK_URL, body: { data: [] } },
-  { url: dexToolsPriceUrl(TOKEN_A), body: { data: { price: 2.5 } } },
-  { url: dexToolsPriceUrl(TOKEN_B), body: { data: { price: 0.5 } } },
-];
-
+let keys;
 let folder;
 let keyFile;
 
 before(async () => {
-  folder = fs.mkdtempSync(
-    path.join(os.tmpdir(), "pulsechain-analytics-test-ratio-keys-"),
-  );
-  keyFile = path.join(folder, "api-keys.json");
-  await saveEncryptedKey(keyFile, "dextools", DEXTOOLS_KEY, PASSWORD);
+  keys = await saveStandInKeys();
+  folder = keys.folder;
+  keyFile = keys.dexTools;
 });
 
 after(() => {
-  fs.rmSync(folder, { recursive: true, force: true });
+  keys.remove();
 });
-
-/**
- * Asserts that no output of a run shows the key.
- *
- * @param {{stdout: string, stderr: string}} run - The run
- */
-function assertKeyNotShown(run) {
-  assert.ok(
-    !`${run.stdout}${run.stderr}`.includes(DEXTOOLS_KEY),
-    "The DexTools key was shown",
-  );
-}
 
 describe("pulse-token-ratio.js", () => {
   it("charts the daily ratio from GeckoTerminal's candles, asking for no key or password", () => {
@@ -146,7 +122,7 @@ describe("pulse-token-ratio.js", () => {
     );
     assert.ok(dexTools.every(({ sentKey }) => sentKey));
     assert.doesNotMatch(run.stderr, /No DexTools API key is saved/);
-    assertKeyNotShown(run);
+    assertKeysNotShown(run);
   });
 
   it("says how to save a DexTools key, and ends with exit code 1, when GeckoTerminal has no candles and none is saved", () => {
@@ -173,7 +149,7 @@ describe("pulse-token-ratio.js", () => {
       /Token A \/ Token B ratio \(current, current only\) - Source: DexTools/,
     );
     assert.match(run.stdout, /Current ratio: 5\.000000000000\n/);
-    assertKeyNotShown(run);
+    assertKeysNotShown(run);
   });
 
   it("in DexTools-only mode with no key saved, says how to save one, asking nothing, and ends with exit code 1", () => {
@@ -400,45 +376,6 @@ describe("pulse-token-ratio.js, its command line", () => {
     assert.equal(run.status, 1);
     assert.equal(run.stderr, "error: unknown option '--api-key'\n");
     assert.deepEqual(run.requests, []);
-    assertKeyNotShown(run);
-  });
-});
-
-describe("the DexTools client, against a DexTools that gives no answer", () => {
-  it("gives up after the time limit, 30 seconds unless the caller sets another, saying so", async () => {
-    assert.equal(DEXTOOLS_TIMEOUT_MS, 30000);
-    const server = http.createServer(() => {});
-    await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
-    try {
-      const asked = getCurrentUsdPriceDexTools(
-        {
-          host: `http://127.0.0.1:${server.address().port}`,
-          subscription: "standard",
-          version: "v2",
-          chain: "pulse",
-          timeoutMs: 300,
-        },
-        DEXTOOLS_KEY,
-        "0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39",
-      ).then(
-        () => "a price",
-        (error) => error,
-      );
-      const stalled = new Promise((resolve) => {
-        setTimeout(
-          () => resolve("still waiting after 5 seconds"),
-          5000,
-        ).unref();
-      });
-      const outcome = await Promise.race([asked, stalled]);
-      assert.ok(outcome instanceof Error, String(outcome));
-      assert.equal(
-        outcome.message,
-        "DexTools gave no answer within 0.3 seconds",
-      );
-    } finally {
-      server.closeAllConnections();
-      await new Promise((resolve) => server.close(resolve));
-    }
+    assertKeysNotShown(run);
   });
 });
