@@ -291,7 +291,13 @@ beside it shows the shape.
 
 ## Known bugs
 
-None is known. When one is found, it gets a test in
+Four are known. The balance checker passes over a `config.json` that is
+not JSON, with a warning, for g4mm4's endpoint, and takes a `defaultRpc`
+that is no http or https url as the default of `--rpc` unchecked. The ratio
+chart takes its options' defaults from `config.json` unchecked: a
+`maxCandles` of 0 passes, which a typed `--max-candles 0` does not; and
+`--source` passes beside a `useDexToolsOnly` the file sets, which commander
+refuses only when both are typed, and the run asks DexTools alone. When one is found, it gets a test in
 `test/known-bugs.test.js`, declared with `knownBug`, so the test passes while
 the bug is present. The bug's fix makes its test fail; declare that test with
 `it` instead, in the same change, among the tests of the code it is about.
