@@ -350,13 +350,7 @@ beside it shows the shape.
 
 ## Known bugs
 
-Five are known, each with its test in `test/known-bugs.test.js`: the
-Summ sweep's `owed.js` and `wallet-history/receipts.js` take an
-endpoint's error answer to a contract call as the contract's refusal; rule
-2 books a position's NFT sent to one of the owner's wallets as Return LP
-token, never Send; a Transfer log of a shape no ERC-20 or NFT Transfer has
-stops the sweep; and the ratio chart's y-axis labels, sized from values
-other than those it draws, can shift the axis on a row. When one is found, it gets a test in
+None is known. When one is found, it gets a test in
 `test/known-bugs.test.js`, declared with `knownBug`, so the test passes while
 the bug is present. The bug's fix makes its test fail; declare that test with
 `it` instead, in the same change, among the tests of the code it is about.

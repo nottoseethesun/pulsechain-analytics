@@ -15,7 +15,6 @@
 
 import asciichart from "asciichart";
 import fs from "fs";
-import { generateNiceTicks } from "./generateNiceTicks.js";
 
 /** The fewest columns the chart is drawn across. */
 export const MIN_CHART_COLUMNS = 90;
@@ -133,6 +132,31 @@ function xAxisLine(interval, chronologicalTimestamps, width) {
   return xAxis;
 }
 
+/** The rows the chart is drawn in. */
+const CHART_HEIGHT = 30;
+
+/**
+ * The values asciichart labels the chart's rows with, as it works them
+ * out: the highest ratio on the top row, the lowest on the bottom one, and
+ * evenly spaced values between them, one a row.
+ *
+ * @param {number} min - The lowest ratio
+ * @param {number} max - The highest ratio
+ * @param {number} height - The chart's height, in rows
+ * @returns {Array<number>} Each row's value, top first
+ */
+function drawnLabelValues(min, max, height) {
+  const range = Math.abs(max - min);
+  const ratio = range !== 0 ? height / range : 1;
+  const min2 = Math.round(min * ratio);
+  const max2 = Math.round(max * ratio);
+  const rows = Math.abs(max2 - min2);
+  const values = [];
+  for (let y = min2; y <= max2; ++y)
+    values.push(rows > 0 ? max - ((y - min2) * range) / rows : y);
+  return values;
+}
+
 /**
  * Prints the chart of the ratios, oldest left, newest right.
  *
@@ -146,8 +170,11 @@ function printChart(interval, chronologicalRatios, chronologicalTimestamps) {
   const maxRatio = Math.max(...chronologicalRatios);
   const formatYRaw = yLabelFormat(maxRatio - minRatio);
 
-  const testTicks = generateNiceTicks(minRatio, maxRatio, 10);
-  const rawLabels = testTicks.map(formatYRaw);
+  // Every label is padded to the longest asciichart draws, so the axis
+  // stands in one column
+  const rawLabels = drawnLabelValues(minRatio, maxRatio, CHART_HEIGHT).map(
+    formatYRaw,
+  );
   const maxLabelLength = Math.max(...rawLabels.map((l) => l.length), 1);
 
   const formatY = (value) => {
@@ -156,7 +183,7 @@ function printChart(interval, chronologicalRatios, chronologicalTimestamps) {
   };
 
   const chartConfig = {
-    height: 30,
+    height: CHART_HEIGHT,
     min: minRatio,
     max: maxRatio,
     format: formatY,

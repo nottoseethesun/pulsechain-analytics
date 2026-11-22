@@ -18,6 +18,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import { ratioRows } from "../chart-price-ratio/ratio-series.js";
+import { printRatios } from "../chart-price-ratio/ratio-output.js";
 import {
   assertKeysNotShown,
   CLOSES_A,
@@ -402,6 +403,40 @@ describe("ratioRows", () => {
     assert.deepEqual(
       rows.map((row) => row.date),
       ["2026-01-01", "2026-01-01"],
+    );
+  });
+});
+
+describe("the chart's y-axis", () => {
+  it("stands in one column on every row, each label padded to the longest the chart draws", () => {
+    const ratios = Array.from({ length: 40 }, (_, at) => 0.5 + (1.2 * at) / 39);
+    const timestamps = ratios.map((_, at) => Date.UTC(2026, 0, 1 + at));
+    const lines = [];
+    const log = console.log;
+    console.log = (line = "") => lines.push(String(line));
+    try {
+      printRatios(
+        { interval: "daily", tokenA: "0xA", tokenB: "0xB", saveCsv: false },
+        ["A", "B"],
+        "GeckoTerminal",
+        {
+          rows: ratios.map((ratio) => ({ date: "", ratio: String(ratio) })),
+          ratios,
+          timestamps,
+        },
+      );
+    } finally {
+      console.log = log;
+    }
+    const columns = lines
+      .flatMap((line) => line.split("\n"))
+      .map((line) => line.search(/[┤┼]/))
+      .filter((at) => at >= 0);
+    assert.ok(columns.length > 10);
+    assert.equal(
+      new Set(columns).size,
+      1,
+      `axis columns ${[...new Set(columns)]}`,
     );
   });
 });

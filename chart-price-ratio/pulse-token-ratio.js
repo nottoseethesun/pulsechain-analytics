@@ -30,9 +30,10 @@
  *  - Each point's ratio is price_A_in_USD / price_B_in_USD.
  *  - The intervals are hourly, daily and weekly.
  *  - The chart (ratio-output.js):
- *    • The y-axis' labels are the multiples of a step of 1, 2 or 5 times a
- *      power of ten that span the lowest ratio to the highest
- *      (generateNiceTicks.js), each rounded to 6, 8, 10 or 12 decimals,
+ *    • The y-axis labels each of the chart's 30 rows with its value: the
+ *      highest ratio on the top row, the lowest on the bottom one, and
+ *      evenly spaced values between, as asciichart, the package that draws
+ *      the chart, works them out; each rounded to 6, 8, 10 or 12 decimals,
  *      more for a narrower range, with trailing zeros dropped; the labels
  *      of a range under 0.00001 are written in scientific notation.
  *    • Each y-axis label is padded with spaces to the length of the
@@ -106,7 +107,7 @@
  * Notes:
  *  - Token addresses are 0x and 40 hex digits, in either case.
  *  - For Moralis's candles and the DexTools fallback, save their api keys with npm run api-keys, in the repo's top folder.
- *  - Intervals finer than 'hourly' are not supported by GeckoTerminal, and are refused.
+ *  - The chart offers hourly, daily and weekly; any other interval is refused.
  *  - The chart spans at least 90 columns (MIN_CHART_COLUMNS, ratio-output.js),
  *    for its dates' room: a series of fewer points is drawn with each point
  *    widened, joined by straight lines. GeckoTerminal's free api serves
@@ -116,7 +117,6 @@
  *  - A source can make no candle for a period in which nothing traded, as
  *    GeckoTerminal does, so a point is a time both pools have a candle for;
  *    the two tokens' prices are paired by time.
- *  - Y-scale automatically computes unique tick values using a nice number algorithm.
  *  - X-scale shows sparse timestamps perfectly aligned with chart columns — chronological order (oldest left → newest right).
  *  - CSV includes columns: date, price_tokenA, price_tokenB, ratio. The date
  *    is the day, YYYY-MM-DD in UTC, and for an hourly run the hour too,

@@ -318,8 +318,12 @@ export function standInWalletChain(description) {
       callBlocks.push(blockTag);
       const contract = contracts[to.toLowerCase()];
       if (contract === undefined) return "0x";
+      // A revert, as ethers throws it for an endpoint's answer that the
+      // call reverted
       const refusal = Object.assign(new Error("execution reverted"), {
         code: "CALL_EXCEPTION",
+        data: null,
+        info: { error: { code: 3, message: "execution reverted" } },
       });
       if ((contract.refuses ?? []).includes(data)) throw refusal;
       if (data.startsWith(POSITIONS_SELECTOR)) {

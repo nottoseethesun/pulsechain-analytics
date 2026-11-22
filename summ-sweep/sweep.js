@@ -45,13 +45,28 @@ import { ownCoinFlows } from "../wallet-history/coin-flows.js";
 import { walletCoinInflows } from "../wallet-history/coin-inflows.js";
 import { decimalText } from "./amounts.js";
 import { rowsForGaps, sortRows } from "./gaps.js";
-import { tokenLegs } from "./legs.js";
+import { oddTransferLogs, tokenLegs } from "./legs.js";
 import { attachManualRows, matchLegs, summLegsOf } from "./match.js";
 import { csvSymbolOf, ownerLists } from "./owner-lists.js";
 import { owedWhenRangeBegan } from "./owed.js";
 import { collectedNftIds, splitCollects } from "./positions.js";
 import { PLS_DECIMALS } from "./rows.js";
 import { sortSplits } from "./splits.js";
+
+/**
+ * The problem of a Transfer log of a shape no ERC-20 or NFT Transfer has,
+ * from which the sweep reads no leg.
+ *
+ * @param {object} log - The log
+ * @returns {{hash: string, problem: string}} The problem
+ */
+function oddLogProblem(log) {
+  const bytes = Math.max(0, (log.data.length - 2) / 2);
+  return {
+    hash: log.transactionHash.toLowerCase(),
+    problem: `a Transfer log of ${getAddress(log.address)} has ${log.topics.length} topics and ${bytes} bytes of data, a shape no ERC-20 or NFT Transfer has, so the sweep reads no leg from it`,
+  };
+}
 
 /**
  * The problem of a coin the position manager paid as PLS.
@@ -125,7 +140,14 @@ async function readHistory(paced, range) {
     times,
     wrappedCoin: chain.wrappedCoin,
   });
-  return { sent, receipts, own, payments: inflows.payments, legs };
+  return {
+    sent,
+    receipts,
+    own,
+    payments: inflows.payments,
+    legs,
+    oddLogs: oddTransferLogs(logs),
+  };
 }
 
 /**
@@ -259,6 +281,10 @@ export async function sweepWallet(paced, sweep) {
     fixes: sorted.fixes,
     rows: sortRows([...sorted.rows, ...gaps.rows]),
     questions: gaps.questions,
-    problems: [...problems, ...sorted.paidAsCoin.map(paidAsCoinProblem)],
+    problems: [
+      ...problems,
+      ...sorted.paidAsCoin.map(paidAsCoinProblem),
+      ...history.oddLogs.map(oddLogProblem),
+    ],
   };
 }
