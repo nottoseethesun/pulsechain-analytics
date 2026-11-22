@@ -349,7 +349,12 @@ beside it shows the shape.
 
 ## Known bugs
 
-None is known. When one is found, it gets a test in
+Two are known, each with its test in `test/known-bugs.test.js`: the Summ
+sweep's `splitCollects` does not mark as collected the positions of a
+transaction that collects from two, so a later collect of one owed coins
+when the range began is reported as its first; and the balance checker
+names a refused `config.json` before a missing `--block` or `--date`. When
+one is found, it gets a test in
 `test/known-bugs.test.js`, declared with `knownBug`, so the test passes while
 the bug is present. The bug's fix makes its test fail; declare that test with
 `it` instead, in the same change, among the tests of the code it is about.
