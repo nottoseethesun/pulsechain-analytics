@@ -10,6 +10,8 @@
  *
  * @requires Node 24 or later, as the repo's package.json says
  * @requires ethers.js (install via: npm install ethers)
+ * @requires crypto-price-fetchers, the owner's repo of code his projects share, which `npm ci` installs: its Summ csv
+ *   utility's `decimalFromRaw` writes the amount for any decimals from 0 to 255, as a token's uint8 holds them
  *
  * How to use:
  * 1. Install dependencies: run `npm ci` in the repo's top folder.
@@ -25,13 +27,15 @@
  *   amount in its data, as ERC-20 has it. An NFT's Transfer event, whose third indexed value is the token id, is not counted.
  * - Returns 0 when the transaction transferred none of the token to the wallet. When a read fails, or the transaction is
  *   not found, it throws, so a failure is never mistaken for an amount; so it does, before it asks the chain, for a token
- *   or wallet that is not 0x and 40 hex digits, naming it.
+ *   or wallet that is not 0x and 40 hex digits, naming it. Spaces around an address are dropped, as the Sheets script
+ *   drops them.
  * - The amount is cut off at 7 decimal places and returned as a number, as the Sheets script returns it. A number keeps
  *   all 7 places for an amount below 2^29, 536,870,912 tokens; from there up, the conversion can round the 7th place.
  * - Assumes the token is ERC-20 compliant with the `decimals()` function and the Transfer event.
  */
 
 import { ethers } from "ethers";
+import { decimalFromRaw } from "crypto-price-fetchers/summ-csv";
 
 /** The topic an ERC-20 Transfer event leads with: keccak256 of its signature. */
 const TRANSFER_TOPIC = ethers.id("Transfer(address,address,uint256)");
@@ -44,10 +48,12 @@ const ADDRESS_FORM = /^0x[0-9a-fA-F]{40}$/;
 
 /**
  * Refuses a token or a wallet that is not an address, naming it, as the Sheets copy does, so a mistyped address is
- * never taken for one that received nothing.
+ * never taken for one that received nothing; and gives the address without the spaces around it, which the Sheets
+ * copy drops too, as a cell may hold them.
  *
  * @param {string} what - What the address is, such as "wallet"
  * @param {string} address - The address given
+ * @returns {string} The address, trimmed
  * @throws {Error} When it is not 0x and 40 hex digits
  */
 function checkAddress(what, address) {
@@ -57,6 +63,7 @@ function checkAddress(what, address) {
       `The ${what} ${text} is not an address: 0x and 40 hex digits`,
     );
   }
+  return text;
 }
 
 /**
@@ -104,7 +111,7 @@ async function read(what, reading) {
 /**
  * Writes an amount in whole tokens, cut off at 7 decimal places.
  *
- * @param {string} wholeTokens - The amount as `ethers.formatUnits` writes it, such as "250.0"
+ * @param {string} wholeTokens - The amount as decimal text, such as "250" or "0.0001"
  * @returns {number} The amount
  */
 function cutOffDecimals(wholeTokens) {
@@ -124,8 +131,8 @@ function cutOffDecimals(wholeTokens) {
  * @throws {Error} When a read fails or the transaction is not found.
  */
 export async function getTokenTransferred(txId, tokenAddress, walletAddress) {
-  checkAddress("token", tokenAddress);
-  checkAddress("wallet", walletAddress);
+  const tokenGiven = checkAddress("token", tokenAddress);
+  const walletGiven = checkAddress("wallet", walletAddress);
   const provider = new ethers.JsonRpcProvider(
     "https://rpc-pulsechain.g4mm4.io",
   );
@@ -136,18 +143,19 @@ export async function getTokenTransferred(txId, tokenAddress, walletAddress) {
   if (receipt === null) {
     throw new Error(`Transaction ${txId} not found; it may still be pending`);
   }
-  const total = sumTransfersTo(receipt.logs, tokenAddress, walletAddress);
+  const total = sumTransfersTo(receipt.logs, tokenGiven, walletGiven);
   if (total === 0n) {
     return 0;
   }
   const token = new ethers.Contract(
-    tokenAddress,
+    tokenGiven,
     ["function decimals() view returns (uint8)"],
     provider,
   );
   const decimals = await read(
-    `the decimals of ${tokenAddress}`,
+    `the decimals of ${tokenGiven}`,
     token.decimals(),
   );
-  return cutOffDecimals(ethers.formatUnits(total, decimals));
+  // Up to 255 decimals, as a uint8 holds, where ethers' formatUnits takes 80
+  return cutOffDecimals(decimalFromRaw(total, Number(decimals)));
 }

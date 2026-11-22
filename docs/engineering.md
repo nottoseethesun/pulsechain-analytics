@@ -142,10 +142,10 @@ owner's key file or password.
 
 | Test | What it covers |
 | ---- | -------------- |
-| `fetch-amount-of-token-transferred.test.js` | The module on ethers, a library for talking to Ethereum-style chains, against a stand-in chain, on the cases `transfer-cases.js` holds both copies to, a token or wallet that is not an address among them. |
+| `fetch-amount-of-token-transferred.test.js` | The module on ethers, a library for talking to Ethereum-style chains, against a stand-in chain, on the cases `transfer-cases.js` holds both copies to, a token or wallet that is not an address, one written with spaces around it, and a token of more than 80 decimals among them. |
 | `fetch-amount-of-token-transferred-gs.test.js` | The Sheets script, run unchanged under Node, on the same cases; and `wrapper.gs`, against a stand-in of the deployed library, giving its amount and letting its error through. |
 | `fetch-amount-of-token-transferred-node-version.test.js` | The Sheets script's Node version, its command line included; its schema of the script's config object held to the script by crypto-price-fetchers' `configSchemaProblems`, and a `config.json` it refuses. |
-| `format-balance.test.js` | How the balance checker writes a balance. |
+| `format-balance.test.js` | How the balance checker writes a balance, for a token of any decimals from 0 to 255. |
 | `check-token-balance.test.js` | The balance checker: its command line, each option checked as it is parsed, and a mistake refused, naming its option, before the chain is asked anything; and the real program, run against a stand-in PulseChain endpoint served on the computer: each balance read once at the block given, or at the last block made before the start of the date given, even when the day's first block is nearer that start, then written with commas and plain, and a failed read's exit code. |
 | `check-token-balance-settings.test.js` | The balance checker's settings (`check-token-balance/settings.js`): the committed `config.json` held to its schema, g4mm4's endpoint for a file that names none and, with a notice, for no file, a key no setting has and an endpoint that is no url refused, listing every problem; and a copy of the checker's files in a temp folder, run with a `config.json` beside it that is not JSON or names no url, stopping with exit code 1, naming the file or the setting, after naming a mistake in an option first, and reading the `config.json` beside it, not the one of the folder it runs in. |
 | `ratio-command.test.js` | The ratio chart's command line as it takes `config.json`'s settings, parsed in the test's thread: the committed file held to its schema and taken as the options' defaults, a `maxCandles` of 0 and several problems at once, nested settings among them, refused, `--source` refused beside a `useDexToolsOnly` the file sets, as beside a typed one, an empty value refused for each option that takes text, and the command `ratioCommandFrom` builds when the settings are refused: its help, a run stopped on the settings' problems, and a mistake in the arguments named first. |
@@ -311,12 +311,7 @@ deleted. The steps from a branch to `main` are LP Ranger's eight, in its
 
 ## Known Bugs
 
-Three are known, each with its test in `test/known-bugs.test.js`: the
-Node copy of `getTokenTransferred` stops on a token whose decimals are
-above 80, as the balance checker's formatting does, and on a token or a
-wallet written with spaces around it, both of which the Sheets copy
-takes.
-A bug found gets a test in `test/known-bugs.test.js`,
+None is known. A bug found gets a test in `test/known-bugs.test.js`,
 declared with `knownBug` (`test/helpers/known-bug.js`), so the test passes
 while the bug is present. The bug's fix makes its test fail; the same change
 declares the test with `it`, among the tests of the code it is about.

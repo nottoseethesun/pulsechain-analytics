@@ -74,7 +74,9 @@ and json-rpc. Both read the transaction's own receipt and add up the
 token's Transfer events to the wallet in it. A receipt holds that
 transaction's events alone, so another transaction in the same block never
 counts. And no archive node is needed, since no past balance is read. A
-read that fails throws, so a failure is never taken for an amount.
+read that fails throws, so a failure is never taken for an amount. Both
+take a token or a wallet written with spaces around it, as a cell may hold
+it, and the amount of a token of any decimals from 0 to 255.
 
 The owner deploys the Sheets script as a library. A cell cannot call a
 library's functions directly, only those of the sheet's own project, so a
@@ -677,7 +679,10 @@ GeckoTerminal, Moralis and DexTools through
 full and send a request refused as too many again after their waits, the
 GeckoTerminal client within a budget of requests, the Summ csv utility the
 Summ sweep writes its
-csv through (`crypto-price-fetchers/summ-csv`), `messageOf`, which gives
+csv through (`crypto-price-fetchers/summ-csv`), whose `decimalFromRaw`
+also writes the amounts of `fetch-amount-of-token-transferred.js` and the
+balance checker for any decimals from 0 to 255, as a token's uint8 holds
+them, `messageOf`, which gives
 the Summ sweep's command line the message of what it catches
 (`crypto-price-fetchers/lib/message-of`), the lint rules against printing
 a secret (`crypto-price-fetchers/eslint-rules/no-secret-logging`) and

@@ -43,3 +43,11 @@ describe("formatBalancePlain", () => {
     assert.equal(formatBalancePlain(WHOLE / 2n, 18), "0.5");
   });
 });
+
+describe("both formats", () => {
+  it("write a balance of a token whose decimals are above 80, up to 255, as a uint8 holds them, given as a number or a BigInt", () => {
+    assert.equal(formatBalanceWithCommas(5n, 100), `0.${"0".repeat(99)}5`);
+    assert.equal(formatBalancePlain(5n, 255n), `0.${"0".repeat(254)}5`);
+    assert.equal(formatBalanceWithCommas(1000n * WHOLE, 18n), "1,000.0");
+  });
+});

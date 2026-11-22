@@ -354,12 +354,7 @@ beside it shows the shape.
 
 ## Known bugs
 
-Three are known, each with its test in `test/known-bugs.test.js`: the
-Node copy of `getTokenTransferred` stops on a token whose decimals are
-above 80, as the balance checker's formatting does, and on a token or a
-wallet written with spaces around it, both of which the Sheets copy
-takes.
-When one is found, it gets a test in
+None is known. When one is found, it gets a test in
 `test/known-bugs.test.js`, declared with `knownBug`, so the test passes while
 the bug is present. The bug's fix makes its test fail; declare that test with
 `it` instead, in the same change, among the tests of the code it is about.
