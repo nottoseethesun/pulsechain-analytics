@@ -354,7 +354,14 @@ beside it shows the shape.
 
 ## Known bugs
 
-None is known. When one is found, it gets a test in
+Two are known, each with its test in `test/known-bugs.test.js`: the Summ
+sweep carries to a position's next collect the principal the wallet did
+not receive, where the position manager takes off what its Collect event
+names, so a coin that takes a tax, or sent to another address, has its
+principal booked twice; and it splits a later collect of a position owed
+coins when the range began, which may still pay coins owed from before
+the range.
+When one is found, it gets a test in
 `test/known-bugs.test.js`, declared with `knownBug`, so the test passes while
 the bug is present. The bug's fix makes its test fail; declare that test with
 `it` instead, in the same change, among the tests of the code it is about.

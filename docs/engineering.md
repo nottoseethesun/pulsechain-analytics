@@ -312,7 +312,14 @@ deleted. The steps from a branch to `main` are LP Ranger's eight, in its
 
 ## Known Bugs
 
-None is known. A bug found gets a test in `test/known-bugs.test.js`,
+Two are known, each with its test in `test/known-bugs.test.js`: the Summ
+sweep carries to a position's next collect the principal the wallet did
+not receive, where the position manager takes off what its Collect event
+names, so a coin that takes a tax, or sent to another address, has its
+principal booked twice; and it splits a later collect of a position owed
+coins when the range began, which may still pay coins owed from before
+the range.
+A bug found gets a test in `test/known-bugs.test.js`,
 declared with `knownBug` (`test/helpers/known-bug.js`), so the test passes
 while the bug is present. The bug's fix makes its test fail; the same change
 declares the test with `it`, among the tests of the code it is about.
