@@ -353,17 +353,7 @@ beside it shows the shape.
 
 ## Known bugs
 
-Seven are known, each with its test in `test/known-bugs.test.js`: the
-Summ sweep stops on a token whose decimals are above 80, and takes a
-decimals answer above 255 for decimals; it takes saved pages of Summ's
-results whose counts of pages or totals disagree; its `--replace` run
-with no rows leaves the last run's csv; it takes a `requestSpacingMs`
-Node's timers cannot keep; and it stops on a TypeError when the endpoint
-could not trace a transaction. The Sheets copy of `getTokenTransferred`
-gives 0 for an address that is not one, where the Node copy gives
-ethers' own error; and the ratio chart's labels of a range under
-0.00001 can all be one value.
-When one is found, it gets a test in
+None is known. When one is found, it gets a test in
 `test/known-bugs.test.js`, declared with `knownBug`, so the test passes while
 the bug is present. The bug's fix makes its test fail; declare that test with
 `it` instead, in the same change, among the tests of the code it is about.

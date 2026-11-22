@@ -99,6 +99,44 @@ describe("runSummSweep", () => {
     assert.equal(fs.existsSync(path.join(top, "rows.csv")), false);
   });
 
+  it("removes the last run's csv, saying so, when a run with --replace has no rows to write", async () => {
+    const top = repo();
+    const csv = path.join(top, "rows.csv");
+    fs.writeFileSync(csv, "the last run's rows\n");
+
+    const run = await runOn(top, [
+      ...argsFor(top, {
+        "--start-date": "2023-11-13",
+        "--end-date": "2023-11-13",
+      }),
+      "--replace",
+    ]);
+
+    assert.equal(run.code, 0);
+    assert.equal(fs.existsSync(csv), false);
+    assert.match(
+      run.out,
+      /No rows to write, so no csv was written, and the last run's csv at \S*rows\.csv was removed\./,
+    );
+  });
+
+  it("refuses a requestSpacingMs Node's timers cannot keep, more than 2147483647 milliseconds", async () => {
+    const top = repo();
+    const file = path.join(top, "config.json");
+    const settings = JSON.parse(fs.readFileSync(file, "utf8"));
+    settings.pulsechain.requestSpacingMs = 3000000000;
+    fs.writeFileSync(file, JSON.stringify(settings));
+
+    const run = await runOn(top, argsFor(top));
+
+    assert.equal(run.code, 1);
+    assert.match(
+      run.err,
+      /pulsechain\.requestSpacingMs must be a whole number of milliseconds from 0 to 2147483647/,
+    );
+    assert.equal(run.chainMade, false);
+  });
+
   it("asks for the owner's settings when they are missing", async () => {
     const top = repo(false);
 

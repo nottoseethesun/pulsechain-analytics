@@ -53,21 +53,33 @@ export function chartColumns(ratios) {
 
 /**
  * Builds the y-axis' label for a value, with the precision the chart's
- * range needs.
+ * range needs: 6, 8, 10 or 12 decimals, more for a narrower range, with
+ * trailing zeros dropped; for a range under 0.00001, scientific notation
+ * with as many digits as keep each row's value apart from the next, so no
+ * two rows share a label, near 1 as near 0. A series whose ratios are all
+ * the same has one row, labelled with the ratio, written in full.
  *
- * @param {number} range - The highest ratio less the lowest
+ * @param {number} min - The lowest ratio
+ * @param {number} max - The highest ratio
+ * @param {number} rows - The rows the chart is drawn in
  * @returns {function(number): string} The label for a value
  */
-function yLabelFormat(range) {
+function yLabelFormat(min, max, rows) {
+  const range = max - min;
+  if (range === 0) return (value) => String(value);
+  if (range < 0.00001) {
+    // The digits that tell a value from the next row's, at the size of
+    // the largest value
+    const step = range / rows;
+    const largest = Math.max(Math.abs(min), Math.abs(max));
+    const digits = Math.ceil(Math.log10(largest / step)) + 1;
+    return (value) => value.toExponential(Math.min(Math.max(4, digits), 100));
+  }
   return (value) => {
     let precision = 6;
     if (range < 0.01) precision = 8;
     if (range < 0.001) precision = 10;
     if (range < 0.0001) precision = 12;
-    if (range < 0.00001) {
-      return value.toExponential(4);
-    }
-
     let formatted = value.toFixed(precision);
     formatted = formatted.replace(/0+$/, "");
     if (formatted.endsWith(".")) formatted = formatted.slice(0, -1);
@@ -168,12 +180,18 @@ function drawnLabelValues(min, max, height) {
  * @param {string} interval - The interval
  * @param {Array<number>} chronologicalRatios - The ratios, oldest first
  * @param {Array<number>} chronologicalTimestamps - Their times, oldest first
+ * @param {function(string): void} print - Prints a line
  */
-function printChart(interval, chronologicalRatios, chronologicalTimestamps) {
+function printChart(
+  interval,
+  chronologicalRatios,
+  chronologicalTimestamps,
+  print,
+) {
   const { columns, width } = chartColumns(chronologicalRatios);
   const minRatio = Math.min(...chronologicalRatios);
   const maxRatio = Math.max(...chronologicalRatios);
-  const formatYRaw = yLabelFormat(maxRatio - minRatio);
+  const formatYRaw = yLabelFormat(minRatio, maxRatio, CHART_HEIGHT);
 
   // asciichart draws a series whose ratios are all the same in one row,
   // which it labels with its own number for the row, the ratio rounded to
@@ -201,11 +219,11 @@ function printChart(interval, chronologicalRatios, chronologicalTimestamps) {
   };
 
   const chartLines = asciichart.plot(columns, chartConfig).split("\n");
-  chartLines.forEach((line) => console.log(line));
+  chartLines.forEach((line) => print(line));
 
   const yTickWidth = maxLabelLength + 2;
   const xAxis = xAxisLine(interval, chronologicalTimestamps, width);
-  console.log(" ".repeat(yTickWidth) + xAxis);
+  print(" ".repeat(yTickWidth) + xAxis);
 }
 
 /**
@@ -217,38 +235,45 @@ function printChart(interval, chronologicalRatios, chronologicalTimestamps) {
  * @param {Array<string>} names - Token A's name and token B's
  * @param {string} source - Where the prices came from
  * @param {{rows: Array<Object>, ratios: Array<number>, timestamps: Array<number>}} series - The ratios
+ * @param {function(string): void} [print] - Prints a line: the console's log, unless a test reads the lines
  */
-export function printRatios(run, names, source, { rows, ratios, timestamps }) {
+export function printRatios(
+  run,
+  names,
+  source,
+  { rows, ratios, timestamps },
+  print = (line) => console.log(line),
+) {
   const [tokenAName, tokenBName] = names;
   const pointsText =
     ratios.length === 1 ? "current only" : `${ratios.length} points`;
   const intervalText = run.useDexToolsOnly ? "current" : run.interval;
 
-  console.log(
+  print(
     `\n${tokenAName} / ${tokenBName} ratio (${intervalText}, ${pointsText}) - Source: ${source}`,
   );
-  console.log(`C.A.: ${run.tokenA} / ${run.tokenB}\n`);
+  print(`C.A.: ${run.tokenA} / ${run.tokenB}\n`);
   if (run.interval === "weekly" && source.startsWith("GeckoTerminal")) {
     const most = Math.ceil(GECKOTERMINAL_FREE_DAYS / run.weeklyResampleDays);
-    console.log(
+    print(
       `GeckoTerminal's free api serves about the last ${GECKOTERMINAL_FREE_DAYS} days of candles, so the weekly chart shows at most ${most} points.\n`,
     );
   }
 
   if (ratios.length > 1) {
-    printChart(run.interval, ratios, timestamps);
+    printChart(run.interval, ratios, timestamps, print);
   } else {
-    console.log("(Single data point - no historical chart available)");
+    print("(Single data point - no historical chart available)");
     if (!run.useDexToolsOnly) {
-      console.log(
+      print(
         "Note: This often occurs with new or low-volume pools. Try a shorter interval.\n",
       );
     }
   }
 
-  console.log("\nRecent ratios (last 10):");
-  rows.slice(-10).forEach((r) => console.log(`${r.date}: ${r.ratio}`));
-  console.log(`\nCurrent ratio: ${ratios[ratios.length - 1].toFixed(12)}`);
+  print("\nRecent ratios (last 10):");
+  rows.slice(-10).forEach((r) => print(`${r.date}: ${r.ratio}`));
+  print(`\nCurrent ratio: ${ratios[ratios.length - 1].toFixed(12)}`);
 
   if (run.saveCsv) {
     const csv =
@@ -257,6 +282,6 @@ export function printRatios(run, names, source, { rows, ratios, timestamps }) {
         .map((r) => `${r.date},${r.priceA},${r.priceB},${r.ratio}`)
         .join("\n");
     fs.writeFileSync(run.csvFilename, csv);
-    console.log(`\nCSV saved as ${run.csvFilename}`);
+    print(`\nCSV saved as ${run.csvFilename}`);
   }
 }

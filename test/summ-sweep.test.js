@@ -131,13 +131,14 @@ describe("parseSummResults", () => {
           page: 2,
           pages: 2,
           rows: [{ ...row, actionId: "c".repeat(24) }],
+          total: 2,
         }),
       },
     ]);
 
     const rows = parseSummResults([
       second,
-      summPage({ page: 1, pages: 2, rows: [row] }),
+      summPage({ page: 1, pages: 2, rows: [row], total: 2 }),
     ]);
 
     assert.deepEqual(
@@ -146,6 +147,38 @@ describe("parseSummResults", () => {
         [1, "0123456789abcdef01234567"],
         [2, "c".repeat(24)],
       ],
+    );
+  });
+
+  it("refuses saved pages whose counts of pages or totals disagree, a page past the last, or rows that fall short of the total", () => {
+    const other = { ...row, actionId: "c".repeat(24) };
+    assert.throws(
+      () =>
+        parseSummResults([
+          summPage({ page: 1, pages: 2, rows: [row], total: 3 }),
+          summPage({ page: 2, pages: 2, rows: [other], total: 2 }),
+        ]),
+      /Page 2 says Summ holds 2 in total, but page 1 says 3/,
+    );
+    assert.throws(
+      () =>
+        parseSummResults([
+          summPage({ page: 1, pages: 1, rows: [row], total: 2 }),
+          summPage({ page: 2, pages: 2, rows: [other], total: 2 }),
+        ]),
+      /Page 2 says Summ's results run to 2 pages, but page 1 says 1/,
+    );
+    assert.throws(
+      () => parseSummResults([summPage({ page: 3, pages: 2, rows: [row] })]),
+      /Page 3 is past the 2 pages it names/,
+    );
+    assert.throws(
+      () =>
+        parseSummResults([
+          summPage({ page: 1, pages: 2, rows: [row], total: 3 }),
+          summPage({ page: 2, pages: 2, rows: [other], total: 3 }),
+        ]),
+      /The pages hold 2 rows, but say Summ holds 3 in total/,
     );
   });
 
@@ -182,6 +215,10 @@ describe("summHolds and decimalText", () => {
   it("write an amount as decimal text", () => {
     assert.equal(decimalText(AMOUNT, 8), "12345.67890123");
     assert.equal(decimalText(5n * 10n ** 18n, 18), "5");
+  });
+
+  it("write an amount of a token whose decimals are above 80, up to 255, as a uint8 holds them", () => {
+    assert.equal(decimalText(5n, 255), `0.${"0".repeat(254)}5`);
   });
 
   it("match the amount as a JavaScript number, and the amount rounded to 10 significant digits", () => {

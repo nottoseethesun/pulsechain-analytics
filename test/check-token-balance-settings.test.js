@@ -14,7 +14,7 @@
  * file's problems, so it asks no chain either.
  */
 
-import { after, before, describe, it, mock } from "node:test";
+import { after, before, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
@@ -107,19 +107,18 @@ describe("defaultRpcFrom", () => {
   });
 
   it("gives g4mm4's endpoint, with a notice, when there is no config.json", () => {
-    const warn = mock.method(console, "warn", () => {});
-    try {
-      assert.equal(
-        defaultRpcFrom(path.join(folder, "none.json")),
-        FALLBACK_RPC,
-      );
-      assert.match(
-        warn.mock.calls[0].arguments[0],
-        /none\.json: --rpc defaults to g4mm4's public endpoint/,
-      );
-    } finally {
-      warn.mock.restore();
-    }
+    const notices = [];
+    assert.equal(
+      defaultRpcFrom(path.join(folder, "none.json"), (notice) =>
+        notices.push(notice),
+      ),
+      FALLBACK_RPC,
+    );
+    assert.equal(notices.length, 1);
+    assert.match(
+      notices[0],
+      /none\.json: --rpc defaults to g4mm4's public endpoint/,
+    );
   });
 
   it("refuses a key the schema does not name, listing it with the endpoint's problem", () => {

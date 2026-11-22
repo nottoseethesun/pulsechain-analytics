@@ -407,27 +407,45 @@ describe("ratioRows", () => {
   });
 });
 
+/**
+ * The lines the ratio chart prints for a daily series, read through its
+ * print seam.
+ *
+ * @param {number[]} ratios - The ratios, oldest first
+ * @returns {string[]} The lines, each split at its line breaks
+ */
+function chartLines(ratios) {
+  const lines = [];
+  printRatios(
+    { interval: "daily", tokenA: "0xA", tokenB: "0xB", saveCsv: false },
+    ["A", "B"],
+    "GeckoTerminal",
+    {
+      rows: ratios.map((ratio) => ({ date: "", ratio: String(ratio) })),
+      ratios,
+      timestamps: ratios.map((_, at) => Date.UTC(2026, 0, 1 + at)),
+    },
+    (line) => lines.push(...String(line).split("\n")),
+  );
+  return lines;
+}
+
 describe("the chart's y-axis", () => {
   it("stands in one column on every row, each label padded to the longest the chart draws", () => {
     const ratios = Array.from({ length: 40 }, (_, at) => 0.5 + (1.2 * at) / 39);
     const timestamps = ratios.map((_, at) => Date.UTC(2026, 0, 1 + at));
     const lines = [];
-    const log = console.log;
-    console.log = (line = "") => lines.push(String(line));
-    try {
-      printRatios(
-        { interval: "daily", tokenA: "0xA", tokenB: "0xB", saveCsv: false },
-        ["A", "B"],
-        "GeckoTerminal",
-        {
-          rows: ratios.map((ratio) => ({ date: "", ratio: String(ratio) })),
-          ratios,
-          timestamps,
-        },
-      );
-    } finally {
-      console.log = log;
-    }
+    printRatios(
+      { interval: "daily", tokenA: "0xA", tokenB: "0xB", saveCsv: false },
+      ["A", "B"],
+      "GeckoTerminal",
+      {
+        rows: ratios.map((ratio) => ({ date: "", ratio: String(ratio) })),
+        ratios,
+        timestamps,
+      },
+      (line) => lines.push(line),
+    );
     const columns = lines
       .flatMap((line) => line.split("\n"))
       .map((line) => line.search(/[┤┼]/))
@@ -442,26 +460,23 @@ describe("the chart's y-axis", () => {
 
   it("labels a series whose ratios are all the same with that ratio, not with asciichart's number for its one row", () => {
     const ratios = [0.5, 0.5, 0.5, 0.5];
-    const lines = [];
-    const log = console.log;
-    console.log = (line = "") => lines.push(...String(line).split("\n"));
-    try {
-      printRatios(
-        { interval: "daily", tokenA: "0xA", tokenB: "0xB", saveCsv: false },
-        ["A", "B"],
-        "GeckoTerminal",
-        {
-          rows: ratios.map((ratio) => ({ date: "", ratio: String(ratio) })),
-          ratios,
-          timestamps: ratios.map((_, at) => Date.UTC(2026, 0, 1 + at)),
-        },
-      );
-    } finally {
-      console.log = log;
-    }
-    const axis = lines.filter((line) => /[┤┼]/.test(line));
+    const axis = chartLines(ratios).filter((line) => /[┤┼]/.test(line));
     assert.equal(axis.length, 1);
     const label = axis[0].slice(0, axis[0].search(/[┤┼]/)).trim();
-    assert.equal(Number(label), 0.5);
+    assert.equal(label, "0.5");
+  });
+
+  it("labels each row with a value of its own when the range is under 0.00001, near 1 as near 0", () => {
+    for (const low of [1, 0.000001]) {
+      const ratios = Array.from(
+        { length: 40 },
+        (_, at) => low + (low * 0.000005 * at) / 39,
+      );
+      const labels = chartLines(ratios)
+        .filter((line) => /[┤┼]/.test(line))
+        .map((line) => line.slice(0, line.search(/[┤┼]/)).trim());
+      assert.equal(labels.length, 31);
+      assert.equal(new Set(labels).size, 31, labels.join(" "));
+    }
   });
 });

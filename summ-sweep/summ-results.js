@@ -19,8 +19,11 @@
  * with their value in USD in parentheses, which is dropped. A saved file
  * holds the page's text, or the connector's answer as JSON, a list of
  * parts whose `text` fields hold it. Every page from 1 to the last must be
- * given, and each must hold the rows its first line says, so a sweep never
- * compares the chain with part of Summ's rows.
+ * given, each must hold the rows its first line says it returned, every
+ * page must name the same number of pages and the same total, and the
+ * rows of all the pages must add up to that total. Pages saved while
+ * Summ's rows changed between them disagree on one of these, so a sweep
+ * never compares the chain with part of Summ's rows.
  *
  * Fit: `summ-sweep/` matches each leg the chain shows against these rows
  * (`summ-sweep/match.js`), and reads their transaction ids when a leg Summ
@@ -164,12 +167,14 @@ function rowOf(block, page) {
  *   `category`, `type`, `heading`, `from` and `to` (`name`, `address`),
  *   and `incoming` and `outgoing` (`amount`, `symbol`)
  * @throws {Error} When a file is no page of Summ's results, a page is
- *   given twice or missing, or a page holds fewer or more rows than its
- *   first line says
+ *   given twice or missing or past the last, a page holds fewer or more
+ *   rows than its first line says, two pages name a different number of
+ *   pages or a different total, or the rows of all the pages fall short
+ *   of the total or pass it
  */
 export function parseSummResults(savedPages) {
   const pages = new Map();
-  let lastPage = 0;
+  let named = null;
   for (const saved of savedPages) {
     const text = pageText(saved);
     const first = PAGE_LINE.exec(text);
@@ -185,13 +190,32 @@ export function parseSummResults(savedPages) {
       throw new Error(
         `Page ${page} holds ${rows.length} rows, but says it returned ${first[3]}`,
       );
+    const counts = { page, pages: Number(first[2]), total: Number(first[4]) };
+    named ??= counts;
+    if (counts.pages !== named.pages)
+      throw new Error(
+        `Page ${page} says Summ's results run to ${counts.pages} pages, but page ${named.page} says ${named.pages}`,
+      );
+    if (counts.total !== named.total)
+      throw new Error(
+        `Page ${page} says Summ holds ${counts.total} in total, but page ${named.page} says ${named.total}`,
+      );
+    if (page > counts.pages)
+      throw new Error(
+        `Page ${page} is past the ${counts.pages} pages it names`,
+      );
     pages.set(page, rows);
-    lastPage = Number(first[2]);
   }
+  const lastPage = named?.pages ?? 0;
   for (let page = 1; page <= lastPage; page += 1)
     if (!pages.has(page))
       throw new Error(`Page ${page} of Summ's ${lastPage} pages is missing`);
-  return [...pages.keys()]
+  const all = [...pages.keys()]
     .sort((a, b) => a - b)
     .flatMap((page) => pages.get(page));
+  if (named !== null && all.length !== named.total)
+    throw new Error(
+      `The pages hold ${all.length} rows, but say Summ holds ${named.total} in total`,
+    );
+  return all;
 }

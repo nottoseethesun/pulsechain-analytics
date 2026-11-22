@@ -62,7 +62,8 @@ Summ csv utility; the report, as json, lists the splits to fix in Summ (a
 leg holding a withdrawal's principal and fees together), the legs Summ
 lacks, the questions about the legs no rule books, Summ's legs no leg
 matched, and the problems found. Neither is written over without
---replace.
+--replace, and a run with --replace that has no rows removes the csv
+already at --out, which would hold rows of the run before.
 
 --summ-synced-to is the time up to which Summ's sync has read the wallet's
 transactions, from Summ. A transaction after it is one that sync has not
@@ -244,6 +245,11 @@ async function sweepWith(options, context) {
       outPath: options.out,
       replace,
     });
+  // A csv a run with --replace leaves in place would hold rows already
+  // imported into Summ, so a run with none removes it
+  const removed =
+    result.rows.length === 0 && replace && fs.existsSync(options.out);
+  if (removed) fs.rmSync(options.out);
   const range = {
     wallet: options.wallet,
     fromBlock,
@@ -261,7 +267,7 @@ async function sweepWith(options, context) {
   say(
     result.rows.length > 0
       ? `Wrote ${result.rows.length} rows to ${options.out}.`
-      : `No rows to write, so no csv was written.`,
+      : `No rows to write, so no csv was written${removed ? `, and the last run's csv at ${options.out} was removed` : ""}.`,
   );
   say(`Wrote the report to ${options.report}.`);
 }
@@ -318,7 +324,10 @@ function sweepCommand(stdout, stderr) {
     )
     .requiredOption("--out <file>", "the csv to write")
     .requiredOption("--report <file>", "the report to write, as json")
-    .option("--replace", "write over files already there")
+    .option(
+      "--replace",
+      "write over files already there, and remove the csv at --out when there are no rows",
+    )
     .addHelpText("after", HELP_AFTER)
     .exitOverride()
     .configureOutput({

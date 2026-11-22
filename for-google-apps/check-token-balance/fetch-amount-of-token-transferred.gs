@@ -202,12 +202,35 @@ function formatAmount(rawAmount, decimals) {
   return parseFloat(integerPart + "." + fractionPart);
 }
 
+/** An address as a cell writes it: 0x and 40 hex digits, in any case. */
+const ADDRESS_FORM = /^0x[0-9a-f]{40}$/;
+
+/**
+ * Refuses a token or a wallet that is not an address, naming it, so a
+ * mistyped address in a cell is never taken for one that received
+ * nothing, and the cell shows the error rather than 0.
+ *
+ * @param {string} what - What the address is, such as "wallet"
+ * @param {string} address - The address, trimmed and in lower case
+ */
+function checkAddress(what, address) {
+  if (!ADDRESS_FORM.test(address)) {
+    throw new Error(
+      "The " +
+        what +
+        " " +
+        address +
+        " is not an address: 0x and 40 hex digits",
+    );
+  }
+}
+
 /**
  * Fetches the amount of the token transferred to the wallet in the given transaction, from its receipt.
  * @param {string} txId The transaction ID (hash) from the PulseChain blockchain (e.g., from column L).
  * @param {string} tokenAddress The contract address of the ERC20 token.
  * @param {string} walletAddress The target wallet address to check transfers to.
- * @return {number} The transferred amount, cut off at 7 decimal places, or 0 if none.
+ * @return {number} The transferred amount, cut off at 7 decimal places, or 0 if none; an error, before the chain is asked, when the token or the wallet is not 0x and 40 hex digits.
  * @customfunction
  */
 function getTokenTransferred(txId, tokenAddress, walletAddress) {
@@ -215,6 +238,8 @@ function getTokenTransferred(txId, tokenAddress, walletAddress) {
   const transaction = String(txId).trim().toLowerCase();
   const token = String(tokenAddress).trim().toLowerCase();
   const wallet = String(walletAddress).trim().toLowerCase();
+  checkAddress("token", token);
+  checkAddress("wallet", wallet);
 
   const receipt = getTransactionReceipt(transaction, rpcUrl);
   const total = sumTransfersTo(receipt, token, wallet);

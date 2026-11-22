@@ -332,4 +332,29 @@ describe("walletCoinInflows", () => {
       { payments: [], unexplained: [{ blockNumber: 65, amount: 42n }] },
     );
   });
+  it("names the transaction and block the endpoint could not trace, rather than stop on a TypeError", async () => {
+    const hash = `0x${"ab".repeat(32)}`;
+    const endpoint = {
+      getBalance: async (_address, block) => (block === 9 ? 0n : 5n),
+      send: async (method) =>
+        method === "eth_getBlockByNumber"
+          ? {
+              number: "0xa",
+              timestamp: "0x64",
+              miner: OTHER,
+              baseFeePerGas: "0x1",
+              withdrawals: [],
+            }
+          : [{ txHash: hash, error: "execution timeout" }],
+    };
+    await assert.rejects(
+      walletCoinInflows(pacedProvider(endpoint, { spacingMs: 0 }), {
+        wallet: WALLET,
+        fromBlock: 10,
+        toBlock: 10,
+        own: [],
+      }),
+      /The endpoint could not trace transaction 0x(ab){32} in block 10: execution timeout/,
+    );
+  });
 });

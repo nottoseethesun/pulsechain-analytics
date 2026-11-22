@@ -96,16 +96,24 @@ async function paymentsIn(paced, search, number) {
     { tracer: "callTracer" },
   ]);
   const at = { blockNumber: number, timestamp: Number(block.timestamp) };
-  const calls = traces
-    .filter((trace) => !search.ownHashes.has(trace.txHash.toLowerCase()))
-    .flatMap((trace) =>
-      paidTo(trace.result, search.wallet).map((payment) => ({
-        kind: "call",
-        ...at,
-        hash: trace.txHash,
-        ...payment,
-      })),
-    );
+  const others = traces.filter(
+    (trace) => !search.ownHashes.has(trace.txHash.toLowerCase()),
+  );
+  // The endpoint gives a transaction it could not trace, such as one whose
+  // tracer ran out of time, an error in place of its calls
+  for (const trace of others)
+    if (trace.result === undefined)
+      throw new Error(
+        `The endpoint could not trace transaction ${trace.txHash} in block ${number}: ${trace.error ?? "it gave no result"}`,
+      );
+  const calls = others.flatMap((trace) =>
+    paidTo(trace.result, search.wallet).map((payment) => ({
+      kind: "call",
+      ...at,
+      hash: trace.txHash,
+      ...payment,
+    })),
+  );
   const withdrawals = (block.withdrawals ?? [])
     .filter((withdrawal) => sameAddress(withdrawal.address, search.wallet))
     .map((withdrawal) => ({

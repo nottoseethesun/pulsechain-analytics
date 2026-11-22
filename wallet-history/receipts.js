@@ -28,6 +28,23 @@ import { contractRefused, endpointFailure } from "./contract-calls.js";
 /** The selector of `symbol()`. */
 const SYMBOL_SELECTOR = "0x95d89b41";
 
+/** The most decimals a token can have: its decimals() gives a uint8. */
+const MOST_DECIMALS = 255n;
+
+/**
+ * A token's decimals from its contract's answer: none when the answer is
+ * more than a uint8 holds, as a contract that follows no standard can
+ * give, so the sweep asks the owner about its legs rather than read them.
+ *
+ * @param {?string} answer - The answer, as hex, or null for none
+ * @returns {?number} The decimals, or null for none
+ */
+function decimalsOf(answer) {
+  if (answer === null) return null;
+  const decimals = BigInt(answer);
+  return decimals > MOST_DECIMALS ? null : Number(decimals);
+}
+
 /** The selector of `decimals()`. */
 const DECIMALS_SELECTOR = "0x313ce567";
 
@@ -121,7 +138,7 @@ export async function tokenFacts(paced, addresses) {
     const decimals = await answerOf(paced, address, DECIMALS_SELECTOR);
     facts.set(address, {
       symbol: symbol === null ? null : symbolOf(symbol),
-      decimals: decimals === null ? null : Number(BigInt(decimals)),
+      decimals: decimalsOf(decimals),
     });
   }
   return facts;

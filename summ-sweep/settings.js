@@ -99,7 +99,7 @@ export const CHAIN_SETTINGS_SCHEMA = Object.freeze({
         positionManager: KINDS.address,
         wrappedCoin: KINDS.address,
         spanBlocks: KINDS.wholeAbove0,
-        requestSpacingMs: KINDS.wholeAtLeast0,
+        requestSpacingMs: KINDS.waitMs,
         batchSize: KINDS.wholeAbove0,
       },
       description: "the chain's facts",

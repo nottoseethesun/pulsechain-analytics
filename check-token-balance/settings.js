@@ -42,12 +42,16 @@ export const SETTINGS_SCHEMA = Object.freeze({
  * once it holds to `SETTINGS_SCHEMA`, else g4mm4's public endpoint.
  *
  * @param {string} [file] - The settings file: `config.json` beside this file, unless a test names another
+ * @param {function(string): void} [warn] - Prints the notice that there is no settings file: the console's warning, unless a test reads it
  * @returns {string} The endpoint's url
  * @throws {Error} When the file cannot be read, is not JSON, or has a problem the schema finds, every problem listed
  */
-export function defaultRpcFrom(file = SETTINGS_FILE) {
+export function defaultRpcFrom(
+  file = SETTINGS_FILE,
+  warn = (notice) => console.warn(notice),
+) {
   if (!fs.existsSync(file)) {
-    console.warn(`No ${file}: --rpc defaults to g4mm4's public endpoint.`);
+    warn(`No ${file}: --rpc defaults to g4mm4's public endpoint.`);
   }
   const settings = readSettingsFile(file, {
     schema: SETTINGS_SCHEMA,

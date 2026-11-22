@@ -5,14 +5,21 @@
  *
  * Each case builds a stand-in chain (`stand-in-chain.js`) and says what
  * getTokenTransferred should give: an `amount`, or an `error` whose message
- * matches a pattern. Both test files run every case, so the two copies are
+ * matches a pattern; a case may name a `token` or a `wallet` of its own in
+ * place of the chain's. Both test files run every case, so the two copies are
  * held to the same answers. The cases with another transfer in the block,
  * or a failed balance read, guard the method itself: a copy that worked
  * the amount out from the wallet's balance around the block, rather than
  * from the transaction's receipt, would get them wrong.
  */
 
-import { OTHER_TOKEN, OTHER_WALLET, standInChain } from "./stand-in-chain.js";
+import {
+  OTHER_TOKEN,
+  OTHER_WALLET,
+  standInChain,
+  TOKEN,
+  WALLET,
+} from "./stand-in-chain.js";
 
 /** The cases, each with the chain it runs on and what it should give. */
 export const TRANSFER_CASES = [
@@ -77,5 +84,19 @@ export const TRANSFER_CASES = [
     name: "gives an error when the endpoint does not know the transaction",
     chain: () => standInChain(250n, { fail: "no-receipt" }),
     error: /not found; it may still be pending/,
+  },
+  {
+    name: "gives an error, not 0, when the wallet is not 0x and 40 hex digits",
+    chain: () => standInChain(250n),
+    wallet: WALLET.slice(0, -1),
+    error:
+      /The wallet 0x[0-9a-fA-F]{39} is not an address: 0x and 40 hex digits/,
+  },
+  {
+    name: "gives an error, not 0, when the token is not 0x and 40 hex digits",
+    chain: () => standInChain(250n),
+    token: TOKEN.slice(0, -1),
+    error:
+      /The token 0x[0-9a-fA-F]{39} is not an address: 0x and 40 hex digits/,
   },
 ];
