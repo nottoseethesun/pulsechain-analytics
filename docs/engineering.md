@@ -306,7 +306,11 @@ deleted. The steps from a branch to `main` are LP Ranger's eight, in its
 
 ## Known Bugs
 
-None is known. A bug found gets a test in `test/known-bugs.test.js`,
+One is known, with its test in `test/known-bugs.test.js`:
+`wallet-history/contract-calls.js` takes an error of the EVM that is no
+revert, such as an invalid opcode, as the endpoint's failure, so the Summ
+sweep stops on a token whose symbol or decimals call stops in the EVM.
+A bug found gets a test in `test/known-bugs.test.js`,
 declared with `knownBug` (`test/helpers/known-bug.js`), so the test passes
 while the bug is present. The bug's fix makes its test fail; the same change
 declares the test with `it`, among the tests of the code it is about.
