@@ -1,13 +1,11 @@
 /**
  * Tests for for-google-apps/check-token-balance/fetch-amount-of-token-transferred.js,
- * the Node version of fetch-amount-of-token-transferred.gs (item 16).
+ * the Node version of fetch-amount-of-token-transferred.gs.
  * @module test/fetch-amount-of-token-transferred-node-version.test
  *
  * The real `.gs` runs under the runner from crypto-price-fetchers. Its rpc
  * requests go to the stand-in chain (`helpers/stand-in-chain.js`) through
- * `standInChainFetch`, so the tests ask nothing outside the computer. Item
- * 9's known bugs are the script's own, so they hold here too; the tests of
- * the script itself keep them.
+ * `standInChainFetch`, so the tests ask nothing outside the computer.
  */
 
 import { after, before, describe, it } from "node:test";
