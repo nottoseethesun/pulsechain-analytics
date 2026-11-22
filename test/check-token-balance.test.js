@@ -1,8 +1,9 @@
 /**
  * Tests of the balance checker, `check-token-balance/`: its command line,
  * declared in `balance-command.js` and parsed here, in the test's thread;
- * and the real program, `index.js`, run as its owner runs it, in a child
- * process from its own folder.
+ * and the real program, run as its owner runs it, through its start file,
+ * `bin/check-token-balance.js`, in a child process from the repo's top
+ * folder.
  * @module test/check-token-balance.test
  *
  * The program asks either an rpc endpoint on this computer that refuses
@@ -26,10 +27,8 @@ import {
   buildBalanceCommand,
 } from "../check-token-balance/balance-command.js";
 
-/** The balance checker's folder. */
-const CHECKER_FOLDER = fileURLToPath(
-  new URL("../check-token-balance/", import.meta.url),
-);
+/** The repo's top folder. */
+const REPO_TOP = fileURLToPath(new URL("..", import.meta.url));
 
 /** An rpc endpoint on this computer that refuses every connection. */
 const REFUSING_RPC = "http://127.0.0.1:1";
@@ -167,17 +166,22 @@ async function startStandInEndpoint(firstBlockTime = FIRST_BLOCK_TIME) {
 }
 
 /**
- * Runs the balance checker, as its owner runs it, from its own folder.
+ * Runs the balance checker, as its owner runs it, through its start file,
+ * from the repo's top folder.
  *
  * @param {string[]} args - Its arguments
  * @returns {Promise<{status: number, stdout: string, stderr: string}>} How it ended, and what it printed
  */
 function runChecker(args) {
   return new Promise((resolve, reject) => {
-    const child = spawn(process.execPath, ["index.js", ...args], {
-      cwd: CHECKER_FOLDER,
-      timeout: 30_000,
-    });
+    const child = spawn(
+      process.execPath,
+      ["bin/check-token-balance.js", ...args],
+      {
+        cwd: REPO_TOP,
+        timeout: 30_000,
+      },
+    );
     let stdout = "";
     let stderr = "";
     child.stdout.on("data", (chunk) => {

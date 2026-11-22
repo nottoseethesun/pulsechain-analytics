@@ -1,6 +1,7 @@
 /**
- * Tests of the ratio chart and the balance checker run whole, in child
- * processes, when their `config.json` is refused: `--help` still gives
+ * Tests of the ratio chart and the balance checker run whole, through
+ * their start files in `bin/`, in child processes, when their `config.json`
+ * is refused: `--help` still gives
  * the help, and any other run stops on the file's problems.
  * @module test/refused-settings.test
  *
@@ -65,7 +66,7 @@ describe("the ratio chart, with config.json refused", () => {
   const refused = JSON.stringify({ maxCandles: 0 });
   const run = (args) =>
     runWithSettings(
-      "chart-price-ratio/pulse-token-ratio.js",
+      "bin/pulse-token-ratio.js",
       "chart-price-ratio/config.json",
       refused,
       args,
@@ -91,7 +92,7 @@ describe("the balance checker, with config.json refused", () => {
   const refused = JSON.stringify({ defaultRpc: "not an url" });
   const run = (args) =>
     runWithSettings(
-      "check-token-balance/index.js",
+      "bin/check-token-balance.js",
       "check-token-balance/config.json",
       refused,
       args,

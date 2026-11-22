@@ -1,8 +1,9 @@
 /**
- * The Node version of fetch-amount-of-token-transferred.gs: how much of a
- * token one PulseChain transaction sent a wallet, for Node programs and the
- * command line.
- * @module for-google-apps/check-token-balance/fetch-amount-of-token-transferred
+ * The Node version of
+ * src/for-google-apps/check-token-balance/fetch-amount-of-token-transferred.gs:
+ * how much of a token one PulseChain transaction sent a wallet, for Node
+ * programs and the command line.
+ * @module bin/fetch-amount-of-token-transferred
  *
  * What: the same answer as the Sheets function `getTokenTransferred`,
  * worked out by the same code, because this file runs
@@ -19,15 +20,16 @@
  * - `openTokenTransferFetcher` opens the script once and returns
  *   `getTokenTransferred(txId, tokenAddress, walletAddress)` as an async
  *   call, plus `close`.
- * - `config.json` beside this file, which git ignores, may set
+ * - `config.json` beside the Sheets script, in
+ *   `src/for-google-apps/check-token-balance/`, which git ignores, may set
  *   `config.rpcUrl`, the PulseChain rpc endpoint the script asks;
- *   `config-example.json` shows the shape. Without the file, the script
+ *   `config-example.json` beside it shows the shape. Without the file, the script
  *   asks the endpoint written in it. `CONFIG_SCHEMAS` holds the file to an
  *   http or https url there, and to no other field, by crypto-price-fetchers'
  *   kinds of value (`crypto-price-fetchers/lib/settings-schema`); the
  *   runner checks the file against it before the script opens, and a
  *   problem stops the run, every problem listed.
- * - The command line, `node fetch-amount-of-token-transferred.js
+ * - The command line, `node bin/fetch-amount-of-token-transferred.js
  *   <transaction> <token> <wallet>`, prints the amount (`--help` gives the
  *   rest).
  *
@@ -36,10 +38,11 @@
  * wrapper: `wrapper.gs` exists because a sheet reaches a library's
  * functions through one, and a Node program imports this file directly.
  *
- * Fit: beside `fetch-amount-of-token-transferred.gs`, which stays the one
- * copy of its logic, so a fix to it is a fix to both. The script of the
- * same name at the repo's top folder is a separate tool, on ethers, with
- * code of its own.
+ * Fit: in `bin/`, the folder of the programs a reader runs; the Sheets
+ * script, `src/for-google-apps/check-token-balance/`'s
+ * `fetch-amount-of-token-transferred.gs`, stays the one copy of its logic,
+ * so a fix to it is a fix to both. The module of the same name at the
+ * repo's top folder is a separate tool, on ethers, with code of its own.
  */
 
 import { fileURLToPath } from "node:url";
@@ -54,13 +57,13 @@ import { KINDS } from "crypto-price-fetchers/lib/settings-schema";
 
 /** The Sheets script this runs. */
 export const SHEETS_SCRIPT = new URL(
-  "./fetch-amount-of-token-transferred.gs",
+  "../src/for-google-apps/check-token-balance/fetch-amount-of-token-transferred.gs",
   import.meta.url,
 );
 
-/** The config file read when none is named. */
+/** The config file read when none is named: the one beside the script. */
 export const DEFAULT_CONFIG_FILE = fileURLToPath(
-  new URL("./config.json", import.meta.url),
+  new URL("config.json", SHEETS_SCRIPT),
 );
 
 /**
@@ -88,7 +91,7 @@ const ADDRESS = /^0x[0-9a-fA-F]{40}$/;
  *
  * @param {Object} [options] - How to open it (`openScriptFunctions`)
  * @param {Object<string, Object>} [options.config] - Values for the script's config objects, in place of the config file
- * @param {string} [options.configFile] - A config file in place of `config.json` beside this file
+ * @param {string} [options.configFile] - A config file in place of `config.json` beside the Sheets script
  * @param {function(string, Object): Promise<Response>} [options.fetch] - Does the script's rpc requests, in place of Node's fetch
  * @param {?function({level: string, text: string}): void} [options.onLog] - Takes each line the script logs
  * @returns {Promise<{getTokenTransferred: function(string, string, string): Promise<number>, close: function(): Promise<void>}>} The function, with the Sheets arguments
@@ -135,9 +138,9 @@ function address(value) {
 const EXAMPLES_HELP = `
 Examples:
   How much HEX one transaction sent a wallet:
-    $ node fetch-amount-of-token-transferred.js <transaction-hash> 0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39 <wallet>
+    $ node bin/fetch-amount-of-token-transferred.js <transaction-hash> 0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39 <wallet>
   The same, with the script's log on stderr, to see each step it took:
-    $ node fetch-amount-of-token-transferred.js --verbose <transaction-hash> 0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39 <wallet>`;
+    $ node bin/fetch-amount-of-token-transferred.js --verbose <transaction-hash> 0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39 <wallet>`;
 
 /**
  * Describes the command line.

@@ -1,6 +1,6 @@
 /**
- * Tests for for-google-apps/check-token-balance/fetch-amount-of-token-transferred.js,
- * the Node version of fetch-amount-of-token-transferred.gs.
+ * Tests for bin/fetch-amount-of-token-transferred.js, the Node version of
+ * src/for-google-apps/check-token-balance/fetch-amount-of-token-transferred.gs.
  * @module test/fetch-amount-of-token-transferred-node-version.test
  *
  * The real `.gs` runs under the runner from crypto-price-fetchers. Its rpc
@@ -21,7 +21,7 @@ import {
   openTokenTransferFetcher,
   runCommandLine,
   SHEETS_SCRIPT,
-} from "../for-google-apps/check-token-balance/fetch-amount-of-token-transferred.js";
+} from "../bin/fetch-amount-of-token-transferred.js";
 import {
   standInChain,
   standInChainFetch,
@@ -31,7 +31,7 @@ import {
 } from "./helpers/stand-in-chain.js";
 
 const NODE_VERSION = new URL(
-  "../for-google-apps/check-token-balance/fetch-amount-of-token-transferred.js",
+  "../bin/fetch-amount-of-token-transferred.js",
   import.meta.url,
 );
 const RPC_URL = "https://rpc.stand-in.test";
@@ -117,7 +117,7 @@ describe("openTokenTransferFetcher", () => {
   it("opens with config-example.json, whose fields are all the script's", async () => {
     const example = fileURLToPath(
       new URL(
-        "../for-google-apps/check-token-balance/config-example.json",
+        "../src/for-google-apps/check-token-balance/config-example.json",
         import.meta.url,
       ),
     );
@@ -168,7 +168,7 @@ describe("fetch-amount-of-token-transferred.js, the command line", () => {
     const stdout = captured();
     const stderr = captured();
     const exitCode = await runCommandLine(
-      ["node", "fetch-amount-of-token-transferred.js", ...args],
+      ["node", "bin/fetch-amount-of-token-transferred.js", ...args],
       {
         fetch: standInChainFetch(standInChain(250n)),
         stdout,
@@ -241,7 +241,7 @@ describe("fetch-amount-of-token-transferred.js, the command line", () => {
     assert.equal(result.stderr, "");
   });
 
-  it("runs as a program: node fetch-amount-of-token-transferred.js --help", () => {
+  it("runs as a program: node bin/fetch-amount-of-token-transferred.js --help", () => {
     const output = execFileSync(
       process.execPath,
       [fileURLToPath(NODE_VERSION), "--help"],

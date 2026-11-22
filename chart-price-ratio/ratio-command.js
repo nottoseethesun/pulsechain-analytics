@@ -113,15 +113,16 @@ folder:
 
 Examples:
   The ratio of HEX's price to wrapped PLS's, day by day, with the defaults
-  of config.json:
-    $ node pulse-token-ratio.js 0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39 0xA1077a294dDE1B09bB078844df40758a5D0f9a27
-  The same ratio hour by hour, also written to a CSV file:
-    $ node pulse-token-ratio.js 0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39 0xA1077a294dDE1B09bB078844df40758a5D0f9a27 hourly --csv
-  The first chart, through npm, from this folder:
+  of config.json, from the repo's top folder:
+    $ node bin/pulse-token-ratio.js 0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39 0xA1077a294dDE1B09bB078844df40758a5D0f9a27
+  The same ratio hour by hour, also written to a CSV file in the folder
+  it runs in:
+    $ node bin/pulse-token-ratio.js 0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39 0xA1077a294dDE1B09bB078844df40758a5D0f9a27 hourly --csv
+  The first chart, through npm, from chart-price-ratio/:
     $ npm start -- 0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39 0xA1077a294dDE1B09bB078844df40758a5D0f9a27
   The daily ratio over the last two years, from Moralis, without the
   question of the source:
-    $ node pulse-token-ratio.js 0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39 0xA1077a294dDE1B09bB078844df40758a5D0f9a27 --source moralis
+    $ node bin/pulse-token-ratio.js 0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39 0xA1077a294dDE1B09bB078844df40758a5D0f9a27 --source moralis
 
 Exit codes:
   0  the ratios were printed

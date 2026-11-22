@@ -1,6 +1,7 @@
 /**
  * Runs the ratio chart, `chart-price-ratio/pulse-token-ratio.js`, as its
- * owner does, in a child process, against a stand-in web.
+ * owner does, through its start file, `bin/pulse-token-ratio.js`, in a
+ * child process, against a stand-in web.
  * @module test/helpers/ratio-chart
  *
  * The chart asks GeckoTerminal, Moralis and DexTools with Node's `fetch`,
@@ -23,9 +24,9 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { saveEncryptedKey } from "crypto-price-fetchers/api-key-store";
 
-/** The chart. */
+/** The chart's start file. */
 const CHART = fileURLToPath(
-  new URL("../../chart-price-ratio/pulse-token-ratio.js", import.meta.url),
+  new URL("../../bin/pulse-token-ratio.js", import.meta.url),
 );
 
 /** The preload that stands in for the web. */

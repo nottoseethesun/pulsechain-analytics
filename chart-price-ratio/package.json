@@ -5,8 +5,8 @@
   "main": "pulse-token-ratio.js",
   "type": "module",
   "scripts": {
-    "start": "node pulse-token-ratio.js",
-    "ratio": "node pulse-token-ratio.js"
+    "start": "node ../bin/pulse-token-ratio.js",
+    "ratio": "node ../bin/pulse-token-ratio.js"
   },
   "keywords": [
     "pulsechain",

@@ -19,17 +19,31 @@ into the tests, so that later sessions reuse it instead of writing it again.
 **Never show any character of an api key once it is entered**: not in a
 reply, a log line, an error message, a test's output, or a listing.
 
-The Sheets scripts in `for-google-apps/`, scripts for Google Sheets,
+The Sheets scripts in `src/for-google-apps/`, scripts for Google Sheets,
 Google's spreadsheet app, written in Apps Script, Google's platform for
 scripts that run inside its apps, change only here. The owner pastes them
 into Apps Script and deploys them as a library. The deployed library has
 a function this repo's copy lacks, `getTokenTransferredUseCache`, which
 `wrapper.gs` calls.
 
+## Where things are
+
+The programs a reader runs from a terminal are in `bin/`: the Summ
+sweep, the Sheets script's Node version, a start file for each tool
+with a package of its own, `check-token-balance.js` and
+`pulse-token-ratio.js`, which loads the tool's program from its folder,
+the key manager and `unlock-api-keys.sh`. Each tool's code and packages
+stay in its own folder, and the Sheets scripts are in
+`src/for-google-apps/`. The Summ sweep reads its settings from the
+folder it runs in, the repo's top; the ratio chart and the balance
+checker read the `config.json` in their own folders, and the Sheets
+script's Node version the one beside the `.gs`.
+
 ## Node versions of the Sheets scripts
 
-`for-google-apps/check-token-balance/fetch-amount-of-token-transferred.js` is
-the Node version of the `.gs` beside it. It runs the `.gs` unchanged, through
+`bin/fetch-amount-of-token-transferred.js` is the Node version of
+`src/for-google-apps/check-token-balance/fetch-amount-of-token-transferred.gs`.
+It runs the `.gs` unchanged, through
 the runner of crypto-price-fetchers, the owner's repo of code his projects
 share, which this repo installs (below); the runner
 (`crypto-price-fetchers/apps-script-runner`) runs an Apps Script file under
@@ -40,9 +54,9 @@ because a sheet reaches a library's functions through a wrapper.
 
 A change to the runner reaches this repo once its lockfiles are made again
 (see crypto-price-fetchers, below). The Node version reads its rpc
-endpoint, the json-rpc api of the PulseChain node it asks, from
-`config.json` beside it, which git ignores; `config-example.json`
-shows the shape.
+endpoint, the json-rpc api of the PulseChain node it asks, from the
+`config.json` beside the `.gs`, which git ignores; `config-example.json`
+there shows the shape.
 
 The module of the same name at the repo's top folder,
 `fetch-amount-of-token-transferred.js`, works out the same amount with
@@ -60,9 +74,9 @@ decentralized exchanges. The keys are kept in `api-keys.json` at the
 repo's top, which git ignores, encrypted with one password the owner
 types, by crypto-price-fetchers' key store
 (`crypto-price-fetchers/api-key-store`). `npm run api-keys` runs its
-manager (`manage-api-keys.js`), and `source ./unlock-api-keys.sh`, a
-script at the repo's top, keeps the password for a terminal in
-`API_KEYS_PASSWORD`. `unlock-api-keys.sh` is a copy of
+manager (`bin/manage-api-keys.js`), and `source ./bin/unlock-api-keys.sh`,
+a script in `bin/`, keeps the password for a terminal in
+`API_KEYS_PASSWORD`. `bin/unlock-api-keys.sh` is a copy of
 crypto-price-fetchers', which a test holds it to; a change to it is made
 there. The ratio chart opens each key the first time it asks that service
 (`chart-price-ratio/api-keys.js`). A key is never a setting in a file git
@@ -150,7 +164,7 @@ schemas:
 - The top `config.json`'s `pulsechain` and `summ-sweep/config.json`:
   `summ-sweep/settings.js`.
 - The Sheets script's Node version's `config.json`: `CONFIG_SCHEMAS` in
-  `for-google-apps/check-token-balance/fetch-amount-of-token-transferred.js`,
+  `bin/fetch-amount-of-token-transferred.js`,
   an http or https url as `config.rpcUrl` and no other field, which
   crypto-price-fetchers' runner checks before the script opens. The
   runner's `configSchemaProblems`, which the Node version's tests run,

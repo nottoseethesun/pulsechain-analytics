@@ -58,16 +58,13 @@ const DEPENDENCY_BINS = Object.freeze(
  * help is asked for.
  */
 const COMMAND_LINES = Object.freeze([
-  { file: "summ-sweep.js", command: [] },
-  { file: "chart-price-ratio/pulse-token-ratio.js", command: [] },
-  { file: "check-token-balance/index.js", command: [] },
-  {
-    file: "for-google-apps/check-token-balance/fetch-amount-of-token-transferred.js",
-    command: [],
-  },
-  { file: "manage-api-keys.js", command: [] },
-  { file: "manage-api-keys.js", command: ["set"] },
-  { file: "manage-api-keys.js", command: ["check-password"] },
+  { file: "bin/summ-sweep.js", command: [] },
+  { file: "bin/pulse-token-ratio.js", command: [] },
+  { file: "bin/check-token-balance.js", command: [] },
+  { file: "bin/fetch-amount-of-token-transferred.js", command: [] },
+  { file: "bin/manage-api-keys.js", command: [] },
+  { file: "bin/manage-api-keys.js", command: ["set"] },
+  { file: "bin/manage-api-keys.js", command: ["check-password"] },
   { file: DEPENDENCY_BINS["github-project-deps"], command: [] },
   { file: DEPENDENCY_BINS["run-actionlint"], command: [] },
 ]);
@@ -77,10 +74,9 @@ const COMMAND_LINES = Object.freeze([
  * file, by the file node runs.
  */
 const COMMAND_MODULES = Object.freeze({
-  "summ-sweep/command-line.js": "summ-sweep.js",
-  "chart-price-ratio/ratio-command.js":
-    "chart-price-ratio/pulse-token-ratio.js",
-  "check-token-balance/balance-command.js": "check-token-balance/index.js",
+  "summ-sweep/command-line.js": "bin/summ-sweep.js",
+  "chart-price-ratio/ratio-command.js": "bin/pulse-token-ratio.js",
+  "check-token-balance/balance-command.js": "bin/check-token-balance.js",
 });
 
 describe("every command line's help", () => {

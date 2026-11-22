@@ -2,7 +2,7 @@
  * Runs a Sheets script, unchanged, under Node for tests.
  * @module test/helpers/sheets-script
  *
- * The Sheets scripts in `for-google-apps/` are Google Apps Script: plain
+ * The Sheets scripts in `src/for-google-apps/` are Google Apps Script: plain
  * JavaScript that reaches the chain through one Apps Script service,
  * `UrlFetchApp`. `loadSheetsScript` runs a script in the test's own thread
  * with the Node versions of the Apps Script services from the runner the
@@ -23,7 +23,7 @@ import {
 
 /** The Sheets script that reads how much of a token a transaction sent a wallet. */
 export const TRANSFER_SHEETS_SCRIPT = new URL(
-  "../../for-google-apps/check-token-balance/fetch-amount-of-token-transferred.gs",
+  "../../src/for-google-apps/check-token-balance/fetch-amount-of-token-transferred.gs",
   import.meta.url,
 );
 

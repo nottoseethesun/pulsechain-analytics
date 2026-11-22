@@ -69,10 +69,11 @@ packages:
 ```bash
 git clone https://github.com/nottoseethesun/pulsechain-analytics.git
 cd pulsechain-analytics/chart-price-ratio
-npm install
+npm ci
 ```
 
-`npm install` installs what the chart needs, crypto-price-fetchers among
+`npm ci` installs what the chart needs, at the versions
+`package-lock.json` keeps, crypto-price-fetchers among
 it, for its key store and its GeckoTerminal, Moralis and DexTools clients. Which version of
 crypto-price-fetchers is installed, and how to change it, is in the repo's
 [README](../README.md#versions-of-crypto-price-fetchers).
@@ -122,21 +123,34 @@ encrypted, with a password you choose, in the repo's top folder, whose
 
 ```bash
 cd ..
-npm install
+npm ci
 npm run api-keys
 ```
 
 The chart opens each key the first time it asks that service, with the
-password that `source ./unlock-api-keys.sh`, in the repo's top folder,
-keeps for the terminal, or one it asks for. A run that reads
+password that `source ./bin/unlock-api-keys.sh`, run in the repo's top
+folder, keeps for the terminal, or one it asks for. A run that reads
 GeckoTerminal's candles and never falls back asks for no password. See the
 repo's [README](../README.md#api-keys).
 
-## Usage
+## Run
 
-`node pulse-token-ratio.js --help` lists every option, each with its
-default from `config.json`, and the exit codes: 0 when the ratios were
-printed, 1 when they were not.
+The chart runs through its start file, `bin/pulse-token-ratio.js`, in
+the repo's top folder, the folder of the programs a reader runs, after
+`npm ci` here. It reads the `config.json` here whichever folder it runs
+in. From the repo's top folder, the daily ratio of two tokens, the
+default:
+
+```bash
+node bin/pulse-token-ratio.js <tokenA> <tokenB>
+```
+
+`npm start -- <options>`, here, runs the same command line.
+`node bin/pulse-token-ratio.js --help` lists every option, each with its
+default from `config.json`, examples of its common uses, and the exit
+codes: 0 when the ratios were printed, 1 when they were not.
+
+### Usage
 
 The chart spans at least 90 columns, so its x-axis has room to space its
 dates. A series of fewer points is drawn with each point widened over
@@ -144,30 +158,29 @@ several columns, the points joined by straight lines. A weekly run from
 GeckoTerminal says first that GeckoTerminal's free api serves about the
 last 184 days, so its chart shows at most 27 points.
 
-### Basic: daily ratio (default)
+#### Example with $808 and $pTGC
 
-`node pulse-token-ratio.js <tokenA> <tokenB>`
+`node bin/pulse-token-ratio.js 0x50F1ca62e6Fb8Adf438ca1F50067AB83670094A6 0x94534EeEe131840b1c0F61847c572228bdfDDE93`
 
-### Example with $808 and $pTGC
-
-`node pulse-token-ratio.js 0x50F1ca62e6Fb8Adf438ca1F50067AB83670094A6 0x94534EeEe131840b1c0F61847c572228bdfDDE93`
-
-### Specify Interval
+#### Specify Interval
 
 ```bash
-node pulse-token-ratio.js <tokenA> <tokenB> --interval=hourly
-node pulse-token-ratio.js <tokenA> <tokenB> --interval=weekly
+node bin/pulse-token-ratio.js <tokenA> <tokenB> --interval=hourly
+node bin/pulse-token-ratio.js <tokenA> <tokenB> --interval=weekly
 ```
 
-### Export to CSV
+#### Export to CSV
 
-`node pulse-token-ratio.js <tokenA> <tokenB> --interval=daily --csv`
+The ratios also written to `token_ratio.csv`, in the folder the chart
+runs in:
 
-### Choose the source without the question
+`node bin/pulse-token-ratio.js <tokenA> <tokenB> --interval=daily --csv`
+
+#### Choose the source without the question
 
 ```bash
-node pulse-token-ratio.js <tokenA> <tokenB> --source moralis
-node pulse-token-ratio.js <tokenA> <tokenB> --source geckoterminal
+node bin/pulse-token-ratio.js <tokenA> <tokenB> --source moralis
+node bin/pulse-token-ratio.js <tokenA> <tokenB> --source geckoterminal
 ```
 
 A run with a Moralis key saved and no terminal to ask at, such as one
