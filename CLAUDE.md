@@ -394,7 +394,18 @@ beside it shows the shape.
 
 ## Known bugs
 
-None is known. When one is found, it gets a test in
+These are known, each with its tests in `test/known-bugs.test.js`:
+
+- The Summ sweep checks its files only after it reads the chain, so a
+  mistake in one can leave the csv of a run that fails, or write its
+  report over the csv when `--out` and `--report` name one file.
+- The Summ sweep refuses an `--end-date` before `--start-date` only after
+  it reads its settings, naming no option.
+- `getTokenTransferred`, in `fetch-amount-of-token-transferred.js`, leaves
+  its provider running after a read that fails, so the program that
+  imported it never ends.
+
+When one is found, it gets a test in
 `test/known-bugs.test.js`, declared with `knownBug`, so the test passes while
 the bug is present. The bug's fix makes its test fail; declare that test with
 `it` instead, in the same change, among the tests of the code it is about.
