@@ -54,8 +54,10 @@ runs from a terminal are in `bin/`: each is a program of its own or a
 start file that loads a tool's program from the tool's folder, whose
 packages it uses. The Sheets scripts are in `src/for-google-apps/`. Each
 command line is declared with commander, the package that parses a
-command line, and answers `--help` with its options, examples of its
-common uses and its exit codes.
+command line, but for `bin/unlock-api-keys.sh`, a shell script that keeps
+the password of the api keys for a terminal ([Api Keys](#api-keys)),
+whose help is written in it, and each answers `--help` with its options,
+examples of its common uses and its exit codes.
 
 | Tool | Where | What it answers |
 | ---- | ----- | --------------- |

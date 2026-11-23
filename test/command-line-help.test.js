@@ -10,7 +10,8 @@
  * repo's top folder, with no way to the owner's keys; a help is printed
  * before anything is asked of the chain or a service. `COMMAND_LINES`
  * lists the Summ sweep, the ratio chart, the balance checker, the Sheets
- * script's Node version, the key manager and its commands, and the bins of
+ * script's Node version, the key manager and its commands,
+ * `bin/unlock-api-keys.sh`, which bash runs, and the bins of
  * crypto-price-fetchers the npm targets run: its versions tool, which
  * `npm run github-project-deps` runs, and `run-actionlint`, which the lint
  * and `npm run audit:actionlint` run. A second test holds the list to the repo and the tools' own
@@ -59,7 +60,8 @@ const DEPENDENCY_BINS = Object.freeze(
 );
 
 /**
- * Every command line: the file node runs, and the subcommand, if any, whose
+ * Every command line: the file it runs, the program that runs that file,
+ * node unless `program` names a shell, and the subcommand, if any, whose
  * help is asked for.
  */
 const COMMAND_LINES = Object.freeze([
@@ -70,6 +72,7 @@ const COMMAND_LINES = Object.freeze([
   { file: "bin/manage-api-keys.js", command: [] },
   { file: "bin/manage-api-keys.js", command: ["set"] },
   { file: "bin/manage-api-keys.js", command: ["check-password"] },
+  { program: "bash", file: "bin/unlock-api-keys.sh", command: [] },
   { file: DEPENDENCY_BINS["github-project-deps"], command: [] },
   { file: DEPENDENCY_BINS["run-actionlint"], command: [] },
 ]);
