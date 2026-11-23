@@ -20,7 +20,9 @@
  * 3. The tests in `test/` check it against a stand-in chain: `npm test`.
  *
  * Note: This module connects to a public Pulsechain RPC endpoint ('https://rpc-pulsechain.g4mm4.io'). Ensure the endpoint is reliable;
- *       you may replace it with another RPC provider if needed (e.g., for rate limiting or privacy).
+ *       you may replace it with another RPC provider if needed (e.g., for rate limiting or privacy). Each call makes its own
+ *       provider, set to PulseChain's chain id, 369, so it never asks the endpoint which network it is, and closes it when
+ *       the call ends, whether the read worked or not.
  *
  * Limitations:
  * - Counts a Transfer event only when the token's own contract emitted it, with the sender and receiver indexed and the
@@ -36,6 +38,12 @@
 
 import { ethers } from "ethers";
 import { decimalFromRaw } from "crypto-price-fetchers/summ-csv";
+
+/**
+ * PulseChain's network, which the provider takes as it is made rather
+ * than asking the endpoint for it.
+ */
+const PULSECHAIN = ethers.Network.from(369);
 
 /** The topic an ERC-20 Transfer event leads with: keccak256 of its signature. */
 const TRANSFER_TOPIC = ethers.id("Transfer(address,address,uint256)");
@@ -139,29 +147,38 @@ export async function getTokenTransferred(txId, tokenAddress, walletAddress) {
   const transaction = String(txId).trim().toLowerCase();
   const provider = new ethers.JsonRpcProvider(
     "https://rpc-pulsechain.g4mm4.io",
+    PULSECHAIN,
+    { staticNetwork: PULSECHAIN },
   );
-  const receipt = await read(
-    `the receipt of ${transaction}`,
-    provider.getTransactionReceipt(transaction),
-  );
-  if (receipt === null) {
-    throw new Error(
-      `Transaction ${transaction} not found; it may still be pending`,
+  // The provider is closed whatever happens, so it leaves no timer
+  // running that would keep the program from ending
+  try {
+    const receipt = await read(
+      `the receipt of ${transaction}`,
+      provider.getTransactionReceipt(transaction),
     );
+    if (receipt === null) {
+      throw new Error(
+        `Transaction ${transaction} not found; it may still be pending`,
+      );
+    }
+    const total = sumTransfersTo(receipt.logs, tokenGiven, walletGiven);
+    if (total === 0n) {
+      return 0;
+    }
+    const token = new ethers.Contract(
+      tokenGiven,
+      ["function decimals() view returns (uint8)"],
+      provider,
+    );
+    const decimals = await read(
+      `the decimals of ${tokenGiven}`,
+      token.decimals(),
+    );
+    // Up to 255 decimals, as a uint8 holds, where ethers' formatUnits
+    // takes 80
+    return cutOffDecimals(decimalFromRaw(total, Number(decimals)));
+  } finally {
+    provider.destroy();
   }
-  const total = sumTransfersTo(receipt.logs, tokenGiven, walletGiven);
-  if (total === 0n) {
-    return 0;
-  }
-  const token = new ethers.Contract(
-    tokenGiven,
-    ["function decimals() view returns (uint8)"],
-    provider,
-  );
-  const decimals = await read(
-    `the decimals of ${tokenGiven}`,
-    token.decimals(),
-  );
-  // Up to 255 decimals, as a uint8 holds, where ethers' formatUnits takes 80
-  return cutOffDecimals(decimalFromRaw(total, Number(decimals)));
 }

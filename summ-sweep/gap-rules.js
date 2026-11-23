@@ -342,7 +342,7 @@ function partRule(group, transaction, env) {
         type: "remove-liquidity",
         from,
         to: env.wallet,
-        text: `Principal of 9mm V3 position #${split.nftId}: of the ${received} it paid out, the ${principal} its DecreaseLiquidity events since its last collect name.`,
+        text: `Principal of 9mm V3 position #${split.nftId}: of the ${received} it paid out, the ${principal} of its principal it still owed.`,
       }
     : {
         type: "income",

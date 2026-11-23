@@ -182,7 +182,7 @@ describe("splitCollects", () => {
       {
         hash: hashOf(1),
         problem:
-          "it paid out nothing of the coin on side 0 of position #7, though its DecreaseLiquidity events name principal of it",
+          "it paid out nothing of the coin on side 0 of position #7, though it still owed principal of it",
       },
     ]);
     assert.deepEqual(
@@ -318,7 +318,7 @@ describe("splitCollects", () => {
     );
     assert.equal(
       problems[2].problem,
-      `it paid out less ${HEX} than the principal its DecreaseLiquidity events name`,
+      `it paid out less ${HEX} than the principal it still owed`,
     );
   });
 

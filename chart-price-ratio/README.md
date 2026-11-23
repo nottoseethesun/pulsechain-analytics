@@ -140,7 +140,7 @@ repo's [README](../README.md#api-keys).
 ## Run
 
 The chart runs through its start file, `bin/pulse-token-ratio.js`, in
-the repo's top folder, the folder of the programs a reader runs, after
+the repo's `bin/`, the folder of the programs a reader runs, after
 `npm ci` here. It reads the `config.json` here whichever folder it runs
 in. From the repo's top folder, the daily ratio of two tokens, the
 default:

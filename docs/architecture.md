@@ -54,8 +54,10 @@ runs from a terminal are in `bin/`: each is a program of its own or a
 start file that loads a tool's program from the tool's folder, whose
 packages it uses. The Sheets scripts are in `src/for-google-apps/`. Each
 command line is declared with commander, the package that parses a
-command line, and answers `--help` with its options, examples of its
-common uses and its exit codes.
+command line, but for `bin/unlock-api-keys.sh`, a shell script that keeps
+the password of the api keys for a terminal ([Api Keys](#api-keys)),
+whose help is written in it, and each answers `--help` with its options,
+examples of its common uses and its exit codes.
 
 | Tool | Where | What it answers |
 | ---- | ----- | --------------- |
@@ -337,6 +339,16 @@ YYYY-MM-DD HH:MM:SS. crypto-price-fetchers' `dayStartSeconds`
 the time; each reads with `Date.parse` and keeps the value only when
 writing it back gives the same text, so a date that does not exist, such
 as 2026-02-30, is refused rather than moved to a nearby day.
+The command line also checks that each file of the saved pages of Summ's
+results, described below, exists, and that the csv's path, `--out`, and
+the report's, `--report`, each name no folder, in a folder that exists
+and takes a new file ([What the Sweep Writes](#what-the-sweep-writes)):
+crypto-price-fetchers' `newFileRefusal`
+(`crypto-price-fetchers/lib/new-file`) makes a file there and removes it,
+since only a write tells whether a folder takes one. Then it checks the
+options against each other: `--out` and `--report` must name two files,
+and the last day, `--end-date`, must not come before the first,
+`--start-date`.
 A mistake stops the run before it reads anything.
 
 Summ's connector for Claude, through which Claude reads and edits the
@@ -612,9 +624,12 @@ Addresses are in EIP-55's mixed case in the report. The Summ csv utility
 writes them in lower case, since its settings for PulseChain give an
 address no case.
 
-Before it writes either file, the run checks both paths and has the
-utility check the rows, so a path already taken or a row that breaks one
-of Summ's rules leaves both files unwritten. The run ends with exit code
+Before it asks the chain anything, the run checks that no report is in
+the way of a run without `--replace`, reads the template's header and
+parses Summ's pages. Before it writes either file, it checks both paths,
+`--out` only for a run that has rows, and has the utility check the rows,
+so a path already taken or a row that breaks one of Summ's rules leaves
+both files unwritten. The run ends with exit code
 0 when the report was written, and the csv with it when there were rows;
 1 when they were not.
 
@@ -740,7 +755,9 @@ the checks of a settings file against its JSON Schema and the option
 parsers made from the same kinds of value (`…/lib/settings-file`,
 `…/lib/settings-schema`), `checkConflicts`, which refuses a typed option
 that conflicts with one a settings file sets (`…/lib/option-conflicts`),
-and the checks the tests make of each command
+`newFileRefusal`, with which the Summ sweep checks that the folder of
+each file it writes takes a new file (`…/lib/new-file`), and the checks
+the tests make of each command
 line's help and of the repo's tracked files
 (`crypto-price-fetchers/lib/command-line-help`, `…/lib/repo-checks`).
 

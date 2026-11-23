@@ -5,14 +5,17 @@ PulseChain, with what each does and what to type. Most run through npm, the
 package manager of Node, the program that runs JavaScript outside a
 browser, from a `package.json`: those its top `package.json` defines, which
 run from the repo's top folder, and the ratio chart's, in
-`chart-price-ratio/`. The rest run with `node`, or `source`, at a terminal,
-from `bin/`, the folder of the programs a reader runs
-([Commands Run Without npm](#commands-run-without-npm)). Two of the top folder's commands run tools of
+`chart-price-ratio/`. The rest, programs in `bin/`, the folder of the
+programs a reader runs, run with `node`, or `source`, at a terminal, from
+the repo's top folder
+([Commands Run Without npm](#commands-run-without-npm)). Four of the top folder's commands run tools of
 crypto-price-fetchers, the owner's repo of code his projects share, which
 this repo installs from GitHub, the website that hosts his code: `api-keys`,
-its key manager, which saves and lists the api keys, and
+its key manager, which saves and lists the api keys;
 `github-project-deps`, its versions tool, which moves crypto-price-fetchers
-to its newest main or its latest release.
+to its newest main or its latest release; and `lint` and
+`audit:actionlint`, which run its `run-actionlint`, the runner of
+actionlint, the checker of GitHub Actions workflow files.
 
 Each command runs on both major versions of Node the repo supports: the
 newest LTS (long-term support) version, today 26, and the version two
@@ -85,7 +88,7 @@ says [how](architecture.md#the-summ-sweep).
 
 | Command | Flags | Description | Example |
 | ------- | ----- | ----------- | ------- |
-| `summ-sweep` | `--wallet <address>`, `--start-date <day>`, `--end-date <day>`, `--summ-synced-to <time>`, `--summ-results <files...>`, `--out <file>`, `--report <file>`, all required; `--replace`; `--help` | Sweeps the wallet's history from the first day to the last, each `YYYY-MM-DD` in UTC, against the pages of Summ's results saved to the files named. `--summ-synced-to` is the time, as `"YYYY-MM-DD HH:MM:SS"` in UTC, up to which Summ's sync has read the wallet's transactions: a transaction after it gets no gas, for that sync to bring. Each option is checked as it is parsed, and a mistake stops the run before it reads anything. Writes the csv through crypto-price-fetchers' Summ csv utility: the income rows of the withdrawals to fix in Summ, and the rows for what Summ lacks. Writes a report, as json, of the withdrawals to fix, the legs Summ lacks, the questions about the legs no rule books, Summ's legs no chain leg matched, and the problems found. Checks both paths and the rows before writing either file, and writes over neither without `--replace`; a run with `--replace` and no rows removes the csv already at `--out`. Reads the chain's facts from the top `config.json` and the owner's settings from `summ-sweep/config.json`. The example keeps the pages in `summ-sweep/input/`, the csv in `summ-sweep/output/csv/` and the report in `summ-sweep/output/json/`, folders where git keeps nothing but the folder. Exits with 0 when the report was written, and the csv with it when there were rows; 1 when they were not. | `npm run summ-sweep -- --wallet 0x… --start-date 2026-01-01 --end-date 2026-11-20 --summ-synced-to "2026-11-20 06:00:00" --summ-results summ-sweep/input/page-1.txt summ-sweep/input/page-2.txt --out summ-sweep/output/csv/rows.csv --report summ-sweep/output/json/report.json` |
+| `summ-sweep` | `--wallet <address>`, `--start-date <day>`, `--end-date <day>`, `--summ-synced-to <time>`, `--summ-results <files...>`, `--out <file>`, `--report <file>`, all required; `--replace`; `--help` | Sweeps the wallet's history from the first day to the last, each `YYYY-MM-DD` in UTC, against the pages of Summ's results saved to the files named. `--summ-synced-to` is the time, as `"YYYY-MM-DD HH:MM:SS"` in UTC, up to which Summ's sync has read the wallet's transactions: a transaction after it gets no gas, for that sync to bring. Each option is checked as it is parsed, and then the options against each other: `--out` and `--report` must name two files, and `--end-date` no day before `--start-date`'s. A mistake stops the run before it reads anything. Writes the csv through crypto-price-fetchers' Summ csv utility: the income rows of the withdrawals to fix in Summ, and the rows for what Summ lacks. Writes a report, as json, of the withdrawals to fix, the legs Summ lacks, the questions about the legs no rule books, Summ's legs no chain leg matched, and the problems found. Checks, before it asks the chain anything, a report already there without `--replace`, the template and the pages; checks, before it writes either file, the rows and, for a run that has rows, a csv already there; and writes over neither without `--replace`; a run with `--replace` and no rows removes the csv already at `--out`. Reads the chain's facts from the top `config.json` and the owner's settings from `summ-sweep/config.json`. The example keeps the pages in `summ-sweep/input/`, the csv in `summ-sweep/output/csv/` and the report in `summ-sweep/output/json/`, folders where git keeps nothing but the folder. Exits with 0 when the report was written, and the csv with it when there were rows; 1 when they were not. | `npm run summ-sweep -- --wallet 0x… --start-date 2026-01-01 --end-date 2026-11-20 --summ-synced-to "2026-11-20 06:00:00" --summ-results summ-sweep/input/page-1.txt summ-sweep/input/page-2.txt --out summ-sweep/output/csv/rows.csv --report summ-sweep/output/json/report.json` |
 
 ---
 
@@ -172,7 +175,7 @@ shows each at work.
 | `node bin/fetch-amount-of-token-transferred.js` | `<transaction> <token> <wallet>`, `--config <file>`, `--verbose`, `--help` | The Node version of the Sheets script in `src/for-google-apps/check-token-balance/`: how much of a token one PulseChain transaction sent a wallet, read from the rpc endpoint the `config.json` beside the script names. From another folder, give the file's path. | `node bin/fetch-amount-of-token-transferred.js <transaction-hash> 0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39 <wallet>` |
 | `node bin/check-token-balance.js` | `--address <address>`, `--block <block>` or `--date <date>`, `--tokens <tokens>`, `--rpc <url>`, `--help` | The balance checker, whose program is in `check-token-balance/`: a wallet's balance of each token named, PLS as `Pulse_Native_Gas_Token`, at a block or at the start of a day in UTC. | `node bin/check-token-balance.js --address <wallet> --date 2026-11-01 --tokens Pulse_Native_Gas_Token` |
 | `node bin/pulse-token-ratio.js` | `<tokenA> <tokenB> [interval]` and the options of `start` above | The ratio chart, whose program is in `chart-price-ratio/`, as `npm start` runs it there. | `node bin/pulse-token-ratio.js <tokenA> <tokenB> --source geckoterminal` |
-| `source ./bin/unlock-api-keys.sh` | — | Asks for the key store's password, showing nothing typed, checks that it opens every key saved, and keeps it in `API_KEYS_PASSWORD` for the terminal, so the programs open their keys without asking. Runs in bash or zsh. | `source ./bin/unlock-api-keys.sh` |
+| `source ./bin/unlock-api-keys.sh` | `--help` | Asks for the key store's password, showing nothing typed, checks that it opens every key saved, and keeps it in `API_KEYS_PASSWORD` for the terminal, so the programs open their keys without asking. Runs in bash or zsh, and returns 0 when it keeps the password, 1 when it keeps none. `--help`, or `-h`, prints its help, asks nothing and returns 0. | `source ./bin/unlock-api-keys.sh` |
 
 ---
 
