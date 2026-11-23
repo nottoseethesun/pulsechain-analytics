@@ -73,7 +73,7 @@ describe("getTokenTransferred, the Node script", () => {
 });
 
 describe("getTokenTransferred, after a read that fails", () => {
-  it("closes its provider, so the program that called it ends", () => {
+  it("lets the program that called it end, after a read that fails", () => {
     const moduleUrl = new URL(
       "../fetch-amount-of-token-transferred.js",
       import.meta.url,

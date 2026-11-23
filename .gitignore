@@ -14,10 +14,14 @@ api-keys.json.tmp
 # The owner's own files: those a tool reads from its input/ folder, and
 # those it writes in its output/ folder, by kind (output/csv/,
 # output/json/). Git keeps each folder by its .gitkeep, an empty file, and
-# nothing else in it.
-/chart-price-ratio/output/*/*
+# nothing else in it: the first rule of an output/ folder ignores all it
+# holds, at any depth; the second takes its folders back, so git looks
+# inside them; and !.gitkeep keeps each .gitkeep.
+/chart-price-ratio/output/**
+!/chart-price-ratio/output/**/
 /summ-sweep/input/*
-/summ-sweep/output/*/*
+/summ-sweep/output/**
+!/summ-sweep/output/**/
 !.gitkeep
 
 # Logs

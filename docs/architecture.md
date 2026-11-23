@@ -343,9 +343,10 @@ The command line also checks that each file of the saved pages of Summ's
 results, described below, exists, and that the csv's path, `--out`, and
 the report's, `--report`, each name no folder, in a folder that exists
 and takes a new file ([What the Sweep Writes](#what-the-sweep-writes)):
-crypto-price-fetchers' `newFileRefusal`
-(`crypto-price-fetchers/lib/new-file`) makes a file there and removes it,
-since only a write tells whether a folder takes one. Then it checks the
+crypto-price-fetchers' `fileToWriteArgument`
+(`crypto-price-fetchers/lib/file-to-write`) checks each, and makes a
+file in its folder and removes it, since only a write tells whether a
+folder takes one. Then it checks the
 options against each other: `--out` and `--report` must name two files,
 and the last day, `--end-date`, must not come before the first,
 `--start-date`.
@@ -755,8 +756,9 @@ the checks of a settings file against its JSON Schema and the option
 parsers made from the same kinds of value (`…/lib/settings-file`,
 `…/lib/settings-schema`), `checkConflicts`, which refuses a typed option
 that conflicts with one a settings file sets (`…/lib/option-conflicts`),
-`newFileRefusal`, with which the Summ sweep checks that the folder of
-each file it writes takes a new file (`…/lib/new-file`), and the checks
+`fileToWriteArgument`, with which the Summ sweep checks each file it
+writes: no folder, in a folder that exists and takes a new file
+(`…/lib/file-to-write`), and the checks
 the tests make of each command
 line's help and of the repo's tracked files
 (`crypto-price-fetchers/lib/command-line-help`, `…/lib/repo-checks`).
