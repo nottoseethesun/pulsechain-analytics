@@ -396,7 +396,10 @@ beside it shows the shape.
 
 ## Known bugs
 
-None is known. When one is found, it gets a test in
+One is known, with its test in `test/known-bugs.test.js`: git keeps a
+file written directly in the Summ sweep's or the ratio chart's `output/`
+folder, which `.gitignore` should ignore.
+When one is found, it gets a test in
 `test/known-bugs.test.js`, declared with `knownBug`, so the test passes while
 the bug is present. The bug's fix makes its test fail; declare that test with
 `it` instead, in the same change, among the tests of the code it is about.
