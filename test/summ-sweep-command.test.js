@@ -30,6 +30,13 @@ after(removeTempFolders);
 /** The repo's top folder. */
 const REPO_TOP = path.resolve(import.meta.dirname, "..");
 
+/**
+ * Why the test that needs a folder that takes no new file is skipped, or
+ * false: it uses /proc, a folder of Linux's that takes no new file even
+ * from root, whom no folder's modes stop.
+ */
+const NO_PROC = !fs.existsSync("/proc") && "this system has no /proc";
+
 describe("runSummSweep", () => {
   it("writes the csv through the Summ csv utility, and the report as json", async () => {
     const top = repo();
@@ -249,12 +256,6 @@ describe("runSummSweep", () => {
       assert.match(run.err, said);
       assert.equal(run.chainMade, false);
     }
-    const backwards = await runOn(
-      top,
-      argsFor(top, { "--start-date": "2023-11-15" }),
-    );
-    assert.equal(backwards.code, 1);
-    assert.match(backwards.err, /--end-date is before --start-date/);
   });
 
   it("gives its help, with its exit codes", async () => {
@@ -263,5 +264,118 @@ describe("runSummSweep", () => {
     assert.equal(help.code, 0);
     assert.match(help.out, /Usage: summ-sweep \[options\]/);
     assert.match(help.out, /Exit codes: 0 when the report was written/);
+  });
+
+  it("refuses a missing folder of --out or --report, a missing page of --summ-results and a templatePath that names no file, before it asks the chain anything, writing neither file", async () => {
+    const cases = [
+      ["--report", "folder", "option '--report <file>' argument"],
+      ["--out", "folder", "option '--out <file>' argument"],
+      ["--summ-results", "page", "option '--summ-results <files...>' argument"],
+      ["templatePath", "template", "templatePath names no file"],
+    ];
+    for (const [name, kind, said] of cases) {
+      const top = repo();
+      const missing = path.join(top, "no-such-folder", "file");
+      const changes = kind === "template" ? {} : { [name]: missing };
+      if (kind === "template") fs.rmSync(path.join(top, "template.csv"));
+      const run = await runOn(top, argsFor(top, changes));
+      assert.equal(run.code, 1, name);
+      assert.ok(run.err.includes(said), `${name}: ${run.err}`);
+      assert.equal(run.chainMade, false, name);
+      assert.equal(fs.existsSync(path.join(top, "rows.csv")), false, name);
+      assert.equal(fs.existsSync(path.join(top, "report.json")), false, name);
+    }
+  });
+
+  it("refuses an --out and a --report that name one file, naming --report, before it reads anything", async () => {
+    const top = repo(false);
+    const same = path.join(top, "rows.csv");
+    const run = await runOn(top, argsFor(top, { "--report": same }));
+    assert.equal(run.code, 1);
+    assert.ok(
+      run.err.includes(
+        `error: option '--report <file>' argument '${same}' is invalid. It names the file --out names; the csv and the report need two.`,
+      ),
+      run.err,
+    );
+    assert.equal(fs.existsSync(same), false);
+  });
+
+  it("refuses an --out or a --report that is a folder, naming it, before it asks the chain anything, writing neither file", async () => {
+    for (const name of ["--out", "--report"]) {
+      const top = repo();
+      const folder = path.join(top, "a-folder");
+      fs.mkdirSync(folder);
+      const run = await runOn(top, [
+        ...argsFor(top, { [name]: folder }),
+        "--replace",
+      ]);
+      assert.equal(run.code, 1, name);
+      assert.ok(
+        run.err.includes(
+          `error: option '${name} <file>' argument '${folder}' is invalid. It is a folder, not a file.`,
+        ),
+        `${name}: ${run.err}`,
+      );
+      assert.equal(run.chainMade, false, name);
+      assert.equal(fs.existsSync(path.join(top, "rows.csv")), false, name);
+    }
+  });
+
+  it("refuses an empty --out, --report or page of --summ-results, naming it, before it asks the chain anything, writing neither file", async () => {
+    for (const flags of [
+      "--out <file>",
+      "--report <file>",
+      "--summ-results <files...>",
+    ]) {
+      const name = flags.split(" ")[0];
+      const top = repo();
+      const run = await runOn(top, argsFor(top, { [name]: "" }));
+      assert.equal(run.code, 1, name);
+      assert.ok(
+        run.err.includes(
+          `error: option '${flags}' argument '' is invalid. It names no file.`,
+        ),
+        `${name}: ${run.err}`,
+      );
+      assert.equal(run.chainMade, false, name);
+      assert.equal(fs.existsSync(path.join(top, "rows.csv")), false, name);
+      assert.equal(fs.existsSync(path.join(top, "report.json")), false, name);
+    }
+  });
+
+  describe("in /proc, which takes no new file", { skip: NO_PROC }, () => {
+    it("refuses an --out or a --report in a folder that takes no new file, naming it, before it asks the chain anything, writing neither file", async () => {
+      for (const name of ["--out", "--report"]) {
+        const top = repo();
+        const file = path.join("/proc", `summ-sweep-test-${name.slice(2)}`);
+        const run = await runOn(top, argsFor(top, { [name]: file }));
+        assert.equal(run.code, 1, name);
+        assert.ok(
+          run.err.includes(
+            `error: option '${name} <file>' argument '${file}' is invalid. Its folder, /proc, takes no new file`,
+          ),
+          `${name}: ${run.err}`,
+        );
+        assert.equal(run.chainMade, false, name);
+        assert.equal(fs.existsSync(path.join(top, "rows.csv")), false, name);
+        assert.equal(fs.existsSync(path.join(top, "report.json")), false, name);
+      }
+    });
+  });
+
+  it("refuses an --end-date before --start-date, naming --end-date, before it reads a settings file", async () => {
+    const top = repo(false);
+    const run = await runOn(
+      top,
+      argsFor(top, { "--start-date": "2023-11-15" }),
+    );
+    assert.equal(run.code, 1);
+    assert.ok(
+      run.err.includes(
+        "error: option '--end-date <day>' argument '2023-11-14' is invalid. It is before the day of --start-date, 2023-11-15.",
+      ),
+      run.err,
+    );
   });
 });

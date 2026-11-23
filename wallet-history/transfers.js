@@ -18,9 +18,10 @@
  * wrapped coin's Deposit or Withdrawal for the wallet. A transfer from the
  * wallet to itself is found by both of the first two, and kept once. Each
  * span of the range is searched in its own turn, no wider than the
- * endpoint takes. The explorer is not asked: its history of the wallet
- * this was built for left out transactions and listed transfers the chain
- * does not hold, where the logs are the chain's own record.
+ * endpoint takes. The explorer, the website that shows PulseChain's
+ * blocks and transactions, is not asked: its lists are a copy its own
+ * indexer makes, which nothing holds to the chain, where the logs are the
+ * chain's own record.
  *
  * Fit: a program that sweeps a wallet's history reads these logs for the
  * tokens each transaction moved, and for the transactions the wallet did

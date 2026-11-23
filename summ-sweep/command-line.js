@@ -12,29 +12,38 @@
  * Summ's legs no leg matched, and the problems found.
  *
  * How: each option is checked as it is parsed: the wallet is an address,
- * put in EIP-55's mixed case; each day is a real day, in UTC; and the time
- * Summ's sync reached is a real time, in UTC. A mistake there is refused
- * before anything is read, with the option named. The chain's facts
- * (endpoint, chain id, position manager, wrapped coin, span of a log
- * search, spacing and size of requests) are in the top `config.json`,
- * which git keeps; the owner's own settings (the path of his Summ template
- * and of his LP Ranger checkout, his own wallets, his spam and income
- * tokens, and each token's symbols in Summ and in a csv) are in
+ * put in EIP-55's mixed case; each day is a real day, in UTC; the time
+ * Summ's sync reached is a real time, in UTC; each file of Summ's pages
+ * exists; and each file the sweep writes is no folder, in a folder that
+ * exists and takes a new file. Then the options are checked against each
+ * other: `--out` and `--report` name two files, and `--end-date` names
+ * no day before `--start-date`'s. A mistake there is
+ * refused before anything is read, with the option named. The chain's
+ * facts (endpoint, chain id, position manager, wrapped coin, span of a
+ * log search, spacing and size of requests) are in the top `config.json`,
+ * which git keeps; the owner's own settings (the path of his Summ
+ * template and of his LP Ranger checkout, his own wallets, his spam and
+ * income tokens, and each token's symbols in Summ and in a csv) are in
  * `summ-sweep/config.json`, which git ignores, since this repo is public;
- * `summ-sweep/config-example.json` shows its shape. Both files are checked
- * against their JSON Schemas (`summ-sweep/settings.js`) before the sweep
- * takes a setting. The range runs from
- * the first block of its first day to the last block of its last. Before
- * either file is written, the rows are checked by the csv utility and
- * both paths are checked for files already there, so a run that fails
- * writes neither. A report's amounts, which are BigInts, are written as
- * decimal text, json having no BigInt.
+ * `summ-sweep/config-example.json` shows its shape. Both files are
+ * checked against their JSON Schemas (`summ-sweep/settings.js`) before
+ * the sweep takes a setting. The range runs from the first block of its
+ * first day to the last block of its last. Before the chain is asked
+ * anything, the sweep checks that no report is in the way of a run
+ * without `--replace`, reads the template's header and parses Summ's
+ * pages. Before either file is written, the rows are checked by the csv
+ * utility, and both paths for files already there: a csv at `--out` is in
+ * the way only of a run that has rows, which only the sweep can tell. So
+ * a mistake these checks find, in an option, a setting, a page or a row,
+ * writes neither file. A report's amounts, which are BigInts, are written
+ * as decimal text, json having no BigInt.
  *
  * Fit: `bin/summ-sweep.js` runs `runSummSweep`. The tests
  * give it a stand-in chain and a stand-in LP Ranger.
  */
 
 import fs from "node:fs";
+import path from "node:path";
 import { Command, CommanderError, InvalidArgumentError } from "commander";
 import { JsonRpcProvider, Network, getAddress, isAddress } from "ethers";
 import {
@@ -43,6 +52,7 @@ import {
   writeSummCsv,
 } from "crypto-price-fetchers/summ-csv";
 import { messageOf } from "crypto-price-fetchers/lib/message-of";
+import { newFileRefusal } from "crypto-price-fetchers/lib/new-file";
 import { pacedProvider } from "../wallet-history/paced-provider.js";
 import { blockAtOrAfter } from "../wallet-history/blocks.js";
 import { parseSummResults } from "./summ-results.js";
@@ -50,7 +60,7 @@ import { readThroughLpRanger } from "./lp-ranger.js";
 import { sweepWallet } from "./sweep.js";
 import { dayStartSeconds } from "crypto-price-fetchers/lib/calendar-day";
 import { readSweepSettings } from "./settings.js";
-import { secondsOfTime } from "./times.js";
+import { dayText, secondsOfTime } from "./times.js";
 
 /** One day, in seconds. */
 const DAY = 86400;
@@ -137,6 +147,50 @@ function timeArgument(value) {
 }
 
 /**
+ * Reads the option of a file the sweep writes: a path that is no folder,
+ * in a folder that exists and takes a new file, which
+ * crypto-price-fetchers' `newFileRefusal` tells by making one there and
+ * removing it.
+ *
+ * @param {string} value - The option's text
+ * @returns {string} The path, as given
+ * @throws {InvalidArgumentError} When it is empty, its folder does not
+ *   exist or takes no new file, or it is a folder
+ */
+function fileToWriteArgument(value) {
+  if (value === "") throw new InvalidArgumentError("It names no file.");
+  const folder = path.dirname(path.resolve(value));
+  if (!fs.existsSync(folder) || !fs.statSync(folder).isDirectory())
+    throw new InvalidArgumentError(`Its folder, ${folder}, does not exist.`);
+  if (fs.existsSync(value) && fs.statSync(value).isDirectory())
+    throw new InvalidArgumentError("It is a folder, not a file.");
+  const refusal = newFileRefusal(folder);
+  if (refusal !== null)
+    throw new InvalidArgumentError(
+      `Its folder, ${folder}, takes no new file (${refusal}).`,
+    );
+  return value;
+}
+
+/**
+ * Reads one file of the option of Summ's saved pages: a file that
+ * exists. Commander calls it once for each file the option names.
+ *
+ * @param {string} value - The file's path
+ * @param {string[]|undefined} previous - The files the option named
+ *   before it
+ * @returns {string[]} The files so far, this one last
+ * @throws {InvalidArgumentError} When it is empty, or no file is at the
+ *   path
+ */
+function pageFileArgument(value, previous) {
+  if (value === "") throw new InvalidArgumentError("It names no file.");
+  if (!fs.existsSync(value) || !fs.statSync(value).isFile())
+    throw new InvalidArgumentError(`No file is at ${path.resolve(value)}.`);
+  return [...(previous ?? []), value];
+}
+
+/**
  * A value of a report as json writes it: a BigInt as decimal text, a Map
  * as an object, a Set as a list.
  *
@@ -185,6 +239,35 @@ function reportOf(result, range) {
 }
 
 /**
+ * Checks, before the chain is asked anything, what it can check without
+ * it: that no report is in the way of a run without `--replace`, that
+ * the template's header can be read, and Summ's pages, which it parses.
+ * A csv already at `--out` is in the way only of a run that has rows to
+ * write, which only the sweep can tell, so `checkBeforeWriting` checks
+ * it.
+ *
+ * @param {object} options - The parsed options
+ * @param {object} owner - The owner's settings: `templatePath`
+ * @returns {object[]} Summ's rows, from the pages
+ * @throws {Error} When the report is in the way, the template names no
+ *   file, or a page is refused
+ */
+function checkBeforeReading(options, owner) {
+  if (options.replace !== true && fs.existsSync(options.report))
+    throw new Error(
+      `${options.report} is already there: pass --replace to write over it`,
+    );
+  if (!fs.existsSync(owner.templatePath))
+    throw new Error(
+      `summ-sweep/config.json → templatePath names no file: ${owner.templatePath}`,
+    );
+  readTemplateHeader(owner.templatePath);
+  return parseSummResults(
+    options.summResults.map((file) => fs.readFileSync(file, "utf8")),
+  );
+}
+
+/**
  * Checks, before anything is written, that both files can be: the rows
  * pass the csv utility's rules, and no file is in the way of a run
  * without `--replace`.
@@ -214,16 +297,12 @@ function checkBeforeWriting(result, options, owner) {
  */
 async function sweepWith(options, context) {
   const { chain, owner, say, makeProvider, run } = context;
-  if (options.endDate < options.startDate)
-    throw new Error("--end-date is before --start-date");
+  const summRows = checkBeforeReading(options, owner);
   const paced = pacedProvider(makeProvider(chain), {
     spacingMs: chain.requestSpacingMs,
   });
   const fromBlock = await blockAtOrAfter(paced, options.startDate);
   const toBlock = (await blockAtOrAfter(paced, options.endDate + DAY)) - 1;
-  const summRows = parseSummResults(
-    options.summResults.map((file) => fs.readFileSync(file, "utf8")),
-  );
   const result = await sweepWallet(paced, {
     wallet: options.wallet,
     fromBlock,
@@ -326,9 +405,14 @@ function sweepCommand(stdout, stderr) {
     .requiredOption(
       "--summ-results <files...>",
       "the saved pages of Summ's results",
+      pageFileArgument,
     )
-    .requiredOption("--out <file>", "the csv to write")
-    .requiredOption("--report <file>", "the report to write, as json")
+    .requiredOption("--out <file>", "the csv to write", fileToWriteArgument)
+    .requiredOption(
+      "--report <file>",
+      "the report to write, as json",
+      fileToWriteArgument,
+    )
     .option(
       "--replace",
       "write over files already there, and remove the csv at --out when there are no rows",
@@ -359,8 +443,17 @@ export async function runSummSweep(argv, deps = {}) {
   const program = sweepCommand(stdout, stderr);
   try {
     program.parse(argv);
+    const options = program.opts();
+    if (options.endDate < options.startDate)
+      program.error(
+        `error: option '--end-date <day>' argument '${dayText(options.endDate)}' is invalid. It is before the day of --start-date, ${dayText(options.startDate)}.`,
+      );
+    if (path.resolve(options.out) === path.resolve(options.report))
+      program.error(
+        `error: option '--report <file>' argument '${options.report}' is invalid. It names the file --out names; the csv and the report need two.`,
+      );
     const { chain, owner } = readSweepSettings(repoTop);
-    await sweepWith(program.opts(), {
+    await sweepWith(options, {
       chain,
       owner,
       say: (line) => stdout.write(`${line}\n`),

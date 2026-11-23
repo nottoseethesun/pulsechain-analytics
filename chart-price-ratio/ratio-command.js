@@ -112,7 +112,7 @@ const PARSE = Object.freeze({
 
 /** What the help says after the options. */
 const HELP_AFTER = `
-Each option's default is set in config.json, beside this file. When
+Each option's default is set in chart-price-ratio/config.json. When
 config.json is refused, the help shows the defaults written in
 ratio-command.js, and any other run stops: on a mistake in its arguments
 when it has one, else on the file's problems.

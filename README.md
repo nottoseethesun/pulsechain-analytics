@@ -403,7 +403,8 @@ fails, and the files go back as they were. It works once a release with a
 ## Run
 
 The programs you run at a terminal are in `bin/`, each run from the
-repo's top folder with `node`, or, for the password script, `source`;
+repo's top folder: with `node`, through npm, or, for the password script,
+with `source`;
 the Sheets scripts are in `src/for-google-apps/check-token-balance/`, and
 a sheet runs them once they are added to it
 ([Google Sheets](#google-sheets)). Each sub-section below covers one: how

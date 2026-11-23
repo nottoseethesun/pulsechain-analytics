@@ -4,9 +4,9 @@
  *
  * What: the sweep's command line takes days as `YYYY-MM-DD` and a time as
  * `YYYY-MM-DD HH:MM:SS`, both in UTC, and the rows' notes write a time the
- * second way. `secondsOfTime` reads a time into seconds since 1970, and
- * `timeText` writes seconds back as a time; a day is read by
- * crypto-price-fetchers' `dayStartSeconds`
+ * second way. `secondsOfTime` reads a time into seconds since 1970,
+ * `timeText` writes seconds back as a time, and `dayText` a day's start
+ * back as a day; a day is read by crypto-price-fetchers' `dayStartSeconds`
  * (`crypto-price-fetchers/lib/calendar-day`).
  *
  * How: a time is read with `Date.parse`, as an ISO time in UTC, and kept
@@ -14,8 +14,9 @@
  * day that does not exist, such as `2026-02-30`, or an hour past 23, is
  * refused rather than moved to a nearby day.
  *
- * Fit: `summ-sweep/command-line.js` reads its options with it, and
- * `summ-sweep/gaps.js` writes the time in a row's note.
+ * Fit: `summ-sweep/command-line.js` reads its options with it and names
+ * the days of a refusal with it, and `summ-sweep/gaps.js` writes the time
+ * in a row's note.
  */
 
 /**
@@ -26,6 +27,16 @@
  */
 export function timeText(seconds) {
   return new Date(seconds * 1000).toISOString().slice(0, 19).replace("T", " ");
+}
+
+/**
+ * A day as the command line takes it.
+ *
+ * @param {number} seconds - The seconds since 1970 of the day's start
+ * @returns {string} Such as `2026-11-04`, in UTC
+ */
+export function dayText(seconds) {
+  return timeText(seconds).slice(0, 10);
 }
 
 /**

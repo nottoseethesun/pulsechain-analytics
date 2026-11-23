@@ -260,8 +260,8 @@ export function splitCollects({
           hash,
           problem:
             coin === null
-              ? `it paid out nothing of the coin on side ${side} of position #${collect.nftId}, though its DecreaseLiquidity events name principal of it`
-              : `it paid out less ${coin} than the principal its DecreaseLiquidity events name`,
+              ? `it paid out nothing of the coin on side ${side} of position #${collect.nftId}, though it still owed principal of it`
+              : `it paid out less ${coin} than the principal it still owed`,
         });
       } else if (coin !== null)
         splits.push({

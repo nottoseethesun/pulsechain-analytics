@@ -141,7 +141,7 @@ describe("the rules of a position's transactions", () => {
     ]);
     assert.match(
       rows[0].description,
-      /^Principal of 9mm V3 position #9: of the 3 HEX it paid out, the 2 HEX its DecreaseLiquidity events since its last collect name\. Bucket A: Summ holds only this transaction's gas, as an approval\.$/,
+      /^Principal of 9mm V3 position #9: of the 3 HEX it paid out, the 2 HEX of its principal it still owed\. Bucket A: Summ holds only this transaction's gas, as an approval\.$/,
     );
     assert.match(
       rows[1].description,

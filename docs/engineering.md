@@ -80,7 +80,6 @@ that hold no key and none of the owner's own settings.
 | `chart-price-ratio/config.json` | yes | The ratio chart's settings, checked against `RATIO_SETTINGS_SCHEMA`: GeckoTerminal's network, DexTools' plan, Moralis's chain and the days a run reads from it, the interval, the CSV's path, read from the chart's folder. No key. `config-example.json` beside it holds the same. |
 | `check-token-balance/config.json` | yes | The balance checker's rpc endpoint, the json-rpc api of a PulseChain node it reads balances from, checked against `SETTINGS_SCHEMA` in `check-token-balance/settings.js`. `config-example.json` beside it holds the same. |
 | `src/for-google-apps/check-token-balance/config.json` | no | The Node version's rpc endpoint, an http or https url (`CONFIG_SCHEMAS`); `config-example.json` beside it shows the shape. |
-| `coverage/` | no | A test run's coverage report. |
 
 Every `config.json` has a `config-example.json` beside it, which git
 keeps: the settings with their default values, or, for the owner's own
@@ -158,7 +157,7 @@ owner's key file or password.
 
 | Test | What it covers |
 | ---- | -------------- |
-| `fetch-amount-of-token-transferred.test.js` | The module on ethers, a library for talking to Ethereum-style chains, against a stand-in chain, on the cases `transfer-cases.js` holds both copies to, a token or wallet that is not an address, one written with spaces around it or in a mixed case that is not its checksum, a transaction hash with spaces around it, and a token of more than 80 decimals among them. |
+| `fetch-amount-of-token-transferred.test.js` | The module on ethers, a library for talking to Ethereum-style chains, against a stand-in chain, on the cases `transfer-cases.js` holds both copies to, a token or wallet that is not an address, one written with spaces around it or in a mixed case that is not its checksum, a transaction hash with spaces around it, and a token of more than 80 decimals among them; and the provider closed after a read that fails, so the program that imported the module ends. |
 | `fetch-amount-of-token-transferred-gs.test.js` | The Sheets script, run unchanged under Node, on the same cases; and `wrapper.gs`, against a stand-in of the deployed library, giving its amount and letting its error through. |
 | `fetch-amount-of-token-transferred-node-version.test.js` | The Sheets script's Node version, its command line included; its schema of the script's config object held to the script by crypto-price-fetchers' `configSchemaProblems`, and a `config.json` it refuses. |
 | `format-balance.test.js` | How the balance checker writes a balance, for a token of any decimals from 0 to 255. |
@@ -178,7 +177,7 @@ owner's key file or password.
 | `summ-sweep-positions.test.js` | The split of withdrawals from positions into principal and fees (`splitCollects`): a pool's coins ordered by their addresses as numbers, the collects it refuses to split, one whose coins the wallet received less of than its principal or none of, the principal a Collect event leaves owed carried to the next collect whatever the wallet received, a later collect of a position owed coins when the range began reported while the range's collects have not paid out all it was owed and split once they have, a two-position collect among them, a transaction that collects twice from one position reported, with what its first Collect paid of what the position was owed kept, and LP Ranger's records of another shape refused. |
 | `summ-sweep-splits.test.js` | LP Ranger's tool run through a stand-in and as a real program (`readThroughLpRanger`); the coins paid as PLS handed back apart, with principal or without, a token coin with no principal left to the match, and the fee of a coin with no symbol for the csv left to a question (`sortSplits`); and the coins each position was owed when the range began, read at the block before it, an endpoint's error answer stopping the read (`owedWhenRangeBegan`). |
 | `summ-sweep-run.test.js` | The whole sweep, `sweepWallet`, against a stand-in chain: a split Summ holds whole and one it holds in parts, the gaps booked, a question's amount in whole tokens, no block read for its time that the search for the wallet's transactions already read, a withdrawal paid as PLS, a position's first collect in the range reported when the position was owed coins as the range began, its coins asked about rather than booked, a Transfer log of a shape no ERC-20 or NFT Transfer has reported and read as no leg, and a change of balance no payment explains. |
-| `summ-sweep-command.test.js` | The sweep's command line: the csv written through crypto-price-fetchers' Summ csv utility, with addresses in lower case, and the report in EIP-55's mixed case; neither file written when one path is taken, and the last run's csv removed by a run with `--replace` and no rows; a mistake in an option refused as it is parsed, before anything is read; the chain's facts of the wrong kind, a `requestSpacingMs` Node's timers cannot keep among them, and an owner's address whose checksum is wrong refused, every problem listed, before the chain is read; the committed top `config.json` and `summ-sweep/config-example.json` held to their schemas; and its help, with its exit codes. |
+| `summ-sweep-command.test.js` | The sweep's command line: the csv written through crypto-price-fetchers' Summ csv utility, with addresses in lower case, and the report in EIP-55's mixed case; neither file written when one path is taken, and the last run's csv removed by a run with `--replace` and no rows; a mistake in an option refused as it is parsed, before anything is read, a missing folder of `--out` or `--report`, a folder of either that takes no new file, shown with `/proc` where there is one, an `--out` or a `--report` that is a folder, a missing page of `--summ-results`, and an empty `--out`, `--report` or page of `--summ-results` among them, as are an `--out` and a `--report` that name one file and an `--end-date` before `--start-date`; a `templatePath` that names no file refused before the chain is asked, writing neither file; the chain's facts of the wrong kind, a `requestSpacingMs` Node's timers cannot keep among them, and an owner's address whose checksum is wrong refused, every problem listed, before the chain is read; the committed top `config.json` and `summ-sweep/config-example.json` held to their schemas; and its help, with its exit codes. |
 | `summ-sweep-gap-rules.test.js` | The rules that book the legs Summ lacks outside a swap (a position's deposits, with the position's number and the PLS a deposit paid, NFTs the position manager mints or burns, withdrawals and fees; wraps; spam; the owner's wallets, a position's NFT sent to one of them among them; income tokens), and the question for each leg no rule books, a token whose contract's symbol is blank or PLS among them, unless the owner's settings give it a symbol. |
 | `summ-sweep-gaps.test.js` | The rows of swaps, of tokens and of PLS, with only what Summ lacks; how much of a transaction Summ holds; where its gas goes; a transaction later than the time given as reached by Summ's sync; and the Fee rows and questions of transactions that moved no token. |
 
@@ -329,18 +328,7 @@ deleted. The steps from a branch to `main` are LP Ranger's eight, in its
 
 ## Known Bugs
 
-These are known, each with its tests in `test/known-bugs.test.js`:
-
-- The Summ sweep checks its files only after it reads the chain, so a
-  mistake in one can leave the csv of a run that fails, or write its
-  report over the csv when `--out` and `--report` name one file.
-- The Summ sweep refuses an `--end-date` before `--start-date` only after
-  it reads its settings, naming no option.
-- `getTokenTransferred`, in `fetch-amount-of-token-transferred.js`, leaves
-  its provider running after a read that fails, so the program that
-  imported it never ends.
-
-A bug found gets a test in `test/known-bugs.test.js`,
+None is known. A bug found gets a test in `test/known-bugs.test.js`,
 declared with `knownBug` (`test/helpers/known-bug.js`), so the test passes
 while the bug is present. The bug's fix makes its test fail; the same change
 declares the test with `it`, among the tests of the code it is about.

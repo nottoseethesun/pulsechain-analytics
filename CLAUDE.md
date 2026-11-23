@@ -115,8 +115,10 @@ The command lines check a day with crypto-price-fetchers' `dayStartSeconds`
 calendar does not have, and an url or a number with a parser made from
 its kinds of value (`crypto-price-fetchers/lib/settings-schema`), the
 kinds the settings files' schemas give the same settings (Settings,
-below), as commander parses them; each
-entry point calls its `endQuietlyWhenOutputCloses`
+below), as commander parses them; the Summ sweep checks with its
+`newFileRefusal` (`crypto-price-fetchers/lib/new-file`) that the folder
+of each file it writes takes a new file, making one there and removing
+it; each entry point calls its `endQuietlyWhenOutputCloses`
 (`crypto-price-fetchers/lib/closed-output`) before it starts, so a command
 line whose output is piped into a program that stops reading, such as
 `head`, ends with its exit code and no stack trace. The help test checks
@@ -394,18 +396,7 @@ beside it shows the shape.
 
 ## Known bugs
 
-These are known, each with its tests in `test/known-bugs.test.js`:
-
-- The Summ sweep checks its files only after it reads the chain, so a
-  mistake in one can leave the csv of a run that fails, or write its
-  report over the csv when `--out` and `--report` name one file.
-- The Summ sweep refuses an `--end-date` before `--start-date` only after
-  it reads its settings, naming no option.
-- `getTokenTransferred`, in `fetch-amount-of-token-transferred.js`, leaves
-  its provider running after a read that fails, so the program that
-  imported it never ends.
-
-When one is found, it gets a test in
+None is known. When one is found, it gets a test in
 `test/known-bugs.test.js`, declared with `knownBug`, so the test passes while
 the bug is present. The bug's fix makes its test fail; declare that test with
 `it` instead, in the same change, among the tests of the code it is about.

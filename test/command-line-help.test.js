@@ -145,7 +145,9 @@ describe("the list of command lines", () => {
  * Runs a tool's start file with `--help` as a checkout runs it after
  * `npm ci` in the tool's folder alone: from a copy of the start file in the
  * `bin/` of a temp folder, beside a link to the tool's folder, with no
- * packages of the top folder's to resolve from.
+ * packages of the top folder's to resolve from. `--preserve-symlinks`
+ * keeps the link's path, so the tool's modules look for packages in the
+ * tool's folder, through the link, and in no folder of the repo.
  *
  * @param {string} startFile - The start file's name in `bin/`
  * @param {string} toolFolder - The tool's folder, from the repo's top
@@ -164,7 +166,7 @@ function helpWithToolPackagesOnly(startFile, toolFolder) {
     fs.symlinkSync(path.join(REPO_TOP, toolFolder), link, "dir");
     return spawnSync(
       process.execPath,
-      [path.join(top, "bin", startFile), "--help"],
+      ["--preserve-symlinks", path.join(top, "bin", startFile), "--help"],
       { cwd: top, encoding: "utf8", timeout: 30000 },
     );
   } finally {
