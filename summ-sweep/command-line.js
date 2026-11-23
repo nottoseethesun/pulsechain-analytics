@@ -52,7 +52,7 @@ import {
   writeSummCsv,
 } from "crypto-price-fetchers/summ-csv";
 import { messageOf } from "crypto-price-fetchers/lib/message-of";
-import { newFileRefusal } from "crypto-price-fetchers/lib/new-file";
+import { fileToWriteArgument } from "crypto-price-fetchers/lib/file-to-write";
 import { pacedProvider } from "../wallet-history/paced-provider.js";
 import { blockAtOrAfter } from "../wallet-history/blocks.js";
 import { parseSummResults } from "./summ-results.js";
@@ -144,32 +144,6 @@ function timeArgument(value) {
       `"${value}" is not a time written as "YYYY-MM-DD HH:MM:SS".`,
     );
   return seconds;
-}
-
-/**
- * Reads the option of a file the sweep writes: a path that is no folder,
- * in a folder that exists and takes a new file, which
- * crypto-price-fetchers' `newFileRefusal` tells by making one there and
- * removing it.
- *
- * @param {string} value - The option's text
- * @returns {string} The path, as given
- * @throws {InvalidArgumentError} When it is empty, its folder does not
- *   exist or takes no new file, or it is a folder
- */
-function fileToWriteArgument(value) {
-  if (value === "") throw new InvalidArgumentError("It names no file.");
-  const folder = path.dirname(path.resolve(value));
-  if (!fs.existsSync(folder) || !fs.statSync(folder).isDirectory())
-    throw new InvalidArgumentError(`Its folder, ${folder}, does not exist.`);
-  if (fs.existsSync(value) && fs.statSync(value).isDirectory())
-    throw new InvalidArgumentError("It is a folder, not a file.");
-  const refusal = newFileRefusal(folder);
-  if (refusal !== null)
-    throw new InvalidArgumentError(
-      `Its folder, ${folder}, takes no new file (${refusal}).`,
-    );
-  return value;
 }
 
 /**

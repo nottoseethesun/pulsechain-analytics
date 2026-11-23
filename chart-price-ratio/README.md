@@ -139,22 +139,21 @@ repo's [README](../README.md#api-keys).
 
 ## Run
 
-The chart runs through its start file, `bin/pulse-token-ratio.js`, in
-the repo's `bin/`, the folder of the programs a reader runs, after
-`npm ci` here. It reads the `config.json` here whichever folder it runs
-in. From the repo's top folder, the daily ratio of two tokens, the
-default:
-
 ```bash
 node bin/pulse-token-ratio.js <tokenA> <tokenB>
 ```
 
-`npm start -- <options>`, here, runs the same command line.
-`node bin/pulse-token-ratio.js --help` lists every option, each with its
-default from `config.json`, examples of its common uses, and the exit
-codes: 0 when the ratios were printed, 1 when they were not.
+Run from the repo's top folder, this charts the daily ratio of two
+tokens, the default. The chart runs through its start file,
+`bin/pulse-token-ratio.js`, in the repo's `bin/`, the folder of the
+programs a reader runs, after `npm ci` here. It reads the `config.json`
+here whichever folder it runs in. `npm start -- <options>`, here, runs
+the same command line. `node bin/pulse-token-ratio.js --help` lists every
+option, each with its default from `config.json`, examples of its common
+uses, and the exit codes: 0 when the ratios were printed, 1 when they
+were not.
 
-### Usage
+### Usage of pulse-token-ratio.js
 
 The chart spans at least 90 columns, so its x-axis has room to space its
 dates. A series of fewer points is drawn with each point widened over

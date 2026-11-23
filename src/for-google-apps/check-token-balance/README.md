@@ -42,28 +42,12 @@ folder of the programs a reader runs, runs
 `fetch-amount-of-token-transferred.gs` itself, unchanged, under Node, the
 program that runs JavaScript outside a browser, so it answers as
 `getTokenTransferred` does in a sheet, from a Node program or the command
-line. It needs no wrapper: a Node program imports it directly. npm, Node's
-package manager, installs the repo's packages.
-
-From the repo's top folder, after `npm ci` (Node 24 or later):
-
-```bash
-node bin/fetch-amount-of-token-transferred.js <transaction> <token> <wallet>
-```
-
-It prints the amount. `--help` lists the options, with examples and the
-exit codes. The PulseChain rpc endpoint, the json-rpc api of the node it
+line ([Run](#run)). It needs no wrapper: a Node program imports it
+directly. npm, Node's package manager, installs the repo's packages with
+`npm ci`, and the Node version runs from the repo's top folder, on Node 24
+or later. The PulseChain rpc endpoint, the json-rpc api of the node it
 asks, can go in `config.json` here, beside the script, which git, the
 version-control program, ignores; `config-example.json` shows the shape.
-From a Node program in the repo's top folder:
-
-```js
-import { openTokenTransferFetcher } from './bin/fetch-amount-of-token-transferred.js';
-
-const fetcher = await openTokenTransferFetcher();
-const amount = await fetcher.getTokenTransferred(txId, tokenAddress, walletAddress);
-await fetcher.close();
-```
 
 It runs the script with the runner of
 [crypto-price-fetchers](https://github.com/nottoseethesun/crypto-price-fetchers),
@@ -87,6 +71,66 @@ The caching function is in the deployed library only, not in the repo's
 copy of the script. The repo's copy, its Node version and the module at
 the repo's top folder that works out the same amount with ethers, a
 library for talking to Ethereum-style chains, keep no cache.
+
+## Run
+
+The script runs in a sheet's cell, once it is added to the sheet
+([Installation](#installation)) and `wrapper.gs` is pasted into the
+sheet's own project; its Node version runs from the repo's top folder.
+Each sub-section below covers one: first an example of how to run it,
+then what it does, and, under its Usage, more examples.
+
+### fetch-amount-of-token-transferred.gs
+
+```text
+=getTokenTransferred(A2, "0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39", B2)
+```
+
+In a cell, this gives the HEX that the transaction in cell A2 sent the
+wallet in cell B2, through the wrapper, which asks the library's caching
+function ([A Note on Caching](#a-note-on-caching)).
+
+#### Usage of fetch-amount-of-token-transferred.gs
+
+The same amount, asked of the chain each time, without the cache:
+
+```text
+=getTokenTransferredNoCache(A2, "0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39", B2)
+```
+
+Each row's own token, its contract address in column C:
+
+```text
+=getTokenTransferred(A2, C2, B2)
+```
+
+### fetch-amount-of-token-transferred.js
+
+```bash
+node bin/fetch-amount-of-token-transferred.js <transaction> <token> <wallet>
+```
+
+This prints how much of the token the transaction sent the wallet.
+`--help` lists the options, with examples and the exit codes.
+
+#### Usage of fetch-amount-of-token-transferred.js
+
+How much HEX one transaction sent a wallet, with the script's log on
+stderr, which shows each step it took:
+
+```bash
+node bin/fetch-amount-of-token-transferred.js --verbose <transaction> 0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39 <wallet>
+```
+
+From a Node program in the repo's top folder:
+
+```js
+import { openTokenTransferFetcher } from './bin/fetch-amount-of-token-transferred.js';
+
+const fetcher = await openTokenTransferFetcher();
+const amount = await fetcher.getTokenTransferred(txId, tokenAddress, walletAddress);
+await fetcher.close();
+```
 
 ## Contributing
 

@@ -115,10 +115,11 @@ The command lines check a day with crypto-price-fetchers' `dayStartSeconds`
 calendar does not have, and an url or a number with a parser made from
 its kinds of value (`crypto-price-fetchers/lib/settings-schema`), the
 kinds the settings files' schemas give the same settings (Settings,
-below), as commander parses them; the Summ sweep checks with its
-`newFileRefusal` (`crypto-price-fetchers/lib/new-file`) that the folder
-of each file it writes takes a new file, making one there and removing
-it; each entry point calls its `endQuietlyWhenOutputCloses`
+below), as commander parses them; the Summ sweep checks each file it
+writes with its `fileToWriteArgument`
+(`crypto-price-fetchers/lib/file-to-write`): no folder, in a folder that
+exists and takes a new file, which it tells by making one there and
+removing it; each entry point calls its `endQuietlyWhenOutputCloses`
 (`crypto-price-fetchers/lib/closed-output`) before it starts, so a command
 line whose output is piped into a program that stops reading, such as
 `head`, ends with its exit code and no stack trace. The help test checks
@@ -126,8 +127,10 @@ that of each command line, and `test/repo-checks.test.js` holds the
 tracked files to its repo checks (`crypto-price-fetchers/lib/repo-checks`):
 every EVM address in EIP-55's form, every npm target named in
 `docs/project-commands.md`, every test file and helper named in the
-docs, every link and path in a doc pointing at a file, folder or
-heading the repo keeps, and a `config-example.json` beside every
+docs, every link in a doc, and every path in a code span that starts
+at the doc's own folder, with `.` or `..` as its first part, pointing
+at a file, folder or heading the repo keeps, and a
+`config-example.json` beside every
 `config.json`, holding what a committed `config.json` holds.
 
 The Summ sweep, which compares a wallet's history with its records in
@@ -396,10 +399,7 @@ beside it shows the shape.
 
 ## Known bugs
 
-One is known, with its test in `test/known-bugs.test.js`: git keeps a
-file written directly in the Summ sweep's or the ratio chart's `output/`
-folder, which `.gitignore` should ignore.
-When one is found, it gets a test in
+None is known. When one is found, it gets a test in
 `test/known-bugs.test.js`, declared with `knownBug`, so the test passes while
 the bug is present. The bug's fix makes its test fail; declare that test with
 `it` instead, in the same change, among the tests of the code it is about.

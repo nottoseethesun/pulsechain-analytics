@@ -119,19 +119,21 @@ or zsh.
 - [Uninstall](#uninstall)
 - [Run](#run)
   - [fetch-amount-of-token-transferred.gs](#fetch-amount-of-token-transferredgs-1)
+    - [Usage of fetch-amount-of-token-transferred.gs](#usage-of-fetch-amount-of-token-transferredgs)
   - [wrapper.gs](#wrappergs-1)
-    - [Usage](#usage)
+    - [Usage of wrapper.gs](#usage-of-wrappergs)
   - [fetch-amount-of-token-transferred.js](#fetch-amount-of-token-transferredjs-1)
-    - [Usage](#usage-1)
+    - [Usage of fetch-amount-of-token-transferred.js](#usage-of-fetch-amount-of-token-transferredjs)
   - [check-token-balance.js](#check-token-balancejs-1)
-    - [Usage](#usage-2)
+    - [Usage of check-token-balance.js](#usage-of-check-token-balancejs)
   - [pulse-token-ratio.js](#pulse-token-ratiojs-1)
-    - [Usage](#usage-3)
+    - [Usage of pulse-token-ratio.js](#usage-of-pulse-token-ratiojs)
   - [summ-sweep.js](#summ-sweepjs-1)
-    - [Usage](#usage-4)
+    - [Usage of summ-sweep.js](#usage-of-summ-sweepjs)
   - [manage-api-keys.js](#manage-api-keysjs-1)
-    - [Usage](#usage-5)
+    - [Usage of manage-api-keys.js](#usage-of-manage-api-keysjs)
   - [unlock-api-keys.sh](#unlock-api-keyssh-1)
+    - [Usage of unlock-api-keys.sh](#usage-of-unlock-api-keyssh)
 - [Configure](#configure)
 - [Lint & Test](#lint--test)
 - [Private Key Security](#private-key-security)
@@ -407,9 +409,9 @@ repo's top folder: with `node`, through npm, or, for the password script,
 with `source`;
 the Sheets scripts are in `src/for-google-apps/check-token-balance/`, and
 a sheet runs them once they are added to it
-([Google Sheets](#google-sheets)). Each sub-section below covers one: how
-to run it, with an example, and, under its Usage, the options and cases
-that take more. Each command line answers `--help` with its options, more
+([Google Sheets](#google-sheets)). Each sub-section below covers one:
+first an example of how to run it, then what it does, and, under its
+Usage, more examples, of the options and cases that take more. Each command line answers `--help` with its options, more
 examples and its exit codes, and
 [`docs/project-commands.md`](docs/project-commands.md) lists every
 command with its flags. `<wallet>` and `<transaction-hash>` stand for
@@ -417,7 +419,12 @@ your own.
 
 ### fetch-amount-of-token-transferred.gs
 
-`getTokenTransferred(transaction, token, wallet)` gives how much of a
+```text
+=getTokenTransferred(A2, "0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39", B2)
+```
+
+In a cell, this gives the HEX that the transaction in cell A2 sent the
+wallet in cell B2. `getTokenTransferred(transaction, token, wallet)` gives how much of a
 token one PulseChain transaction sent a wallet: it reads the
 transaction's receipt and adds up the token's transfers to the wallet in
 it, cut off at 7 decimal places rather than rounded. For an amount of
@@ -427,22 +434,37 @@ pasted into the sheet's project, a cell calls the copy's
 `getTokenTransferred`, which keeps no cache; with the library added, a
 cell calls the wrapper's, below, in the same way.
 
-The HEX that the transaction in cell A2 sent the wallet in cell B2:
+#### Usage of fetch-amount-of-token-transferred.gs
+
+Each row's own token, its contract address in column C, so that one
+formula, filled down the column, reads transfers of several tokens:
+
+```text
+=getTokenTransferred(A2, C2, B2)
+```
+
+The wrapped PLS that one transaction sent one wallet, both typed into the
+formula:
+
+```text
+=getTokenTransferred("<transaction-hash>", "0xA1077a294dDE1B09bB078844df40758a5D0f9a27", "<wallet>")
+```
+
+### wrapper.gs
 
 ```text
 =getTokenTransferred(A2, "0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39", B2)
 ```
 
-### wrapper.gs
-
-With the library and the wrapper in the sheet's project, the wrapper's
+With the library and the wrapper in the sheet's project, this gives the
+same amount as above. The wrapper's
 `getTokenTransferred` asks the library's caching function, which answers
 a repeated call from its cache, since a transaction's amount does not
 change once it is on the chain, and its `getTokenTransferredNoCache`
 asks without the cache. A sheet with a pasted copy of the script has no
 `getTokenTransferredNoCache`.
 
-#### Usage
+#### Usage of wrapper.gs
 
 The same amount as above, asked of the chain each time, without the
 cache:
@@ -451,20 +473,27 @@ cache:
 =getTokenTransferredNoCache(A2, "0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39", B2)
 ```
 
-### fetch-amount-of-token-transferred.js
+Each row's own token, its contract address in column C, from the cache:
 
-`bin/fetch-amount-of-token-transferred.js` runs the Sheets script under
-Node, unchanged, and prints what its cell would show, with exit code 0,
-or the script's message on stderr, with exit code 1. It asks the rpc
-endpoint the optional `config.json` beside the Sheets script names, or
-else the one the script is written with, g4mm4's
-([Configure](#configure)). How much HEX one transaction sent a wallet:
+```text
+=getTokenTransferred(A2, C2, B2)
+```
+
+### fetch-amount-of-token-transferred.js
 
 ```bash
 node bin/fetch-amount-of-token-transferred.js <transaction-hash> 0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39 <wallet>
 ```
 
-#### Usage
+This prints how much HEX one transaction sent a wallet.
+`bin/fetch-amount-of-token-transferred.js` runs the Sheets script under
+Node, unchanged, and prints what its cell would show, with exit code 0,
+or the script's message on stderr, with exit code 1. It asks the rpc
+endpoint the optional `config.json` beside the Sheets script names, or
+else the one the script is written with, g4mm4's
+([Configure](#configure)).
+
+#### Usage of fetch-amount-of-token-transferred.js
 
 The same, with the script's log on stderr, which shows each step it took:
 
@@ -472,21 +501,28 @@ The same, with the script's log on stderr, which shows each step it took:
 node bin/fetch-amount-of-token-transferred.js --verbose <transaction-hash> 0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39 <wallet>
 ```
 
-### check-token-balance.js
+The same, from the rpc endpoint that a settings file of yours names, in
+the shape of `config-example.json` beside the Sheets script:
 
-`bin/check-token-balance.js`, the balance checker, prints a wallet's
-balance of each token named, at a block or at the start of a day in UTC.
-A token is named by its contract address; PLS, the chain's own coin, has
-no contract, so it is named `Pulse_Native_Gas_Token`. It reads its
-settings from the `config.json` in `check-token-balance/`, whichever
-folder it runs in. A wallet's PLS and HEX at the start of 1 November
-2026, UTC:
+```bash
+node bin/fetch-amount-of-token-transferred.js --config ~/pulsechain-endpoint.json <transaction-hash> 0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39 <wallet>
+```
+
+### check-token-balance.js
 
 ```bash
 node bin/check-token-balance.js --address <wallet> --date 2026-11-01 --tokens Pulse_Native_Gas_Token,0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39
 ```
 
-#### Usage
+This prints a wallet's PLS and HEX at the start of 1 November 2026, UTC.
+`bin/check-token-balance.js`, the balance checker, prints a wallet's
+balance of each token named, at a block or at the start of a day in UTC.
+A token is named by its contract address; PLS, the chain's own coin, has
+no contract, so it is named `Pulse_Native_Gas_Token`. It reads its
+settings from the `config.json` in `check-token-balance/`, whichever
+folder it runs in.
+
+#### Usage of check-token-balance.js
 
 The same wallet's PLS at one block, from another rpc endpoint that keeps
 past state:
@@ -495,8 +531,20 @@ past state:
 node bin/check-token-balance.js --address <wallet> --block 22000000 --tokens Pulse_Native_Gas_Token --rpc https://rpc.pulsechain.com
 ```
 
+The same wallet's wrapped PLS and HEX at the start of 2026, from a node
+on this computer that keeps past state:
+
+```bash
+node bin/check-token-balance.js --address <wallet> --date 2026-01-01 --tokens 0xA1077a294dDE1B09bB078844df40758a5D0f9a27,0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39 --rpc http://localhost:8545
+```
+
 ### pulse-token-ratio.js
 
+```bash
+node bin/pulse-token-ratio.js 0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39 0xA1077a294dDE1B09bB078844df40758a5D0f9a27
+```
+
+This charts the ratio of HEX's price to wrapped PLS's, day by day.
 `bin/pulse-token-ratio.js`, the ratio chart, charts the ratio of two
 PulseChain tokens' prices (token A / token B) in the terminal, even when
 no pool trades one for the other: it prices each token in USD, from a
@@ -507,16 +555,10 @@ the candles cannot be had, it falls back to each token's current price
 from DexTools, with a DexTools key saved. It reads its settings from the
 `config.json` in `chart-price-ratio/`, whichever folder it runs in.
 [Its README](chart-price-ratio/README.md) covers how it picks each pool.
-The ratio of HEX's price to wrapped PLS's, day by day:
-
-```bash
-node bin/pulse-token-ratio.js 0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39 0xA1077a294dDE1B09bB078844df40758a5D0f9a27
-```
-
 `npm start -- <options>`, in `chart-price-ratio/`, runs the same command
 line.
 
-#### Usage
+#### Usage of pulse-token-ratio.js
 
 The same ratio hour by hour, also written to a CSV file,
 `chart-price-ratio/output/csv/token_ratio.csv`, where git keeps nothing
@@ -535,7 +577,12 @@ node bin/pulse-token-ratio.js 0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39 0xA1077
 
 ### summ-sweep.js
 
-`bin/summ-sweep.js`, the Summ sweep, which `npm run summ-sweep` runs,
+```bash
+npm run summ-sweep -- --wallet <wallet> --start-date 2026-11-01 --end-date 2026-11-30 --summ-synced-to "2026-11-30 23:59:59" --summ-results summ-sweep/input/summ-results-1.json summ-sweep/input/summ-results-2.json --out summ-sweep/output/csv/missing.csv --report summ-sweep/output/json/report.json
+```
+
+This sweeps a wallet's November 2026 against two saved pages of Summ's
+results. `bin/summ-sweep.js`, the Summ sweep, which `npm run summ-sweep` runs,
 compares a wallet's history on PulseChain, read from the chain alone,
 with its records in Summ, and writes a csv of rows for what Summ lacks
 and a report, as json, of what to fix. It reads its settings from the
@@ -553,14 +600,9 @@ folder it runs in, the repo's top folder. It needs three things:
 It writes the csv in `summ-sweep/output/csv/` and the report in
 `summ-sweep/output/json/`, as the examples name them. The files hold your
 own data, and the repo is public, so git keeps nothing in those folders
-but the folders. A wallet's November 2026 swept against two saved pages
-of Summ's results:
+but the folders.
 
-```bash
-npm run summ-sweep -- --wallet <wallet> --start-date 2026-11-01 --end-date 2026-11-30 --summ-synced-to "2026-11-30 23:59:59" --summ-results summ-sweep/input/summ-results-1.json summ-sweep/input/summ-results-2.json --out summ-sweep/output/csv/missing.csv --report summ-sweep/output/json/report.json
-```
-
-#### Usage
+#### Usage of summ-sweep.js
 
 The same sweep run again after fixing a leg in Summ and saving Summ's
 results again, writing over the last run's files:
@@ -569,21 +611,28 @@ results again, writing over the last run's files:
 npm run summ-sweep -- --wallet <wallet> --start-date 2026-11-01 --end-date 2026-11-30 --summ-synced-to "2026-11-30 23:59:59" --summ-results summ-sweep/input/summ-results-1.json summ-sweep/input/summ-results-2.json --out summ-sweep/output/csv/missing.csv --report summ-sweep/output/json/report.json --replace
 ```
 
+The first 23 days of November, while Summ's sync has read the wallet's
+transactions only up to 18:00 UTC on 22 November: the rows of the
+transactions after that time carry no gas, for the sync to bring:
+
+```bash
+npm run summ-sweep -- --wallet <wallet> --start-date 2026-11-01 --end-date 2026-11-23 --summ-synced-to "2026-11-22 18:00:00" --summ-results summ-sweep/input/summ-results-1.json --out summ-sweep/output/csv/missing-1-to-23.csv --report summ-sweep/output/json/report-1-to-23.json
+```
+
 [The Summ Sweep](docs/architecture.md#the-summ-sweep) explains its rules.
 
 ### manage-api-keys.js
-
-`bin/manage-api-keys.js`, which `npm run api-keys` runs, is
-crypto-price-fetchers' key manager: it lists each key the top
-`config.json` names, saved or not, never showing its characters, and
-asks for each one not saved. Each key, saved or not, with a question for
-each one not saved:
 
 ```bash
 npm run api-keys
 ```
 
-#### Usage
+This lists each key the top `config.json` names, saved or not, never
+showing its characters, with a question for each one not saved:
+`bin/manage-api-keys.js`, which `npm run api-keys` runs, is
+crypto-price-fetchers' key manager.
+
+#### Usage of manage-api-keys.js
 
 DexTools' saved key replaced, as after DexTools issues a new one:
 
@@ -591,17 +640,40 @@ DexTools' saved key replaced, as after DexTools issues a new one:
 npm run api-keys -- set dextools
 ```
 
-### unlock-api-keys.sh
+Whether the password kept for the terminal opens every saved key, by its
+exit code, 0 when it does:
 
-`bin/unlock-api-keys.sh`, a copy of crypto-price-fetchers' script, asks
-for the password once, showing nothing of what is typed, checks that it
-opens the keys, and keeps it in `API_KEYS_PASSWORD` until the terminal
-closes, so a tool opens its keys without asking. It runs with `source`,
-since a script run as a program cannot set anything in the terminal that
-started it:
+```bash
+npm run api-keys -- check-password
+```
+
+### unlock-api-keys.sh
 
 ```bash
 source ./bin/unlock-api-keys.sh
+```
+
+This asks for the password once, showing nothing of what is typed,
+checks that it opens the keys, and keeps it in `API_KEYS_PASSWORD` until
+the terminal closes, so a tool opens its keys without asking.
+`bin/unlock-api-keys.sh` is a copy of crypto-price-fetchers' script. It
+runs with `source`, since a script run as a program cannot set anything
+in the terminal that started it.
+
+#### Usage of unlock-api-keys.sh
+
+The same from any other folder, by the script's path:
+
+```bash
+source /path/to/pulsechain-analytics/bin/unlock-api-keys.sh
+```
+
+The password kept, then the ratio chart run from Moralis, which opens
+the Moralis key without asking for the password:
+
+```bash
+source ./bin/unlock-api-keys.sh
+node bin/pulse-token-ratio.js 0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39 0xA1077a294dDE1B09bB078844df40758a5D0f9a27 --source moralis
 ```
 
 ---
