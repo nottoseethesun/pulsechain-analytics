@@ -21,9 +21,13 @@ With no Moralis key saved, a run reads GeckoTerminal's candles. With one
 saved, it asks which to read, Enter taking Moralis, unless `--source`
 names one. The chart asks both through the clients of
 crypto-price-fetchers, the owner's repo of code his projects share. When
-the candles cannot be had, the chart falls back to each token's current
-price from **DexTools**, a third such service, which takes an api key:
-one point.
+the candles cannot be had, as when the source cannot list a token's pools
+or pairs, or gives no candles of them, the chart falls back to each
+token's current price from **DexTools**, a third such service, which
+takes an api key: one point. It cannot fall back with no DexTools key
+saved, or when DexTools does not answer in time, answers with an error,
+or gives no price for a token: the run then stops with exit code 1, and
+prints no ratio.
 
 IMPORTANT: Use at your own risk as defined in the included file, `../LICENSE`.
 
@@ -132,23 +136,22 @@ npm run api-keys
 ```
 
 The chart opens each key the first time it asks that service, with the
-password that `source ./bin/unlock-api-keys.sh`, run in the repo's top
-folder, keeps for the terminal, or one it asks for. A run that reads
+password, which it asks for. A run that reads
 GeckoTerminal's candles and never falls back asks for no password. See the
 repo's [README](../README.md#api-keys).
 
 ## Run
 
 ```bash
-node bin/pulse-token-ratio.js <tokenA> <tokenB>
+node bin/end-user/pulse-token-ratio.js <tokenA> <tokenB>
 ```
 
 Run from the repo's top folder, this charts the daily ratio of two
 tokens, the default. The chart runs through its start file,
-`bin/pulse-token-ratio.js`, in the repo's `bin/`, the folder of the
-programs a reader runs, after `npm ci` here. It reads the `config.json`
+`bin/end-user/pulse-token-ratio.js`, in the repo's `bin/end-user/`, the
+folder of the programs only an end user runs, after `npm ci` here. It reads the `config.json`
 here whichever folder it runs in. `npm start -- <options>`, here, runs
-the same command line. `node bin/pulse-token-ratio.js --help` lists every
+the same command line. `node bin/end-user/pulse-token-ratio.js --help` lists every
 option, each with its default from `config.json`, examples of its common
 uses, and the exit codes: 0 when the ratios were printed, 1 when they
 were not.
@@ -163,26 +166,26 @@ last 184 days, so its chart shows at most 27 points.
 
 #### Example with $808 and $pTGC
 
-`node bin/pulse-token-ratio.js 0x50F1ca62e6Fb8Adf438ca1F50067AB83670094A6 0x94534EeEe131840b1c0F61847c572228bdfDDE93`
+`node bin/end-user/pulse-token-ratio.js 0x50F1ca62e6Fb8Adf438ca1F50067AB83670094A6 0x94534EeEe131840b1c0F61847c572228bdfDDE93`
 
 #### Specify Interval
 
 ```bash
-node bin/pulse-token-ratio.js <tokenA> <tokenB> --interval=hourly
-node bin/pulse-token-ratio.js <tokenA> <tokenB> --interval=weekly
+node bin/end-user/pulse-token-ratio.js <tokenA> <tokenB> --interval=hourly
+node bin/end-user/pulse-token-ratio.js <tokenA> <tokenB> --interval=weekly
 ```
 
 #### Export to CSV
 
 The ratios also written to `output/csv/token_ratio.csv`, in this folder:
 
-`node bin/pulse-token-ratio.js <tokenA> <tokenB> --interval=daily --csv`
+`node bin/end-user/pulse-token-ratio.js <tokenA> <tokenB> --interval=daily --csv`
 
 #### Choose the source without the question
 
 ```bash
-node bin/pulse-token-ratio.js <tokenA> <tokenB> --source moralis
-node bin/pulse-token-ratio.js <tokenA> <tokenB> --source geckoterminal
+node bin/end-user/pulse-token-ratio.js <tokenA> <tokenB> --source moralis
+node bin/end-user/pulse-token-ratio.js <tokenA> <tokenB> --source geckoterminal
 ```
 
 A run with a Moralis key saved and no terminal to ask at, such as one
@@ -190,11 +193,18 @@ whose input is a pipe, stops unless `--source` names one.
 
 ## Output Example
 
-The daily ratio of $808 to $pTGC on PulseChain. The picture comes from an
-older version, which said "PLS-based" and listed its oldest ratios under
-"Recent ratios"; the chart now says "USD-based" and lists the newest ten.
+The daily ratio of $pTGC to $HEX on PulseChain, from GeckoTerminal's
+candles, as this command, run from the repo's top folder on 24 November
+2026 (UTC), printed it:
 
-![The ratio chart's output: the daily ratio of $808 to $pTGC, as a line chart in the terminal](pulse-token-ratio-output.png)
+```bash
+node bin/end-user/pulse-token-ratio.js 0x94534EeEe131840b1c0F61847c572228bdfDDE93 0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39 --source geckoterminal
+```
+
+The picture leaves out the lines printed before the chart's title, which
+name the pools it picked.
+
+![The ratio chart's output: the daily ratio of $pTGC to $HEX, as a line chart in the terminal](pulse-token-ratio-output.png)
 
 ## Contributing
 

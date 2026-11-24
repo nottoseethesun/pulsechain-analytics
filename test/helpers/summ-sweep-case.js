@@ -17,8 +17,12 @@
  * folders the tests make are listed here, so a test file removes them
  * once its tests end.
  *
- * Fit: `test/summ-sweep-splits.test.js` and `test/summ-sweep-run.test.js`
- * use it, and `test/helpers/summ-gaps.js` takes its wallets and tokens.
+ * Fit: `test/summ-sweep.test.js`, `test/summ-sweep-splits.test.js`,
+ * `test/summ-sweep-positions.test.js`, `test/summ-sweep-run.test.js` and
+ * `test/summ-sweep-command.test.js` use it; `test/helpers/summ-gaps.js`
+ * takes its wallets, tokens and hashes, and
+ * `test/helpers/summ-sweep-command-run.js` its chain, records, rows and
+ * temp folders.
  */
 
 import fs from "node:fs";

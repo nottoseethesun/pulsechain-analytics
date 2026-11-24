@@ -2,8 +2,8 @@
 /**
  * The start file of the balance checker, which prints a PulseChain
  * wallet's balances of tokens at a block or at the start of a day:
- * `node bin/check-token-balance.js`.
- * @module bin/check-token-balance
+ * `node bin/end-user/check-token-balance.js`.
+ * @module bin/end-user/check-token-balance
  *
  * What: runs the balance checker's command line, whose code and packages are in
  * `check-token-balance/`; `--help` gives its options, examples and exit codes.
@@ -14,7 +14,7 @@
  * the `config.json` beside its own files. This file imports nothing else,
  * so the packages `npm ci` installs in `check-token-balance/` are all it needs.
  *
- * Fit: in `bin/`, the folder of the programs a reader runs.
+ * Fit: in `bin/end-user/`, the folder of the programs only an end user runs.
  */
 
-import "../check-token-balance/index.js";
+import "../../check-token-balance/index.js";

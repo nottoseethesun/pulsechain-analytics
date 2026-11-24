@@ -16,7 +16,7 @@
  * `npm run github-project-deps` runs, and `run-actionlint`, which the lint
  * and `npm run audit:actionlint` run. A second test holds the list to the repo and the tools' own
  * packages, so a command line added later is held to the rule too. A third
- * runs each tool's start file in `bin/` with only the packages `npm ci`
+ * runs each tool's start file in `bin/end-user/` with only the packages `npm ci`
  * installs in the tool's folder, as a checkout has them when only that
  * folder was installed.
  */
@@ -65,13 +65,13 @@ const DEPENDENCY_BINS = Object.freeze(
  * help is asked for.
  */
 const COMMAND_LINES = Object.freeze([
-  { file: "bin/summ-sweep.js", command: [] },
-  { file: "bin/pulse-token-ratio.js", command: [] },
-  { file: "bin/check-token-balance.js", command: [] },
-  { file: "bin/fetch-amount-of-token-transferred.js", command: [] },
-  { file: "bin/manage-api-keys.js", command: [] },
-  { file: "bin/manage-api-keys.js", command: ["set"] },
-  { file: "bin/manage-api-keys.js", command: ["check-password"] },
+  { file: "bin/end-user/summ-sweep.js", command: [] },
+  { file: "bin/end-user/pulse-token-ratio.js", command: [] },
+  { file: "bin/end-user/check-token-balance.js", command: [] },
+  { file: "bin/end-user/fetch-amount-of-token-transferred.js", command: [] },
+  { file: "bin/end-user/manage-api-keys.js", command: [] },
+  { file: "bin/end-user/manage-api-keys.js", command: ["set"] },
+  { file: "bin/end-user/manage-api-keys.js", command: ["check-password"] },
   { program: "bash", file: "bin/unlock-api-keys.sh", command: [] },
   { file: DEPENDENCY_BINS["github-project-deps"], command: [] },
   { file: DEPENDENCY_BINS["run-actionlint"], command: [] },
@@ -82,9 +82,10 @@ const COMMAND_LINES = Object.freeze([
  * file, by the file node runs.
  */
 const COMMAND_MODULES = Object.freeze({
-  "summ-sweep/command-line.js": "bin/summ-sweep.js",
-  "chart-price-ratio/ratio-command.js": "bin/pulse-token-ratio.js",
-  "check-token-balance/balance-command.js": "bin/check-token-balance.js",
+  "summ-sweep/command-line.js": "bin/end-user/summ-sweep.js",
+  "chart-price-ratio/ratio-command.js": "bin/end-user/pulse-token-ratio.js",
+  "check-token-balance/balance-command.js":
+    "bin/end-user/check-token-balance.js",
 });
 
 describe("every command line's help", () => {
@@ -144,12 +145,12 @@ describe("the list of command lines", () => {
 /**
  * Runs a tool's start file with `--help` as a checkout runs it after
  * `npm ci` in the tool's folder alone: from a copy of the start file in the
- * `bin/` of a temp folder, beside a link to the tool's folder, with no
+ * `bin/end-user/` of a temp folder, beside a link to the tool's folder, with no
  * packages of the top folder's to resolve from. `--preserve-symlinks`
  * keeps the link's path, so the tool's modules look for packages in the
  * tool's folder, through the link, and in no folder of the repo.
  *
- * @param {string} startFile - The start file's name in `bin/`
+ * @param {string} startFile - The start file's name in `bin/end-user/`
  * @param {string} toolFolder - The tool's folder, from the repo's top
  * @returns {import('node:child_process').SpawnSyncReturns<string>} The run
  */
@@ -158,15 +159,19 @@ function helpWithToolPackagesOnly(startFile, toolFolder) {
   const link = path.join(top, toolFolder);
   try {
     fs.writeFileSync(path.join(top, "package.json"), '{"type":"module"}\n');
-    fs.mkdirSync(path.join(top, "bin"));
+    fs.mkdirSync(path.join(top, "bin", "end-user"), { recursive: true });
     fs.copyFileSync(
-      path.join(REPO_TOP, "bin", startFile),
-      path.join(top, "bin", startFile),
+      path.join(REPO_TOP, "bin", "end-user", startFile),
+      path.join(top, "bin", "end-user", startFile),
     );
     fs.symlinkSync(path.join(REPO_TOP, toolFolder), link, "dir");
     return spawnSync(
       process.execPath,
-      ["--preserve-symlinks", path.join(top, "bin", startFile), "--help"],
+      [
+        "--preserve-symlinks",
+        path.join(top, "bin", "end-user", startFile),
+        "--help",
+      ],
       { cwd: top, encoding: "utf8", timeout: 30000 },
     );
   } finally {
@@ -175,12 +180,12 @@ function helpWithToolPackagesOnly(startFile, toolFolder) {
   }
 }
 
-describe("the start files in bin/", () => {
+describe("the start files in bin/end-user/", () => {
   for (const [startFile, toolFolder] of [
     ["check-token-balance.js", "check-token-balance"],
     ["pulse-token-ratio.js", "chart-price-ratio"],
   ]) {
-    it(`bin/${startFile} runs its tool with only the packages npm ci installs in ${toolFolder}/`, () => {
+    it(`bin/end-user/${startFile} runs its tool with only the packages npm ci installs in ${toolFolder}/`, () => {
       const run = helpWithToolPackagesOnly(startFile, toolFolder);
       assert.equal(run.status, 0, run.stderr);
       assert.match(run.stdout, /^Usage: /);

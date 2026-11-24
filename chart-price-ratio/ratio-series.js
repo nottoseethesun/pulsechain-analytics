@@ -220,6 +220,7 @@ function sameTimes(dataA, dataB) {
  *
  * @param {Object} run - The run
  * @returns {Promise<?{dataA: Array, dataB: Array, source: string}>} The two series, or null when no key is saved, having said how to save one
+ * @throws {Error} When DexTools does not answer in time, answers with an error, or gives no price
  */
 async function dexToolsFallback(run) {
   if (!keySaved("dextools")) {
@@ -236,8 +237,22 @@ async function dexToolsFallback(run) {
 }
 
 /**
+ * Falls back to DexTools' current prices, naming the tokens as given.
+ *
+ * @param {Object} run - The run
+ * @param {Array<string>} names - The tokens' names
+ * @returns {Promise<?{dataA: Array, dataB: Array, source: string, names: Array<string>}>} The two series, their source and the names, or null when no DexTools key is saved
+ * @throws {Error} When DexTools does not answer in time, answers with an error, or gives no price
+ */
+async function namedFallback(run, names) {
+  const fallback = await dexToolsFallback(run);
+  return fallback === null ? null : { ...fallback, names };
+}
+
+/**
  * Fetches the two tokens' names and prices from GeckoTerminal's best
- * pools, falling back to DexTools when their candles cannot be had.
+ * pools, falling back to DexTools when the pools or their candles cannot
+ * be had.
  *
  * @param {Object} run - The run
  * @returns {Promise<?{dataA: Array, dataB: Array, source: string, names: Array<string>}>} The two series, their source and the tokens' names, or null when there are none
@@ -258,7 +273,7 @@ async function geckoSeries(run) {
     );
   } catch (e) {
     console.warn(`GeckoTerminal pool discovery failed: ${e.message}`);
-    throw e;
+    return namedFallback(run, names);
   }
   try {
     const closes = await geckoCloses(run, poolA, poolB);
@@ -269,35 +284,39 @@ async function geckoSeries(run) {
     };
   } catch (e) {
     console.warn(`GeckoTerminal historical data failed: ${e.message}`);
-    const fallback = await dexToolsFallback(run);
-    return fallback === null ? null : { ...fallback, names };
+    return namedFallback(run, names);
   }
 }
 
 /**
  * Fetches the two tokens' names and prices from Moralis: each token's
  * pair, from the pairs that list it first, then the pairs' candles,
- * falling back to DexTools when those cannot be had.
+ * falling back to DexTools when the pairs or their candles cannot be had.
  *
  * @param {Object} run - The run
  * @returns {Promise<?{dataA: Array, dataB: Array, source: string, names: Array<string>}>} The two series, their source and the tokens' names, or null when there are none
- * @throws {Error} When no Moralis key is saved or it cannot be opened, or Moralis lists no pair whose candles price a token
+ * @throws {Error} When no Moralis key is saved or it cannot be opened
  */
 async function moralisSeries(run) {
   if (!keySaved("moralis")) {
     throw new Error(`No Moralis API key is saved. ${SAVE_KEY_HELP}`);
   }
   const apiKey = await run.moralisKey();
-  const pairA = await moralisPair(run.moralis, apiKey, run.tokenA);
-  const pairB = await moralisPair(run.moralis, apiKey, run.tokenB);
+  let pairA, pairB;
+  try {
+    pairA = await moralisPair(run.moralis, apiKey, run.tokenA);
+    pairB = await moralisPair(run.moralis, apiKey, run.tokenB);
+  } catch (e) {
+    console.warn(`Moralis pair discovery failed: ${e.message}`);
+    return namedFallback(run, ["Token A", "Token B"]);
+  }
   const names = [pairA.name, pairB.name];
   try {
     const closes = await moralisCloses(run, apiKey, pairA, pairB);
     return { ...closes, names, source: "Moralis (USD-based historical)" };
   } catch (e) {
     console.warn(`Moralis historical data failed: ${e.message}`);
-    const fallback = await dexToolsFallback(run);
-    return fallback === null ? null : { ...fallback, names };
+    return namedFallback(run, names);
   }
 }
 

@@ -123,24 +123,26 @@ span, with the Moralis api key saved, encrypted, in the repo's key store.
 With a Moralis key saved, a run asks at the terminal which of the two to
 read, Enter taking Moralis, unless --source names one; a run with no
 terminal to ask at stops unless --source names one. When the candles
-cannot be had, the chart falls back to DexTools' current prices, with the
-DexTools api key saved in the same store. To save a key, in the repo's top
-folder:
+cannot be had, as when the source cannot list a token's pools or pairs,
+or gives no candles of them, the chart falls back to DexTools' current
+prices, one point, with the DexTools api key saved in the same store.
+With no DexTools key saved, or when DexTools gives no price, the run
+stops with exit code 1. To save a key, in the repo's top folder:
   npm run api-keys
 
 Examples:
   The ratio of HEX's price to wrapped PLS's, day by day, with the defaults
   of config.json, from the repo's top folder:
-    $ node bin/pulse-token-ratio.js 0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39 0xA1077a294dDE1B09bB078844df40758a5D0f9a27
+    $ node bin/end-user/pulse-token-ratio.js 0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39 0xA1077a294dDE1B09bB078844df40758a5D0f9a27
   The same ratio hour by hour, also written to
   chart-price-ratio/output/csv/token_ratio.csv, where git keeps nothing but
   the folder:
-    $ node bin/pulse-token-ratio.js 0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39 0xA1077a294dDE1B09bB078844df40758a5D0f9a27 hourly --csv
+    $ node bin/end-user/pulse-token-ratio.js 0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39 0xA1077a294dDE1B09bB078844df40758a5D0f9a27 hourly --csv
   The first chart, through npm, from chart-price-ratio/:
     $ npm start -- 0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39 0xA1077a294dDE1B09bB078844df40758a5D0f9a27
   The daily ratio over the last two years, from Moralis, without the
   question of the source:
-    $ node bin/pulse-token-ratio.js 0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39 0xA1077a294dDE1B09bB078844df40758a5D0f9a27 --source moralis
+    $ node bin/end-user/pulse-token-ratio.js 0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39 0xA1077a294dDE1B09bB078844df40758a5D0f9a27 --source moralis
 
 Exit codes:
   0  the ratios were printed

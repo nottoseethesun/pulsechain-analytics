@@ -379,3 +379,45 @@ describe("runSummSweep", () => {
     );
   });
 });
+
+describe("the Summ sweep's command line, on a range or a sync time past the chain", () => {
+  it("refuses a range that begins after the chain's newest block, writing nothing", async () => {
+    const top = repo();
+    const run = await runOn(
+      top,
+      argsFor(top, {
+        "--start-date": "2026-11-01",
+        "--end-date": "2026-11-02",
+      }),
+    );
+    assert.equal(run.code, 1, run.err);
+    assert.match(
+      run.err,
+      /--start-date's day, 2026-11-01, begins after the chain's newest block, 1000, made at /,
+    );
+    assert.equal(fs.existsSync(path.join(top, "report.json")), false);
+    assert.equal(fs.existsSync(path.join(top, "rows.csv")), false);
+  });
+
+  it("refuses a --summ-synced-to after now, asking the chain nothing", async () => {
+    const top = repo();
+    const run = await runOn(
+      top,
+      argsFor(top, { "--summ-synced-to": "2999-01-01 00:00:00" }),
+    );
+    assert.equal(run.code, 1, run.err);
+    assert.match(run.err, /"2999-01-01 00:00:00" is after now/);
+    assert.equal(run.chainMade, false);
+  });
+
+  it("says so when the range's last day ends after the chain's newest block, sweeping up to it", async () => {
+    const top = repo();
+    const run = await runOn(top, argsFor(top, { "--end-date": "2026-11-30" }));
+    assert.equal(run.code, 0, run.err);
+    assert.match(
+      run.out,
+      /--end-date's day, 2026-11-30, ends after the chain's newest block, 1000, made at .* UTC: the sweep stops at that block/,
+    );
+    assert.match(run.out, /Blocks 0 to 1000: /);
+  });
+});

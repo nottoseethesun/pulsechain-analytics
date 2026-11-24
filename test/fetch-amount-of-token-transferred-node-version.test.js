@@ -1,5 +1,5 @@
 /**
- * Tests for bin/fetch-amount-of-token-transferred.js, the Node version of
+ * Tests for bin/end-user/fetch-amount-of-token-transferred.js, the Node version of
  * src/for-google-apps/check-token-balance/fetch-amount-of-token-transferred.gs.
  * @module test/fetch-amount-of-token-transferred-node-version.test
  *
@@ -21,7 +21,7 @@ import {
   openTokenTransferFetcher,
   runCommandLine,
   SHEETS_SCRIPT,
-} from "../bin/fetch-amount-of-token-transferred.js";
+} from "../bin/end-user/fetch-amount-of-token-transferred.js";
 import {
   standInChain,
   standInChainFetch,
@@ -31,7 +31,7 @@ import {
 } from "./helpers/stand-in-chain.js";
 
 const NODE_VERSION = new URL(
-  "../bin/fetch-amount-of-token-transferred.js",
+  "../bin/end-user/fetch-amount-of-token-transferred.js",
   import.meta.url,
 );
 const RPC_URL = "https://rpc.stand-in.test";
@@ -164,13 +164,17 @@ describe("fetch-amount-of-token-transferred.js, the command line", () => {
    * @param {string[]} args - The arguments after the file's name
    * @returns {Promise<{exitCode: number, stdout: string, stderr: string}>} What it did
    */
-  async function run(args) {
+  async function run(args, asked = { count: 0 }) {
     const stdout = captured();
     const stderr = captured();
+    const chainFetch = standInChainFetch(standInChain(250n));
     const exitCode = await runCommandLine(
-      ["node", "bin/fetch-amount-of-token-transferred.js", ...args],
+      ["node", "bin/end-user/fetch-amount-of-token-transferred.js", ...args],
       {
-        fetch: standInChainFetch(standInChain(250n)),
+        fetch: (...request) => {
+          asked.count += 1;
+          return chainFetch(...request);
+        },
         stdout,
         stderr,
       },
@@ -190,7 +194,12 @@ describe("fetch-amount-of-token-transferred.js, the command line", () => {
   });
 
   it("refuses a transaction hash that is not one, before asking the chain", async () => {
-    const result = await run(["0x1234", TOKEN, WALLET, "--config", configFile]);
+    const asked = { count: 0 };
+    const result = await run(
+      ["0x1234", TOKEN, WALLET, "--config", configFile],
+      asked,
+    );
+    assert.equal(asked.count, 0);
     assert.equal(result.exitCode, 1);
     assert.match(
       result.stderr,
@@ -219,7 +228,12 @@ describe("fetch-amount-of-token-transferred.js, the command line", () => {
       refused,
       JSON.stringify({ config: { rpcUrl: "rpc.example", retries: 2 } }),
     );
-    const result = await run([TRANSACTION, TOKEN, WALLET, "--config", refused]);
+    const asked = { count: 0 };
+    const result = await run(
+      [TRANSACTION, TOKEN, WALLET, "--config", refused],
+      asked,
+    );
+    assert.equal(asked.count, 0);
     assert.deepEqual(result, {
       exitCode: 1,
       stdout: "",
@@ -241,7 +255,7 @@ describe("fetch-amount-of-token-transferred.js, the command line", () => {
     assert.equal(result.stderr, "");
   });
 
-  it("runs as a program: node bin/fetch-amount-of-token-transferred.js --help", () => {
+  it("runs as a program: node bin/end-user/fetch-amount-of-token-transferred.js --help", () => {
     const output = execFileSync(
       process.execPath,
       [fileURLToPath(NODE_VERSION), "--help"],

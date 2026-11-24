@@ -255,10 +255,11 @@ function getTokenTransferred(txId, tokenAddress, walletAddress) {
  * Logs the result to the console.
  */
 function testGetTokenTransferred() {
+  // pXEN that moved from PulseX's PLSD/pXEN pair to its pXEN/WPLS pair: it logs 7787050313.881971.
   const txId =
-    "0xab9c6162b16c9e26149720420cb73c7d445d31b150cf448f3e91da13125b1bd8";
+    "0xb2a141e14663bf69a0dcade663c836543c618bcd039fa6de92c2567e4f1ad8e6";
   const tokenAddress = "0x8a7FDcA264e87b6da72D000f22186B4403081A2a";
-  const walletAddress = "0xbCB167f16A1aA3ca3F483CC922967e9aCdEC405D";
+  const walletAddress = "0x61C8D2DeE20F8e303B999D485cFa577054196B40";
   const result = getTokenTransferred(txId, tokenAddress, walletAddress);
   console.log("Test result for example transaction: " + result);
 }

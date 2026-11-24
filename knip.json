@@ -1,7 +1,7 @@
 {
   "$schema": "https://unpkg.com/knip@5/schema.json",
   "entry": [
-    "bin/*.js",
+    "bin/end-user/*.js",
     "fetch-amount-of-token-transferred.js",
     "eslint-security.config.js",
     "test/**/*.test.js"

@@ -50,8 +50,8 @@ Two companion references sit alongside this one:
 Six tools answer the five questions. Two of them work out the same
 amount, one with ethers, a library for talking to Ethereum-style chains
 such as PulseChain, and one as a Sheets script. The programs a reader
-runs from a terminal are in `bin/`: each is a program of its own or a
-start file that loads a tool's program from the tool's folder, whose
+runs from a terminal are in `bin/end-user/`: each is a program of its own
+or a start file that loads a tool's program from the tool's folder, whose
 packages it uses. The Sheets scripts are in `src/for-google-apps/`. Each
 command line is declared with commander, the package that parses a
 command line, but for `bin/unlock-api-keys.sh`, a shell script that keeps
@@ -62,11 +62,11 @@ examples of its common uses and its exit codes.
 | Tool | Where | What it answers |
 | ---- | ----- | --------------- |
 | The amount a transaction sent, on ethers | `fetch-amount-of-token-transferred.js` | How much of a token one transaction sent a wallet. |
-| The same, as a Sheets script | `src/for-google-apps/check-token-balance/`, with its Node version in `bin/fetch-amount-of-token-transferred.js` | The same, in a sheet's cell, and from Node through the script's Node version. |
-| The balance checker | `check-token-balance/`, run by `bin/check-token-balance.js` | A wallet's balances of tokens, PLS among them, at a block or a date. A package of its own. |
-| The ratio chart | `chart-price-ratio/`, run by `bin/pulse-token-ratio.js` | The ratio of two tokens' prices over time, as a chart in the terminal. A package of its own. |
+| The same, as a Sheets script | `src/for-google-apps/check-token-balance/`, with its Node version in `bin/end-user/fetch-amount-of-token-transferred.js` | The same, in a sheet's cell, and from Node through the script's Node version. |
+| The balance checker | `check-token-balance/`, run by `bin/end-user/check-token-balance.js` | A wallet's balances of tokens, PLS among them, at a block or a date. A package of its own. |
+| The ratio chart | `chart-price-ratio/`, run by `bin/end-user/pulse-token-ratio.js` | The ratio of two tokens' prices over time, as a chart in the terminal. A package of its own. |
 | A wallet's history | `wallet-history/` | Every token and every PLS a wallet moved over a range of blocks, from the chain alone: functions a program calls, with no command line of their own. |
-| The Summ sweep | `summ-sweep/`, run by `bin/summ-sweep.js`, which `npm run summ-sweep` runs | What Summ lacks or holds wrongly of the tokens a wallet moved over a range of days: the withdrawals from 9mm V3 positions to fix in Summ, a csv of rows for what Summ lacks, and questions for the owner about the legs no rule books. |
+| The Summ sweep | `summ-sweep/`, run by `bin/end-user/summ-sweep.js`, which `npm run summ-sweep` runs | What Summ lacks or holds wrongly of the tokens a wallet moved over a range of days: the withdrawals from 9mm V3 positions to fix in Summ, a csv of rows for what Summ lacks, and questions for the owner about the legs no rule books. |
 
 ---
 
@@ -95,7 +95,7 @@ function without the cache. Neither catches the library's error, so a
 failed read shows in the cell as an error, as it does from the script
 itself.
 
-`bin/fetch-amount-of-token-transferred.js` is the script's Node version:
+`bin/end-user/fetch-amount-of-token-transferred.js` is the script's Node version:
 it runs the `.gs` unchanged, so a fix in
 the `.gs` fixes both. It does so through the runner of
 crypto-price-fetchers, the owner's repo of code his projects share, which
@@ -108,7 +108,7 @@ Script's services. The tests hold the two copies to the same answers
 
 ## The Balance Checker
 
-`check-token-balance/index.js`, which `bin/check-token-balance.js` loads,
+`check-token-balance/index.js`, which `bin/end-user/check-token-balance.js` loads,
 reads a wallet's balance of each token named,
 PLS or ERC-20, at a block, or at the start of a UTC date: after the last
 block made before that midnight, whose state is the chain's when the day
@@ -131,7 +131,7 @@ node, since other nodes keep only the chain's recent state.
 
 ## The Ratio Chart
 
-`chart-price-ratio/pulse-token-ratio.js`, which `bin/pulse-token-ratio.js`
+`chart-price-ratio/pulse-token-ratio.js`, which `bin/end-user/pulse-token-ratio.js`
 loads, charts the ratio of two tokens' prices, even when no pool holds
 both. A run reads its candles, the open,
 high, low and close prices of each period, from one of two sources, and
@@ -160,8 +160,9 @@ input is a pipe, stops and names `--source` (`ratio-source.js`).
    lists the pairs that trade the token, through crypto-price-fetchers'
    client, and takes the deepest active pair that lists the token first:
    Moralis's candles of a pair price the token the pair lists first, as in
-   HEX / WPLS, which prices HEX. A token no active pair lists first stops
-   the run, which says to read GeckoTerminal's candles instead.
+   HEX / WPLS, which prices HEX. For a token no active pair lists first,
+   the chart says to read GeckoTerminal's candles instead, and falls back
+   to DexTools (step 3).
 2. It fetches each token's candles in its pool at the interval asked,
    hourly, daily, the default, or daily resampled to weeks. A pool holds
    two tokens. GeckoTerminal's candles price the one GeckoTerminal calls
@@ -179,16 +180,18 @@ input is a pipe, stops and names `--source` (`ratio-source.js`).
 3. When the candles cannot be had, the chart falls back to each token's
    current USD price from DexTools, a third such service, which takes an
    api key: one point. It asks DexTools through crypto-price-fetchers'
-   client. Each request through crypto-price-fetchers' clients has 30
-   seconds to answer in full. One that runs out of time ends the run with
-   exit code 1, printing no ratio, when it lists a token's pools at
-   GeckoTerminal or its pairs at Moralis, or asks DexTools. The history
-   requests of a token's most liquid pools at GeckoTerminal, up to five,
-   each a pool's daily candles, end the run only when all of them fail; one
-   that fails drops only its pool. On the chart's
-   candles, a request that runs out of time means the candles cannot be
-   had: the chart falls back to DexTools, or, with no DexTools key saved,
-   ends with exit code 1.
+   client. The candles cannot be had when the source cannot list a token's
+   pools or pairs, or none of a token's most liquid pools at GeckoTerminal,
+   up to five, has daily candles, or the chart's candles cannot be read.
+   Each request through crypto-price-fetchers' clients has 30 seconds to
+   answer in full, and one that runs out of time, or answers with an
+   error, fails as a request with no answer does. The history requests of
+   a token's most liquid pools at GeckoTerminal, each a pool's daily
+   candles, fail the pool lookup only when all of them fail; one that
+   fails drops only its pool. With no DexTools key saved, the run ends
+   with exit code 1, saying how to save one; when DexTools does not answer
+   in time, answers with an error, or gives no price, the run ends with
+   exit code 1, printing no ratio.
 4. It prints the chart, with labels on both axes, then the last ten
    ratios and the current one, and writes a CSV when asked. asciichart,
    an npm package that draws a line chart in text, draws the chart in 31
@@ -340,7 +343,8 @@ the time; each reads with `Date.parse` and keeps the value only when
 writing it back gives the same text, so a date that does not exist, such
 as 2026-02-30, is refused rather than moved to a nearby day.
 The command line also checks that each file of the saved pages of Summ's
-results, described below, exists, and that the csv's path, `--out`, and
+results, described below, exists, with crypto-price-fetchers'
+`fileToReadArgument` (`crypto-price-fetchers/lib/file-to-read`), and that the csv's path, `--out`, and
 the report's, `--report`, each name no folder, in a folder that exists
 and takes a new file ([What the Sweep Writes](#what-the-sweep-writes)):
 crypto-price-fetchers' `fileToWriteArgument`
@@ -365,7 +369,12 @@ number of pages or a different total, or rows that do not add up to the
 total. Pages saved while Summ's rows changed between them disagree on one
 of these, and a row on neither would be booked again as one Summ lacks.
 The range of blocks runs from the first block of the first day to the
-last block of the last.
+last block of the last. A range whose first day begins after the chain's
+newest block is refused, since the chain holds none of it yet; one whose
+last day ends after that block runs up to it, and the run says so, since
+a run once the day has ended sweeps the rest. A `--summ-synced-to` after
+now is refused, since Summ's sync cannot have reached a time still to
+come.
 
 The chain's facts are in the top `config.json`, under `pulsechain`: the
 endpoint, the chain's id, the position manager, WPLS, the widest span of
@@ -671,7 +680,7 @@ config.json → colour is not a setting this tool reads
 | `check-token-balance/config.json`, beside the checker's files | `SETTINGS_SCHEMA` (`check-token-balance/settings.js`): `defaultRpc`, an http or https url | `defaultRpcFrom`; no file gives g4mm4's endpoint, with a notice |
 | The top `config.json` | `CHAIN_SETTINGS_SCHEMA` (`summ-sweep/settings.js`): the chain's facts under `pulsechain`, each required, its two contracts in EIP-55's form | The Summ sweep, and crypto-price-fetchers' key store for `apiKeys` |
 | `summ-sweep/config.json` | `OWNER_SETTINGS_SCHEMA` (`summ-sweep/settings.js`): the template's and LP Ranger's paths, required, and the owner's lists, whose addresses may be in lower case | The Summ sweep |
-| `src/for-google-apps/check-token-balance/config.json` | `CONFIG_SCHEMAS` in `bin/fetch-amount-of-token-transferred.js`: an http or https url as `config.rpcUrl`, which the script reads each time it is called, and no other field. crypto-price-fetchers' `configSchemaProblems` holds the schema to the script in the tests | The script's Node version, through crypto-price-fetchers' runner, before the script opens |
+| `src/for-google-apps/check-token-balance/config.json` | `CONFIG_SCHEMAS` in `bin/end-user/fetch-amount-of-token-transferred.js`: an http or https url as `config.rpcUrl`, which the script reads each time it is called, and no other field. crypto-price-fetchers' `configSchemaProblems` holds the schema to the script in the tests | The script's Node version, through crypto-price-fetchers' runner, before the script opens |
 
 A command line whose options take their defaults from a settings file
 makes each option's parser from the kind the schema gives the same
@@ -758,7 +767,9 @@ parsers made from the same kinds of value (`…/lib/settings-file`,
 that conflicts with one a settings file sets (`…/lib/option-conflicts`),
 `fileToWriteArgument`, with which the Summ sweep checks each file it
 writes: no folder, in a folder that exists and takes a new file
-(`…/lib/file-to-write`), and the checks
+(`…/lib/file-to-write`), `fileToReadArgument`, with which it checks each
+saved page of Summ's results it reads (`…/lib/file-to-read`), and the
+checks
 the tests make of each command
 line's help and of the repo's tracked files
 (`crypto-price-fetchers/lib/command-line-help`, `…/lib/repo-checks`).

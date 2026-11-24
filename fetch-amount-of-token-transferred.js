@@ -133,9 +133,9 @@ function cutOffDecimals(wholeTokens) {
 /**
  * Reads how much of a token one transaction transferred to a wallet, from the transaction's receipt.
  *
- * @param {string} txId - The transaction hash (e.g., '0xab9c6162b16c9e26149720420cb73c7d445d31b150cf448f3e91da13125b1bd8').
+ * @param {string} txId - The transaction hash (e.g., '0xb2a141e14663bf69a0dcade663c836543c618bcd039fa6de92c2567e4f1ad8e6').
  * @param {string} tokenAddress - The address of the ERC-20 token contract (e.g., '0x8a7FDcA264e87b6da72D000f22186B4403081A2a').
- * @param {string} walletAddress - The wallet address to check transfers to (e.g., '0xbCB167f16A1aA3ca3F483CC922967e9aCdEC405D').
+ * @param {string} walletAddress - The wallet address to check transfers to (e.g., '0x61C8D2DeE20F8e303B999D485cFa577054196B40').
  * @returns {Promise<number>} The amount, cut off at 7 decimal places, or 0 if the transaction transferred none of the token to the wallet.
  * @throws {Error} When a read fails or the transaction is not found.
  */

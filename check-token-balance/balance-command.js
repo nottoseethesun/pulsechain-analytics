@@ -49,10 +49,10 @@ block needs an endpoint that keeps past state.
 Examples:
   A wallet's PLS and HEX at the start of 1 November 2026, UTC, from the
   repo's top folder:
-    $ node bin/check-token-balance.js --address <wallet> --date 2026-11-01 --tokens ${NATIVE_TOKEN},0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39
+    $ node bin/end-user/check-token-balance.js --address <wallet> --date 2026-11-01 --tokens ${NATIVE_TOKEN},0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39
   The same wallet's PLS at one block, from another rpc endpoint that keeps
   past state:
-    $ node bin/check-token-balance.js --address <wallet> --block 22000000 --tokens ${NATIVE_TOKEN} --rpc https://rpc.pulsechain.com
+    $ node bin/end-user/check-token-balance.js --address <wallet> --block 22000000 --tokens ${NATIVE_TOKEN} --rpc https://rpc.pulsechain.com
 
 Exit codes:
   0  each balance was printed
@@ -167,23 +167,26 @@ export function buildBalanceCommand(defaultRpc) {
     )
     .requiredOption(
       "-a, --address <address>",
-      "PulseChain wallet address",
+      "PulseChain wallet address (required)",
       walletAddress,
     )
     .addOption(
-      new Option("-b, --block <block>", "PulseChain block number")
+      new Option(
+        "-b, --block <block>",
+        "PulseChain block number; this or --date is required",
+      )
         .argParser(blockNumber)
         .conflicts("date"),
     )
     .addOption(
       new Option(
         "-d, --date <date>",
-        "UTC date in YYYY-MM-DD format: the balance when it starts, 00:00:00 UTC, after the last block made before then",
+        "UTC date in YYYY-MM-DD format: the balance when it starts, 00:00:00 UTC, after the last block made before then; this or --block is required",
       ).argParser(utcDayStart),
     )
     .requiredOption(
       "-t, --tokens <tokens>",
-      `Comma-separated list of token contract addresses or "${NATIVE_TOKEN}" for native PLS`,
+      `Comma-separated list of token contract addresses or "${NATIVE_TOKEN}" for native PLS (required)`,
       tokenList,
     )
     .option(

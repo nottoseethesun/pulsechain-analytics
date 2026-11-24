@@ -38,7 +38,7 @@
  * writes neither file. A report's amounts, which are BigInts, are written
  * as decimal text, json having no BigInt.
  *
- * Fit: `bin/summ-sweep.js` runs `runSummSweep`. The tests
+ * Fit: `bin/end-user/summ-sweep.js` runs `runSummSweep`. The tests
  * give it a stand-in chain and a stand-in LP Ranger.
  */
 
@@ -52,6 +52,7 @@ import {
   writeSummCsv,
 } from "crypto-price-fetchers/summ-csv";
 import { messageOf } from "crypto-price-fetchers/lib/message-of";
+import { fileToReadArgument } from "crypto-price-fetchers/lib/file-to-read";
 import { fileToWriteArgument } from "crypto-price-fetchers/lib/file-to-write";
 import { pacedProvider } from "../wallet-history/paced-provider.js";
 import { blockAtOrAfter } from "../wallet-history/blocks.js";
@@ -60,7 +61,7 @@ import { readThroughLpRanger } from "./lp-ranger.js";
 import { sweepWallet } from "./sweep.js";
 import { dayStartSeconds } from "crypto-price-fetchers/lib/calendar-day";
 import { readSweepSettings } from "./settings.js";
-import { dayText, secondsOfTime } from "./times.js";
+import { dayText, secondsOfTime, timeText } from "./times.js";
 
 /** One day, in seconds. */
 const DAY = 86400;
@@ -77,7 +78,10 @@ already at --out, which would hold rows of the run before.
 
 --summ-synced-to is the time up to which Summ's sync has read the wallet's
 transactions, from Summ. A transaction after it is one that sync has not
-read yet: its rows carry no gas, for the sync to bring.
+read yet: its rows carry no gas, for the sync to bring. A time after now
+is refused, as is a range whose first day begins after the chain's newest
+block; a range whose last day ends after that block is swept up to it,
+and the run says so.
 
 The chain's facts come from the top config.json, and the owner's settings
 from summ-sweep/config.json, which git ignores; summ-sweep/config-example.json
@@ -89,11 +93,11 @@ the files hold the owner's own data, and the repo is public, so git keeps
 nothing in those folders but the folders.
 
 Examples:
-  Sweep a wallet's November 2026 against two saved pages of Summ's results:
-    $ npm run summ-sweep -- --wallet <address> --start-date 2026-11-01 --end-date 2026-11-30 --summ-synced-to "2026-11-30 23:59:59" --summ-results summ-sweep/input/summ-results-1.json summ-sweep/input/summ-results-2.json --out summ-sweep/output/csv/missing.csv --report summ-sweep/output/json/report.json
+  Sweep a wallet's October 2026 against two saved pages of Summ's results:
+    $ npm run summ-sweep -- --wallet <address> --start-date 2026-10-01 --end-date 2026-10-31 --summ-synced-to "2026-10-31 23:59:59" --summ-results summ-sweep/input/summ-results-1.json summ-sweep/input/summ-results-2.json --out summ-sweep/output/csv/missing.csv --report summ-sweep/output/json/report.json
   Run it again after fixing a leg in Summ and saving Summ's results again,
   writing over the last run's files:
-    $ npm run summ-sweep -- --wallet <address> --start-date 2026-11-01 --end-date 2026-11-30 --summ-synced-to "2026-11-30 23:59:59" --summ-results summ-sweep/input/summ-results-1.json summ-sweep/input/summ-results-2.json --out summ-sweep/output/csv/missing.csv --report summ-sweep/output/json/report.json --replace
+    $ npm run summ-sweep -- --wallet <address> --start-date 2026-10-01 --end-date 2026-10-31 --summ-synced-to "2026-10-31 23:59:59" --summ-results summ-sweep/input/summ-results-1.json summ-sweep/input/summ-results-2.json --out summ-sweep/output/csv/missing.csv --report summ-sweep/output/json/report.json --replace
 
 Exit codes: 0 when the report was written, and the csv with it when there
 were rows; 1 when they were not.
@@ -143,12 +147,17 @@ function timeArgument(value) {
     throw new InvalidArgumentError(
       `"${value}" is not a time written as "YYYY-MM-DD HH:MM:SS".`,
     );
+  if (seconds * 1000 > Date.now())
+    throw new InvalidArgumentError(
+      `"${value}" is after now: Summ's sync cannot have reached a time still to come.`,
+    );
   return seconds;
 }
 
 /**
  * Reads one file of the option of Summ's saved pages: a file that
- * exists. Commander calls it once for each file the option names.
+ * exists, by crypto-price-fetchers' `fileToReadArgument`. Commander calls
+ * it once for each file the option names.
  *
  * @param {string} value - The file's path
  * @param {string[]|undefined} previous - The files the option named
@@ -158,10 +167,7 @@ function timeArgument(value) {
  *   path
  */
 function pageFileArgument(value, previous) {
-  if (value === "") throw new InvalidArgumentError("It names no file.");
-  if (!fs.existsSync(value) || !fs.statSync(value).isFile())
-    throw new InvalidArgumentError(`No file is at ${path.resolve(value)}.`);
-  return [...(previous ?? []), value];
+  return [...(previous ?? []), fileToReadArgument(value)];
 }
 
 /**
@@ -263,6 +269,18 @@ function checkBeforeWriting(result, options, owner) {
 }
 
 /**
+ * Names a block with the time it was made.
+ *
+ * @param {{ask: function}} paced - The paced provider
+ * @param {number} number - The block's number
+ * @returns {Promise<string>} Such as `1000, made at 2023-11-14 22:18:20 UTC`
+ */
+async function madeAt(paced, number) {
+  const block = await paced.ask("getBlock", number);
+  return `${number}, made at ${timeText(block.timestamp)} UTC`;
+}
+
+/**
  * Runs the sweep the options describe.
  *
  * @param {object} options - The parsed options
@@ -275,8 +293,17 @@ async function sweepWith(options, context) {
   const paced = pacedProvider(makeProvider(chain), {
     spacingMs: chain.requestSpacingMs,
   });
+  const newest = await paced.ask("getBlockNumber");
   const fromBlock = await blockAtOrAfter(paced, options.startDate);
+  if (fromBlock > newest)
+    throw new Error(
+      `--start-date's day, ${dayText(options.startDate)}, begins after the chain's newest block, ${await madeAt(paced, newest)}: the chain holds none of the range yet.`,
+    );
   const toBlock = (await blockAtOrAfter(paced, options.endDate + DAY)) - 1;
+  if (toBlock === newest)
+    say(
+      `--end-date's day, ${dayText(options.endDate)}, ends after the chain's newest block, ${await madeAt(paced, newest)}: the sweep stops at that block, and a run once the day has ended sweeps the rest.`,
+    );
   const result = await sweepWallet(paced, {
     wallet: options.wallet,
     fromBlock,
@@ -360,31 +387,39 @@ function sweepCommand(stdout, stderr) {
     .description(
       "Sweeps a wallet's history on PulseChain against Summ's rows, and writes the rows Summ lacks and a report of what to fix.",
     )
-    .requiredOption("--wallet <address>", "the wallet", walletArgument)
+    .requiredOption(
+      "--wallet <address>",
+      "the wallet (required)",
+      walletArgument,
+    )
     .requiredOption(
       "--start-date <day>",
-      "the first day, as YYYY-MM-DD, in UTC",
+      "the first day, as YYYY-MM-DD, in UTC (required)",
       dayArgument,
     )
     .requiredOption(
       "--end-date <day>",
-      "the last day, as YYYY-MM-DD, in UTC",
+      "the last day, as YYYY-MM-DD, in UTC (required)",
       dayArgument,
     )
     .requiredOption(
       "--summ-synced-to <time>",
-      'the time Summ\'s sync of the wallet reached, as "YYYY-MM-DD HH:MM:SS", in UTC',
+      'the time Summ\'s sync of the wallet reached, as "YYYY-MM-DD HH:MM:SS", in UTC (required)',
       timeArgument,
     )
     .requiredOption(
       "--summ-results <files...>",
-      "the saved pages of Summ's results",
+      "the saved pages of Summ's results (required)",
       pageFileArgument,
     )
-    .requiredOption("--out <file>", "the csv to write", fileToWriteArgument)
+    .requiredOption(
+      "--out <file>",
+      "the csv to write (required)",
+      fileToWriteArgument,
+    )
     .requiredOption(
       "--report <file>",
-      "the report to write, as json",
+      "the report to write, as json (required)",
       fileToWriteArgument,
     )
     .option(

@@ -28,11 +28,14 @@ a function this repo's copy lacks, `getTokenTransferredUseCache`, which
 
 ## Where things are
 
-The programs a reader runs from a terminal are in `bin/`: the Summ
-sweep, the Sheets script's Node version, a start file for each tool
+The programs a reader runs from a terminal are in `bin/`. Those only an
+end user normally runs are in `bin/end-user/`, the owner's rule: the
+Summ sweep, the Sheets script's Node version, a start file for each tool
 with a package of its own, `check-token-balance.js` and
 `pulse-token-ratio.js`, which loads the tool's program from its folder,
-the key manager and `unlock-api-keys.sh`. Each tool's code and packages
+and the key manager. Any other program goes anywhere under `bin/` but
+there: `bin/` itself holds `unlock-api-keys.sh`, which a terminal
+sources rather than runs. Each tool's code and packages
 stay in its own folder, and the Sheets scripts are in
 `src/for-google-apps/`. The Summ sweep reads its settings from the
 folder it runs in, the repo's top; the ratio chart and the balance
@@ -53,7 +56,7 @@ files, in temp folders, so it never writes in those folders.
 
 ## Node versions of the Sheets scripts
 
-`bin/fetch-amount-of-token-transferred.js` is the Node version of
+`bin/end-user/fetch-amount-of-token-transferred.js` is the Node version of
 `src/for-google-apps/check-token-balance/fetch-amount-of-token-transferred.gs`.
 It runs the `.gs` unchanged, through
 the runner of crypto-price-fetchers, the owner's repo of code his projects
@@ -86,7 +89,7 @@ decentralized exchanges. The keys are kept in `api-keys.json` at the
 repo's top, which git ignores, encrypted with one password the owner
 types, by crypto-price-fetchers' key store
 (`crypto-price-fetchers/api-key-store`). `npm run api-keys` runs its
-manager (`bin/manage-api-keys.js`), and `source ./bin/unlock-api-keys.sh`,
+manager (`bin/end-user/manage-api-keys.js`), and `source ./bin/unlock-api-keys.sh`,
 a script in `bin/`, keeps the password for a terminal in
 `API_KEYS_PASSWORD`. `bin/unlock-api-keys.sh` is a copy of
 crypto-price-fetchers', which a test holds it to; a change to it is made
@@ -119,7 +122,9 @@ below), as commander parses them; the Summ sweep checks each file it
 writes with its `fileToWriteArgument`
 (`crypto-price-fetchers/lib/file-to-write`): no folder, in a folder that
 exists and takes a new file, which it tells by making one there and
-removing it; each entry point calls its `endQuietlyWhenOutputCloses`
+removing it, and each saved page of Summ's results it reads with its
+`fileToReadArgument` (`crypto-price-fetchers/lib/file-to-read`): a file
+that exists; each entry point calls its `endQuietlyWhenOutputCloses`
 (`crypto-price-fetchers/lib/closed-output`) before it starts, so a command
 line whose output is piped into a program that stops reading, such as
 `head`, ends with its exit code and no stack trace. The help test checks
@@ -182,7 +187,7 @@ schemas:
 - The top `config.json`'s `pulsechain` and `summ-sweep/config.json`:
   `summ-sweep/settings.js`.
 - The Sheets script's Node version's `config.json`: `CONFIG_SCHEMAS` in
-  `bin/fetch-amount-of-token-transferred.js`,
+  `bin/end-user/fetch-amount-of-token-transferred.js`,
   an http or https url as `config.rpcUrl` and no other field, which
   crypto-price-fetchers' runner checks before the script opens. The
   runner's `configSchemaProblems`, which the Node version's tests run,
@@ -236,7 +241,7 @@ exit codes. An npm target that runs one passes the flag through, as
 `npm run <target> -- --help`. Each is declared with commander, the package
 that parses command lines, so the options its help lists come from the
 declaration the program parses; the examples and exit codes go in the
-help's closing text (`addHelpText("after", …)`). `bin/unlock-api-keys.sh`, the copy of crypto-price-fetchers' script that a terminal sources, is the one command line not in JavaScript: the help it answers is written in it, a reader of that help that stops reading ends it quietly, it ignores any argument but `-h` and `--help`, since a sourced script sees its caller's arguments, and the help test runs it with bash.
+help's closing text (`addHelpText("after", …)`). `bin/unlock-api-keys.sh`, the copy of crypto-price-fetchers' script that a terminal sources, is the one command line not in JavaScript: the help it answers is written in it, a reader of that help that stops reading ends it quietly, it ignores any argument but `-h` and `--help`, since a sourced script sees its caller's arguments, and the help test runs it with bash; `docs/engineering.md` gives the steps that check it in zsh, by hand, since zsh is one of the computer's own programs, which the owner's rule keeps out of the automated tests. No README names `bin/unlock-api-keys.sh`, the owner's rule: `docs/engineering.md` describes it, once.
 `docs/project-commands.md` lists every npm target, including those
 that run other tools, such as `lint` and `check`, and every command line
 run with `node`, each with its flags and an example. LP Ranger's rules do
@@ -251,7 +256,7 @@ form of Markdown files; Prettier, which formats code; actionlint, which
 checks the GitHub Actions workflow files, run from its official release by
 crypto-price-fetchers' bin `run-actionlint`, which refuses an archive whose
 SHA-256 differs from the one it pins; and knip, which finds files nothing
-uses), the tests with at least 80% of lines covered, and the security
+uses), the tests with at least 80% of lines covered and a minute's time limit on each (`--test-timeout=60000`), and the security
 audits (npm audit, npm's check of the installed packages against known
 vulnerabilities, for the three packages, with `run-actionlint --check`,
 which checks every archive of that release; the security lint in
@@ -260,7 +265,7 @@ a rule that refuses printing a name that may hold a secret; and secretlint,
 which looks for keys and credentials in files). It must pass before a commit
 and a push; husky, the package that runs scripts at git's hooks, runs
 `npm run lint` before each commit. CI runs `npm run check` on both supported
-versions of Node (below), in `ci.yml`, and each audit as a job of its own
+versions of Node (below), in `ci.yml`, each run stopped at 20 minutes (`timeout-minutes`), and each audit as a job of its own
 (`security-audit.yml`), after installing the three packages. `main` is
 protected: those five checks must pass on a pull request, never squashed,
 and no branch is deleted. LP Ranger's eight steps in
@@ -321,8 +326,12 @@ holds the stand-ins:
 - `stand-in-web-preload.js` replaces `fetch` in a program a test starts,
   with answers from a file the test writes; `ratio-chart.js` runs the ratio
   chart with it, against a stand-in GeckoTerminal, Moralis and DexTools,
-  and in a pseudo-terminal, through util-linux's `script`, to answer its
-  questions as at the owner's terminal.
+  and with `stand-in-terminal-preload.js`, to answer its questions as at
+  the owner's terminal.
+- `stand-in-terminal-preload.js` makes the stdin and stderr of a program
+  a test starts, two pipes, a stand-in terminal: it marks both a terminal
+  and gives stdin a raw mode, each turn of which it logs, so a test can
+  tell that each prompt read in raw mode and left it.
 - `stand-in-settings-preload.js` hands the ratio chart or the balance
   checker, run in a child process, a settings file of the test's own,
   from an environment variable, since each reads the `config.json` beside

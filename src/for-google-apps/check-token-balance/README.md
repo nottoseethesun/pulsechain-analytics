@@ -37,8 +37,8 @@ Library URL:  https://script.google.com/macros/library/d/1HFXEAhRh3-fSqNLzi9i-oM
 
 ## The Node Version
 
-`bin/fetch-amount-of-token-transferred.js`, in the repo's `bin/`, the
-folder of the programs a reader runs, runs
+`bin/end-user/fetch-amount-of-token-transferred.js`, in the repo's
+`bin/end-user/`, the folder of the programs only an end user runs, runs
 `fetch-amount-of-token-transferred.gs` itself, unchanged, under Node, the
 program that runs JavaScript outside a browser, so it answers as
 `getTokenTransferred` does in a sheet, from a Node program or the command
@@ -107,7 +107,7 @@ Each row's own token, its contract address in column C:
 ### fetch-amount-of-token-transferred.js
 
 ```bash
-node bin/fetch-amount-of-token-transferred.js <transaction> <token> <wallet>
+node bin/end-user/fetch-amount-of-token-transferred.js <transaction> <token> <wallet>
 ```
 
 This prints how much of the token the transaction sent the wallet.
@@ -119,13 +119,13 @@ How much HEX one transaction sent a wallet, with the script's log on
 stderr, which shows each step it took:
 
 ```bash
-node bin/fetch-amount-of-token-transferred.js --verbose <transaction> 0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39 <wallet>
+node bin/end-user/fetch-amount-of-token-transferred.js --verbose <transaction> 0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39 <wallet>
 ```
 
 From a Node program in the repo's top folder:
 
 ```js
-import { openTokenTransferFetcher } from './bin/fetch-amount-of-token-transferred.js';
+import { openTokenTransferFetcher } from './bin/end-user/fetch-amount-of-token-transferred.js';
 
 const fetcher = await openTokenTransferFetcher();
 const amount = await fetcher.getTokenTransferred(txId, tokenAddress, walletAddress);
