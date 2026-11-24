@@ -399,7 +399,11 @@ beside it shows the shape.
 
 ## Known bugs
 
-None is known. When one is found, it gets a test in
-`test/known-bugs.test.js`, declared with `knownBug`, so the test passes while
-the bug is present. The bug's fix makes its test fail; declare that test with
-`it` instead, in the same change, among the tests of the code it is about.
+Four are known, each with a test in `test/known-bugs.test.js`, declared
+with `knownBug`, so the test passes while the bug is present: the ratio
+chart does not fall back to DexTools' current prices when GeckoTerminal
+cannot list a token's pools, nor when Moralis lists no pair that lists a
+token first; and the Summ sweep takes a range that begins after the
+chain's newest block, and a `--summ-synced-to` after now. A bug's fix
+makes its test fail; declare that test with `it` instead, in the same
+change, among the tests of the code it is about.

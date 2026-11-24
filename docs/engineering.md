@@ -328,7 +328,11 @@ deleted. The steps from a branch to `main` are LP Ranger's eight, in its
 
 ## Known Bugs
 
-None is known. A bug found gets a test in `test/known-bugs.test.js`,
-declared with `knownBug` (`test/helpers/known-bug.js`), so the test passes
-while the bug is present. The bug's fix makes its test fail; the same change
+Four are known, each with a test in `test/known-bugs.test.js`, declared
+with `knownBug` (`test/helpers/known-bug.js`), so the test passes while the
+bug is present: the ratio chart does not fall back to DexTools' current
+prices when GeckoTerminal cannot list a token's pools, nor when Moralis
+lists no pair that lists a token first; and the Summ sweep takes a range
+that begins after the chain's newest block, and a `--summ-synced-to` after
+now. The bug's fix makes its test fail; the same change
 declares the test with `it`, among the tests of the code it is about.
