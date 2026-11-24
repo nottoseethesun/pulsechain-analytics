@@ -16,9 +16,20 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { readNeededKeys } from "crypto-price-fetchers/api-key-store";
+import {
+  assertKeysNotShown,
+  MORALIS_CHECK_URL,
+  MORALIS_KEY,
+  PASSWORD,
+} from "./helpers/ratio-chart.js";
 
 /** The repo's top folder. */
 const REPO_TOP = fileURLToPath(new URL("..", import.meta.url));
+
+/** The preload that stands in for the web, for the key manager's check of a key. */
+const STAND_IN_WEB = fileURLToPath(
+  new URL("./helpers/stand-in-web-preload.js", import.meta.url),
+);
 
 describe("the api keys", () => {
   it("are DexTools', for the ratio chart's fallback, and Moralis's, for its candles, as config.json lists them", () => {
@@ -49,29 +60,56 @@ describe("the api keys", () => {
       path.join(os.tmpdir(), "pulsechain-analytics-test-api-keys-"),
     );
     try {
+      const answers = path.join(folder, "answers.json");
+      const log = path.join(folder, "requests.log");
+      fs.writeFileSync(
+        answers,
+        JSON.stringify([{ url: MORALIS_CHECK_URL, body: { version: "2.2" } }]),
+      );
       const env = {
         ...process.env,
         API_KEYS_FILE_PATH: path.join(folder, "api-keys.json"),
+        API_KEYS_PASSWORD: PASSWORD,
+        STAND_IN_WEB_ANSWERS: answers,
+        STAND_IN_WEB_LOG: log,
+        STAND_IN_WEB_KEY: MORALIS_KEY,
       };
-      delete env.API_KEYS_PASSWORD;
-      const run = spawnSync(
-        process.execPath,
-        [path.join(REPO_TOP, "bin", "manage-api-keys.js")],
-        { env, input: "\n\n", encoding: "utf8", timeout: 15000 },
-      );
-      assert.equal(run.status, 0, run.stderr);
+      const manage = (input) =>
+        spawnSync(
+          process.execPath,
+          [
+            "--import",
+            STAND_IN_WEB,
+            path.join(REPO_TOP, "bin", "end-user", "manage-api-keys.js"),
+          ],
+          { env, input, encoding: "utf8", timeout: 15000 },
+        );
+      const first = manage(`\n${MORALIS_KEY}\n`);
+      assert.equal(first.status, 0, first.stderr);
       assert.match(
-        run.stdout,
+        first.stdout,
         / {2}DexTools {2}not saved\n {2}Moralis {3}not saved\n$/,
       );
       assert.match(
-        run.stderr,
+        first.stderr,
         /No DexTools api key was entered, so none was saved\./,
       );
+      const second = manage("\n");
+      assert.equal(second.status, 0, second.stderr);
       assert.match(
-        run.stderr,
-        /No Moralis api key was entered, so none was saved\./,
+        second.stdout,
+        / {2}DexTools {2}not saved\n {2}Moralis {3}saved\n$/,
       );
+      assert.deepEqual(
+        fs
+          .readFileSync(log, "utf8")
+          .trim()
+          .split("\n")
+          .map((line) => JSON.parse(line)),
+        [{ url: MORALIS_CHECK_URL, sentKey: true }],
+      );
+      assertKeysNotShown(first);
+      assertKeysNotShown(second);
     } finally {
       fs.rmSync(folder, { recursive: true, force: true });
     }

@@ -71,16 +71,19 @@ export function repo(owner = true) {
  */
 export async function runOn(top, args) {
   const output = { out: "", err: "", chainMade: false };
-  const code = await runSummSweep(["node", "bin/summ-sweep.js", ...args], {
-    repoTop: top,
-    stdout: { write: (text) => (output.out += text) },
-    stderr: { write: (text) => (output.err += text) },
-    makeProvider: () => {
-      output.chainMade = true;
-      return sweepChain();
+  const code = await runSummSweep(
+    ["node", "bin/end-user/summ-sweep.js", ...args],
+    {
+      repoTop: top,
+      stdout: { write: (text) => (output.out += text) },
+      stderr: { write: (text) => (output.err += text) },
+      makeProvider: () => {
+        output.chainMade = true;
+        return sweepChain();
+      },
+      run: async (_file, args) => JSON.stringify(RECORDS.get(args[1])),
     },
-    run: async (_file, args) => JSON.stringify(RECORDS.get(args[1])),
-  });
+  );
   return { code, ...output };
 }
 

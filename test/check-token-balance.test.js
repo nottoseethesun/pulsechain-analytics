@@ -2,7 +2,7 @@
  * Tests of the balance checker, `check-token-balance/`: its command line,
  * declared in `balance-command.js` and parsed here, in the test's thread;
  * and the real program, run as its owner runs it, through its start file,
- * `bin/check-token-balance.js`, in a child process from the repo's top
+ * `bin/end-user/check-token-balance.js`, in a child process from the repo's top
  * folder.
  * @module test/check-token-balance.test
  *
@@ -176,7 +176,7 @@ function runChecker(args) {
   return new Promise((resolve, reject) => {
     const child = spawn(
       process.execPath,
-      ["bin/check-token-balance.js", ...args],
+      ["bin/end-user/check-token-balance.js", ...args],
       {
         cwd: REPO_TOP,
         timeout: 30_000,

@@ -73,13 +73,15 @@ describe("getTokenTransferred, the Sheets script", () => {
 
 describe("wrapper.gs, which a sheet's cells call", () => {
   /**
-   * Loads the wrapper with a stand-in of the deployed library, whose two
-   * functions answer as `answer` does.
+   * Loads the wrapper with a stand-in of the deployed library, whose
+   * `getTokenTransferred` answers as `answer` does, and its
+   * `getTokenTransferredUseCache` as `cachedAnswer` does.
    *
-   * @param {function(): number} answer - Gives each call's amount, or throws
+   * @param {function(...string): number} answer - Gives each call's amount, or throws
+   * @param {function(...string): number} [cachedAnswer] - The same, for the function with the cache; `answer` when not given
    * @returns {Object} The context holding the wrapper's functions
    */
-  function loadWrapper(answer) {
+  function loadWrapper(answer, cachedAnswer = answer) {
     const wrapper = new URL(
       "../src/for-google-apps/check-token-balance/wrapper.gs",
       import.meta.url,
@@ -92,19 +94,33 @@ describe("wrapper.gs, which a sheet's cells call", () => {
         }),
         FetchTokenAmountTransferredSA: {
           getTokenTransferred: answer,
-          getTokenTransferredUseCache: answer,
+          getTokenTransferredUseCache: cachedAnswer,
         },
       },
     );
   }
 
-  it("gives the library's amount, from the cached function and from the other", () => {
-    const script = loadWrapper(() => 250);
-    assert.equal(script.getTokenTransferred(TRANSACTION, TOKEN, WALLET), 250);
+  it("gives the amount of the library's function with the cache to getTokenTransferred, and of the one without to getTokenTransferredNoCache, each with the cell's three values", () => {
+    const asked = [];
+    const script = loadWrapper(
+      (...values) => {
+        asked.push(["getTokenTransferred", ...values]);
+        return 250;
+      },
+      (...values) => {
+        asked.push(["getTokenTransferredUseCache", ...values]);
+        return 125;
+      },
+    );
+    assert.equal(script.getTokenTransferred(TRANSACTION, TOKEN, WALLET), 125);
     assert.equal(
       script.getTokenTransferredNoCache(TRANSACTION, TOKEN, WALLET),
       250,
     );
+    assert.deepEqual(asked, [
+      ["getTokenTransferredUseCache", TRANSACTION, TOKEN, WALLET],
+      ["getTokenTransferred", TRANSACTION, TOKEN, WALLET],
+    ]);
   });
 
   it("lets the library's error through, so the cell shows an error rather than 0", () => {

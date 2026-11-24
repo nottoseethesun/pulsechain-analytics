@@ -9,9 +9,9 @@
  * The Moralis and DexTools keys come from the repo's key store, never from
  * a setting or the command line: the tests save them in key files of their
  * own, in a temp folder, removed afterwards. No output may hold one. The
- * question of the source is also answered in a pseudo-terminal, through
- * util-linux's `script` (`runChartInTerminal`), on Linux, where `script`
- * runs.
+ * question of the source is also answered at a stand-in terminal
+ * (`runChartInTerminal`), whose raw mode each prompt must turn on before
+ * it reads and off after.
  */
 
 import { after, before, describe, it } from "node:test";
@@ -159,7 +159,31 @@ describe("pulse-token-ratio.js, reading Moralis's candles", () => {
     assertKeysNotShown(run);
   });
 
-  it("stops with exit code 1 when no pair lists a token first, naming --source geckoterminal", () => {
+  it("falls back to DexTools' current prices when no pair lists a token first, naming --source geckoterminal", () => {
+    const run = runChart([TOKEN_A, TOKEN_B, "--source", "moralis"], {
+      answers: [
+        ...moralisAnswers(CLOSES_A, CLOSES_B, { listsBFirst: false }),
+        ...DEXTOOLS_ANSWERS,
+      ],
+      keyFile: keys.both,
+      env: MORALIS_ENV,
+    });
+    assert.equal(run.status, 0, run.stderr);
+    assert.ok(
+      run.stderr.includes(
+        `Moralis pair discovery failed: Moralis lists no active pair that lists ${TOKEN_B} first, so its candles cannot price it: run the chart again with --source geckoterminal`,
+      ),
+      run.stderr,
+    );
+    assert.match(
+      run.stdout,
+      /Token A \/ Token B ratio \(daily, current only\) - Source: DexTools/,
+    );
+    assert.match(run.stdout, /Current ratio: 5\.000000000000\n/);
+    assertKeysNotShown(run);
+  });
+
+  it("with no DexTools key saved, stops with exit code 1 when no pair lists a token first, naming --source geckoterminal", () => {
     const run = runChart([TOKEN_A, TOKEN_B, "--source", "moralis"], {
       answers: moralisAnswers(CLOSES_A, CLOSES_B, { listsBFirst: false }),
       keyFile: keys.moralis,
@@ -171,6 +195,10 @@ describe("pulse-token-ratio.js, reading Moralis's candles", () => {
         `Moralis lists no active pair that lists ${TOKEN_B} first, so its candles cannot price it: run the chart again with --source geckoterminal`,
       ),
       run.stderr,
+    );
+    assert.match(
+      run.stderr,
+      /Cannot fall back to current prices: No DexTools API key is saved\./,
     );
     assert.ok(run.requests.every(({ url }) => !url.includes("/ohlcv")));
   });
@@ -324,41 +352,37 @@ describe("chooseSource, the choice of the source of candles", () => {
   });
 });
 
-describe(
-  "pulse-token-ratio.js, asking for the source at a terminal",
-  {
-    skip: process.platform !== "linux" && "needs util-linux's script",
-  },
-  () => {
-    /** The question's last line, where the answer is typed. */
-    const QUESTION = /Which should this run read, 1 or 2\? /;
+describe("pulse-token-ratio.js, asking for the source at a terminal", () => {
+  /** The question's last line, where the answer is typed. */
+  const QUESTION = /Which should this run read, 1 or 2\? /;
 
-    it("takes Moralis on Enter, then asks for the password, showing none of it", async () => {
-      const run = await runChartInTerminal([TOKEN_A, TOKEN_B], {
-        answers: moralisAnswers(CLOSES_A, CLOSES_B),
-        keyFile: keys.moralis,
-        replies: [
-          { after: QUESTION, type: "\r" },
-          { after: /Password for the api keys in /, type: `${PASSWORD}\r` },
-        ],
-      });
-      assert.equal(run.status, 0, run.output);
-      assert.ok(run.output.includes("  1  Moralis: the last 730 days (Enter)"));
-      assert.match(run.output, /ratio \(daily, 100 points\) - Source: Moralis/);
-      assert.ok(!run.output.includes(PASSWORD), "The password was shown");
-      assertKeysNotShown({ stdout: run.output, stderr: "" });
+  it("takes Moralis on Enter, then asks for the password, showing none of it", async () => {
+    const run = await runChartInTerminal([TOKEN_A, TOKEN_B], {
+      answers: moralisAnswers(CLOSES_A, CLOSES_B),
+      keyFile: keys.moralis,
+      replies: [
+        { after: QUESTION, type: "\r" },
+        { after: /Password for the api keys in /, type: `${PASSWORD}\r` },
+      ],
     });
+    assert.equal(run.status, 0, run.output);
+    assert.ok(run.output.includes("  1  Moralis: the last 730 days (Enter)"));
+    assert.match(run.output, /ratio \(daily, 100 points\) - Source: Moralis/);
+    assert.ok(!run.output.includes(PASSWORD), "The password was shown");
+    assertKeysNotShown({ stdout: run.output, stderr: "" });
+    assert.deepEqual(run.rawModes, [true, false, true, false]);
+  });
 
-    it("takes GeckoTerminal on 2, and opens no key", async () => {
-      const run = await runChartInTerminal([TOKEN_A, TOKEN_B], {
-        answers: geckoAnswers(CLOSES_A, CLOSES_B),
-        keyFile: keys.moralis,
-        replies: [{ after: QUESTION, type: "2\r" }],
-      });
-      assert.equal(run.status, 0, run.output);
-      assert.match(run.output, /Source: GeckoTerminal/);
-      assert.doesNotMatch(run.output, /Password/);
-      assert.ok(run.requests.every(({ url }) => !url.includes("moralis")));
+  it("takes GeckoTerminal on 2, and opens no key", async () => {
+    const run = await runChartInTerminal([TOKEN_A, TOKEN_B], {
+      answers: geckoAnswers(CLOSES_A, CLOSES_B),
+      keyFile: keys.moralis,
+      replies: [{ after: QUESTION, type: "2\r" }],
     });
-  },
-);
+    assert.equal(run.status, 0, run.output);
+    assert.match(run.output, /Source: GeckoTerminal/);
+    assert.doesNotMatch(run.output, /Password/);
+    assert.ok(run.requests.every(({ url }) => !url.includes("moralis")));
+    assert.deepEqual(run.rawModes, [true, false]);
+  });
+});

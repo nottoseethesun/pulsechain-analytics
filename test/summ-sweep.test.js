@@ -1,8 +1,11 @@
 /**
  * Tests for the parts of `summ-sweep/` that read Summ's results and the
  * chain's legs, and match them: `summ-results.js`, `amounts.js`,
- * `legs.js` and `match.js`. `summ-sweep-splits.test.js` tests the
- * withdrawals, LP Ranger's tool, the whole sweep and its command line.
+ * `legs.js` and `match.js`. `summ-sweep-splits.test.js` tests LP
+ * Ranger's tool and the sorting of the withdrawals' splits,
+ * `summ-sweep-positions.test.js` the split itself,
+ * `summ-sweep-run.test.js` the whole sweep, and
+ * `summ-sweep-command.test.js` its command line.
  * @module test/summ-sweep.test
  *
  * Summ's pages are written by `helpers/summ-pages.js`; the wallets and

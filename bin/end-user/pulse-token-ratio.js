@@ -2,8 +2,8 @@
 /**
  * The start file of the ratio chart, which charts the ratio of two
  * PulseChain tokens' prices in the terminal: `npm start` in
- * `chart-price-ratio/`, or `node bin/pulse-token-ratio.js`.
- * @module bin/pulse-token-ratio
+ * `chart-price-ratio/`, or `node bin/end-user/pulse-token-ratio.js`.
+ * @module bin/end-user/pulse-token-ratio
  *
  * What: runs the ratio chart's command line, whose code and packages are in
  * `chart-price-ratio/`; `--help` gives its options, examples and exit codes.
@@ -14,7 +14,7 @@
  * the `config.json` beside its own files. This file imports nothing else,
  * so the packages `npm ci` installs in `chart-price-ratio/` are all it needs.
  *
- * Fit: in `bin/`, the folder of the programs a reader runs.
+ * Fit: in `bin/end-user/`, the folder of the programs only an end user runs.
  */
 
-import "../chart-price-ratio/pulse-token-ratio.js";
+import "../../chart-price-ratio/pulse-token-ratio.js";

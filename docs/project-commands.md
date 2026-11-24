@@ -5,8 +5,10 @@ PulseChain, with what each does and what to type. Most run through npm, the
 package manager of Node, the program that runs JavaScript outside a
 browser, from a `package.json`: those its top `package.json` defines, which
 run from the repo's top folder, and the ratio chart's, in
-`chart-price-ratio/`. The rest, programs in `bin/`, the folder of the
-programs a reader runs, run with `node`, or `source`, at a terminal, from
+`chart-price-ratio/`. The rest, programs in `bin/end-user/`, the folder
+of the programs only an end user runs, and the script in `bin/` that
+keeps the password for a terminal, run with `node`, or `source`, at a
+terminal, from
 the repo's top folder
 ([Commands Run Without npm](#commands-run-without-npm)). Four of the top folder's commands run tools of
 crypto-price-fetchers, the owner's repo of code his projects share, which
@@ -54,7 +56,7 @@ runs Node itself:
 
 ```sh
 npm run api-keys -- set dextools
-node --test --test-name-pattern="ratio" "test/*.test.js"
+node --test --test-timeout=60000 --test-name-pattern="ratio" "test/*.test.js"
 ```
 
 A command that runs one of the repo's command lines passes `--help` on to
@@ -132,8 +134,13 @@ them, after the lint, and must pass before a commit and a push.
 | `audit:security` | — | The security lint, `eslint-security.config.js`: the rules of eslint-plugin-security, against code open to attack, of eslint-plugin-no-secrets, against strings that look like keys, and crypto-price-fetchers' `no-secret-logging`, against printing a name that may hold a secret. | `npm run audit:security` |
 | `check` | — | The full gate: `lint`, `test:coverage`, `audit:deps` (with `audit:actionlint`), `audit:security` and `audit:secrets`, in that order, stopping at the first that fails. | `npm run check` |
 | `format:check` | — | Prettier in check mode; fails rather than rewriting. | `npm run format:check` |
-| `test` | — | The tests, on Node's test runner. The tests whose names hold some words run as `node --test --test-name-pattern="api keys" "test/*.test.js"`, since Node reads that flag only before the file pattern. | `npm test` |
+| `test` | — | The tests, on Node's test runner. The tests whose names hold some words run as `node --test --test-timeout=60000 --test-name-pattern="api keys" "test/*.test.js"`, since Node reads that flag only before the file pattern. | `npm test` |
 | `test:coverage` | — | The same tests with coverage, failing below 80% of lines covered. | `npm run test:coverage` |
+
+`test` and `test:coverage`, and so `check`, pass `--test-timeout=60000`
+to Node's test runner: a test or hook still running after a minute
+fails, by name, and the rest of its file runs
+([Tests](engineering.md#tests)).
 
 ---
 
@@ -151,11 +158,11 @@ npm runs this command itself, after another one.
 
 `chart-price-ratio/` and `check-token-balance/` each have a package of
 their own: run `npm ci` in the folder before using the tool there. Each
-tool runs through its start file in `bin/`.
+tool runs through its start file in `bin/end-user/`.
 
 | Folder | Command | Description | Example |
 | ------ | ------- | ----------- | ------- |
-| `chart-price-ratio/` | `start`, `ratio` | Run the ratio chart, through `bin/pulse-token-ratio.js`. With a Moralis key saved, a run asks which source to read, Moralis or GeckoTerminal, unless `--source` names one. `npm start -- --help` lists its options, each with its default from `config.json`, examples of its common uses, and its exit codes. `--csv` writes the ratios to `output/csv/token_ratio.csv` in `chart-price-ratio/`, where git keeps nothing but the folder, unless `--csv-filename` names another file. | `npm start -- <tokenA> <tokenB> daily` · `npm start -- <tokenA> <tokenB> --source moralis` |
+| `chart-price-ratio/` | `start`, `ratio` | Run the ratio chart, through `bin/end-user/pulse-token-ratio.js`. With a Moralis key saved, a run asks which source to read, Moralis or GeckoTerminal, unless `--source` names one. `npm start -- --help` lists its options, each with its default from `config.json`, examples of its common uses, and its exit codes. `--csv` writes the ratios to `output/csv/token_ratio.csv` in `chart-price-ratio/`, where git keeps nothing but the folder, unless `--csv-filename` names another file. | `npm start -- <tokenA> <tokenB> daily` · `npm start -- <tokenA> <tokenB> --source moralis` |
 
 The balance checker has no npm command: it runs with `node`
 ([Commands Run Without npm](#commands-run-without-npm)).
@@ -164,17 +171,20 @@ The balance checker has no npm command: it runs with `node`
 
 ## Commands Run Without npm
 
-These command lines, programs in `bin/`, run with `node`, or, for the
-password script, `source`, at a terminal, from the repo's top folder.
+These command lines run with `node`, or, for the password script,
+`source`, at a terminal, from the repo's top folder: three of the
+programs in `bin/end-user/`, and the password script in `bin/`. The
+other two programs in `bin/end-user/`, the Summ sweep and the key
+manager, run through the npm targets above, `summ-sweep` and `api-keys`.
 Each Node command line answers `--help` with its options, examples of its
 common uses and its exit codes; [the README's Run](../README.md#run)
 shows each at work.
 
 | Command | Flags | Description | Example |
 | ------- | ----- | ----------- | ------- |
-| `node bin/fetch-amount-of-token-transferred.js` | `<transaction> <token> <wallet>`, `--config <file>`, `--verbose`, `--help` | The Node version of the Sheets script in `src/for-google-apps/check-token-balance/`: how much of a token one PulseChain transaction sent a wallet, read from the rpc endpoint the `config.json` beside the script names. From another folder, give the file's path. | `node bin/fetch-amount-of-token-transferred.js <transaction-hash> 0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39 <wallet>` |
-| `node bin/check-token-balance.js` | `--address <address>`, `--block <block>` or `--date <date>`, `--tokens <tokens>`, `--rpc <url>`, `--help` | The balance checker, whose program is in `check-token-balance/`: a wallet's balance of each token named, PLS as `Pulse_Native_Gas_Token`, at a block or at the start of a day in UTC. | `node bin/check-token-balance.js --address <wallet> --date 2026-11-01 --tokens Pulse_Native_Gas_Token` |
-| `node bin/pulse-token-ratio.js` | `<tokenA> <tokenB> [interval]` and the options of `start` above | The ratio chart, whose program is in `chart-price-ratio/`, as `npm start` runs it there. | `node bin/pulse-token-ratio.js <tokenA> <tokenB> --source geckoterminal` |
+| `node bin/end-user/fetch-amount-of-token-transferred.js` | `<transaction> <token> <wallet>`, `--config <file>`, `--verbose`, `--help` | The Node version of the Sheets script in `src/for-google-apps/check-token-balance/`: how much of a token one PulseChain transaction sent a wallet, read from the rpc endpoint the `config.json` beside the script names. From another folder, give the file's path. | `node bin/end-user/fetch-amount-of-token-transferred.js <transaction-hash> 0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39 <wallet>` |
+| `node bin/end-user/check-token-balance.js` | `--address <address>`, `--block <block>` or `--date <date>`, `--tokens <tokens>`, `--rpc <url>`, `--help` | The balance checker, whose program is in `check-token-balance/`: a wallet's balance of each token named, PLS as `Pulse_Native_Gas_Token`, at a block or at the start of a day in UTC. | `node bin/end-user/check-token-balance.js --address <wallet> --date 2026-11-01 --tokens Pulse_Native_Gas_Token` |
+| `node bin/end-user/pulse-token-ratio.js` | `<tokenA> <tokenB> [interval]` and the options of `start` above | The ratio chart, whose program is in `chart-price-ratio/`, as `npm start` runs it there. | `node bin/end-user/pulse-token-ratio.js <tokenA> <tokenB> --source geckoterminal` |
 | `source ./bin/unlock-api-keys.sh` | `--help` | Asks for the key store's password, showing nothing typed, checks that it opens every key saved, and keeps it in `API_KEYS_PASSWORD` for the terminal, so the programs open their keys without asking. Runs in bash or zsh, and returns 0 when it keeps the password, 1 when it keeps none. `--help`, or `-h`, prints its help, asks nothing and returns 0. | `source ./bin/unlock-api-keys.sh` |
 
 ---

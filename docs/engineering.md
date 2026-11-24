@@ -26,6 +26,9 @@ manages his 9mm V3 liquidity positions: its `CLAUDE.md` and
 
 - [Quick Start](#quick-start)
 - [Files on Disk](#files-on-disk)
+- [The Unlock Script](#the-unlock-script)
+  - [Usage](#usage)
+  - [In zsh, by Hand](#in-zsh-by-hand)
 - [The Gate: `npm run check`](#the-gate-npm-run-check)
 - [Lint](#lint)
 - [Tests](#tests)
@@ -103,10 +106,77 @@ both paths before it writes either.
 
 ---
 
+## The Unlock Script
+
+`bin/unlock-api-keys.sh` asks for the key store's password once, showing
+nothing of what is typed, checks that it opens the keys saved, and keeps
+it for the terminal in `API_KEYS_PASSWORD`, so the tools, such as the
+ratio chart with its Moralis and DexTools keys, open their keys without
+asking. It runs in bash or zsh, the default shell of macOS, and with
+`source`, since a script run as a program cannot set anything in the
+terminal that started it; no program runs it. It is a copy of
+crypto-price-fetchers' script, which `test/api-keys.test.js` holds it
+to, so a change to it is made there. It finds the repo's top folder as
+the one above its own, and runs the key manager there, at
+`bin/end-user/manage-api-keys.js`. From the repo's top folder:
+
+```bash
+source ./bin/unlock-api-keys.sh
+```
+
+### Usage
+
+From any other folder, by the script's path:
+
+```bash
+source /path/to/pulsechain-analytics/bin/unlock-api-keys.sh
+```
+
+The password kept, then the ratio chart run from Moralis, which opens
+the Moralis key without asking for the password:
+
+```bash
+source ./bin/unlock-api-keys.sh
+node bin/end-user/pulse-token-ratio.js 0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39 0xA1077a294dDE1B09bB078844df40758a5D0f9a27 --source moralis
+```
+
+Closing the terminal forgets the password, as does
+`unset API_KEYS_PASSWORD`.
+
+### In zsh, by Hand
+
+The script finds the repo's folder by a different line in bash and in
+zsh. crypto-price-fetchers' tests source its copy in bash, and, run by
+hand, in zsh ([In zsh, by Hand](https://github.com/nottoseethesun/crypto-price-fetchers/blob/main/docs/engineering.md#in-zsh-by-hand), in its
+`docs/engineering.md`, says how), in the same place beside its key
+manager as here; the tests here run only the script's help, in bash. To
+check this copy in zsh, on a computer with zsh, such as a Mac, start zsh,
+and from the repo's top folder:
+
+1. Run `source ./bin/unlock-api-keys.sh --help`. It prints its help, and
+   asks nothing.
+2. Run `zsh ./bin/unlock-api-keys.sh`, which runs it as a program. It
+   says "Run it with source, so it can keep the password in this
+   terminal:", and `echo $?` prints 1.
+3. Run `cd ~`, then source the script by its whole path, as
+   `source /path/to/pulsechain-analytics/bin/unlock-api-keys.sh`. Its
+   question names the folder the repo is in, as "Password for the api
+   keys of pulsechain-analytics:", which shows that zsh's line found the
+   folder. Press Enter alone: it says "No password was typed, so none is
+   kept.", and `echo $?` prints 1.
+4. Source it again, and type the password of the keys `npm run api-keys`
+   saved, which shows nothing typed. It says "API_KEYS_PASSWORD is set
+   for this terminal.", and `echo $?` prints 0; a wrong password gives
+   "The password is not kept." and 1. With no key saved yet, any password
+   is kept, after a line that says no key is saved. Run
+   `unset API_KEYS_PASSWORD` to forget it.
+
+---
+
 ## The Gate: `npm run check`
 
 `npm run check` runs every gate, in order, and stops at the first that
-fails: the lint, the tests with coverage, then the three security audits. It
+fails: the lint, the tests with coverage, then the four security audits. It
 must pass before every commit and push, and CI runs it on Node 26, the
 newest LTS (long-term support) version, and on Node 24, the oldest the repo
 supports.
@@ -123,11 +193,11 @@ row explains:
 
 | Tool | Configured in | What it does, and what it holds the repo to |
 | ---- | ------------- | ------------------------------------------- |
-| ESLint | `eslint.config.js` | Checks JavaScript against rules: LP Ranger's, with no warning allowed: cyclomatic complexity ≤ 17, ≤ 500 lines of code a file (blank lines and comments not counted), lines ≤ 80 characters but strings, urls and comments, `===`, no unused name, no `var`, `const` where nothing is reassigned, no `Math.random`, no comment that tells Prettier, the formatter in the row below, to skip code, and every import resolved. It reads the Sheets scripts too, as the paragraph below the table says. And `no-or-default`, crypto-price-fetchers' rule against `a \|\| b` whose value is kept, as a default is, when `b` is no boolean: `\|\|` takes its fallback for every falsy value, so a default is written with `??` or an explicit check. |
+| ESLint | `eslint.config.js` | Checks JavaScript against rules: LP Ranger's, with no warning allowed: cyclomatic complexity ≤ 17, ≤ 500 lines of code a file (blank lines and comments not counted), lines ≤ 80 characters but strings, template literals, regular expressions, urls and comments, `===`, no unused name, no `var`, `const` where nothing is reassigned, no `Math.random`, no comment that tells Prettier, the formatter in the row below, to skip code, and every import resolved. It reads the Sheets scripts too, as the paragraph below the table says. And `no-or-default`, crypto-price-fetchers' rule against `a \|\| b` whose value is kept, as a default is, when `b` is no boolean: `\|\|` takes its fallback for every falsy value, so a default is written with `??` or an explicit check. |
 | markdownlint | `.markdownlint-cli2.jsonc` | Checks the form of Markdown files, with LP Ranger's settings, over every Markdown file. |
 | Prettier | `.prettierrc`, `.prettierignore` | Formats code; in check mode, it fails when its formatting would change any JavaScript, Sheets script, JSON or YAML file. |
 | actionlint | crypto-price-fetchers' `actionlint/release.js` | Checks the GitHub Actions workflow files, in `.github/workflows/`, for mistakes in their syntax, their expressions and the shell scripts their steps run. The lint runs the official release of actionlint, rhysd's program, through `run-actionlint`, a bin of crypto-price-fetchers: the first run downloads the archive for its system, refuses it unless its SHA-256 is the one crypto-price-fetchers pins, and keeps the program in `node_modules/.cache/actionlint/`, which later runs use. |
-| knip | `knip.json` | Finds files nothing imports or runs, and fails on any. See [Dead Code Detection](#dead-code-detection). |
+| knip | `knip.json` | Finds files outside `test/` that nothing imports or runs, and fails on any. See [Dead Code Detection](#dead-code-detection). |
 
 The Sheets scripts are plain scripts, not modules: Apps Script, Google's
 platform for scripts that run inside its apps, loads them
@@ -164,11 +234,12 @@ owner's key file or password.
 | `check-token-balance.test.js` | The balance checker: its command line, each option checked as it is parsed, and a mistake refused, naming its option, before the chain is asked anything; and the real program, run against a stand-in PulseChain endpoint served on the computer: each balance read once at the block given, or at the last block made before the start of the date given, even when the day's first block is nearer that start, then written with commas and plain, and a failed read's exit code. |
 | `check-token-balance-settings.test.js` | The balance checker's settings (`check-token-balance/settings.js`): the committed `config.json` held to its schema, g4mm4's endpoint for a file that names none and, with a notice, for no file, a key no setting has and an endpoint that is no url refused, listing every problem; and a copy of the checker's files in a temp folder, run with a `config.json` beside it that is not JSON or names no url, stopping with exit code 1, naming the file or the setting, after naming a mistake in an option first, and reading the `config.json` beside it, not the one of the folder it runs in. |
 | `ratio-command.test.js` | The ratio chart's command line as it takes `config.json`'s settings, parsed in the test's thread: the committed file held to its schema and taken as the options' defaults, a `maxCandles` of 0 and several problems at once, nested settings among them, refused, `--source` refused beside a `useDexToolsOnly` the file sets, as beside a typed one, an empty value refused for each option that takes text, and the command `ratioCommandFrom` builds when the settings are refused: its help, a run stopped on the settings' problems, and a mistake in the arguments named first. |
-| `pulse-token-ratio.test.js` | The ratio chart, run as its owner runs it, reading GeckoTerminal's candles, against a stand-in GeckoTerminal, which lists candles newest first and makes none for a day in which nothing traded, as GeckoTerminal does, and a stand-in DexTools, with the DexTools key from a key file of the test's own: its prices, read oldest first, its recent and current ratios, its weekly points, its pairing of the two tokens' prices by time, a token's own prices when it is its pool's quote token, its fallback, its command line, its default interval, its exit codes, a series of few points drawn with each point widened, the y-axis in one column on every row, a series whose ratios are all the same labelled with the ratio, each row's label its own when the range is under 0.00001, and the most points a weekly chart from GeckoTerminal can have, which a weekly run says; and the rows' dates, with the hour in an hourly run, and their prices and ratios, a value below a millionth in exponent form rather than as 0 (`ratioRows`); and the two test files of the ratio chart passing when a test-name pattern selects none of their tests. |
+| `pulse-token-ratio.test.js` | The ratio chart, run as its owner runs it, reading GeckoTerminal's candles, against a stand-in GeckoTerminal, which lists candles newest first and makes none for a day in which nothing traded, as GeckoTerminal does, and a stand-in DexTools, with the DexTools key from a key file of the test's own: its prices, read oldest first, its recent and current ratios, its weekly points, its pairing of the two tokens' prices by time, a token's own prices when it is its pool's quote token, its fallback, its command line, its default interval, its exit codes, a series of few points drawn with each point widened, and the most points a weekly chart from GeckoTerminal can have, which a weekly run says; and the two test files of the ratio chart passing when a test-name pattern selects none of their tests. |
+| `ratio-series-and-output.test.js` | The rows' dates, with the hour in an hourly run, and their prices and ratios, a value below a millionth in exponent form rather than as 0 (`ratioRows`, in `chart-price-ratio/ratio-series.js`); and the chart's y-axis (`printRatios`, in `chart-price-ratio/ratio-output.js`): in one column on every row, a series whose ratios are all the same labelled with the ratio, and each row's label its own when the range is under 0.00001. |
 | `refused-settings.test.js` | The ratio chart and the balance checker, run whole with a refused `config.json` handed to them by `helpers/stand-in-settings-preload.js`: each answers `--help` with its help, and stops any other run, with exit code 1, on the file's problems; the balance checker names a missing `--block` or `--date` first. |
-| `pulse-token-ratio-moralis.test.js` | The ratio chart reading Moralis's candles, against a stand-in Moralis, GeckoTerminal and DexTools, with the Moralis and DexTools keys from key files of the test's own: the deepest active pair that lists each token first, the two years of daily candles it reads unless `--moralis-days` names another span, its hourly and weekly charts, its fallback to DexTools when Moralis's candles price another token, and its stop when no pair lists a token first; and the choice of the source (`ratio-source.js`): the question asked when a Moralis key is saved, Enter taking Moralis, an answer asked again, `--source` in its place, the stop with no terminal to ask at, and `--source` refused with `--useDexToolsOnly` or with no Moralis key saved; and the question answered in a pseudo-terminal, on Linux: Enter taking Moralis, then the password, which the terminal never shows, and 2 taking GeckoTerminal, opening no key. |
-| `command-line-help.test.js` | Every command line's help, `--help` and `-h`, and its help into a pipe closed before it is written, which must end with exit code 0 and nothing on stderr: the Summ sweep's, the ratio chart's, the balance checker's, the Sheets script's Node version's and the key manager's, each run through its file in `bin/`, `bin/unlock-api-keys.sh`'s, run with bash, and those of the bins of crypto-price-fetchers the npm targets run, its versions tool and `run-actionlint`, each with its options, examples and exit codes, by crypto-price-fetchers' checks (`crypto-price-fetchers/lib/command-line-help`); and that its list holds every command line the repo runs, every bin of crypto-price-fetchers among them; and each tool's start file in `bin/` run with only the packages `npm ci` installs in the tool's folder, from a temp folder that holds a copy of it beside a link to that folder. |
-| `api-keys.test.js` | The keys `config.json` lists, the key manager, which saves and lists the api keys, and the copy of `bin/unlock-api-keys.sh`, the script that keeps the password for a terminal. |
+| `pulse-token-ratio-moralis.test.js` | The ratio chart reading Moralis's candles, against a stand-in Moralis, GeckoTerminal and DexTools, with the Moralis and DexTools keys from key files of the test's own: the deepest active pair that lists each token first, the two years of daily candles it reads unless `--moralis-days` names another span, its hourly and weekly charts, its fallback to DexTools when Moralis's candles price another token or when no pair lists a token first, and its stop in that case when no DexTools key is saved; and the choice of the source (`ratio-source.js`): the question asked when a Moralis key is saved, Enter taking Moralis, an answer asked again, `--source` in its place, the stop with no terminal to ask at, and `--source` refused with `--useDexToolsOnly` or with no Moralis key saved; and the question answered at a stand-in terminal: Enter taking Moralis, then the password, which the output never shows, each prompt reading in raw mode and leaving it, and 2 taking GeckoTerminal, opening no key. |
+| `command-line-help.test.js` | Every command line's help, `--help` and `-h`, and its help into a pipe closed before it is written, which must end with exit code 0 and nothing on stderr: the Summ sweep's, the ratio chart's, the balance checker's, the Sheets script's Node version's and the key manager's, each run through its file in `bin/end-user/`, `bin/unlock-api-keys.sh`'s, run with bash, and those of the bins of crypto-price-fetchers the npm targets run, its versions tool and `run-actionlint`, each with its options, examples and exit codes, by crypto-price-fetchers' checks (`crypto-price-fetchers/lib/command-line-help`); and that its list holds every command line the repo runs, every bin of crypto-price-fetchers among them; and each tool's start file in `bin/end-user/` run with only the packages `npm ci` installs in the tool's folder, from a temp folder that holds a copy of it beside a link to that folder. |
+| `api-keys.test.js` | The keys `config.json` lists, the key manager, which saves and lists the api keys, and the copy of `bin/unlock-api-keys.sh`, the script that keeps the password for a terminal ([The Unlock Script](#the-unlock-script)). |
 | `repo-checks.test.js` | The repo's tracked files, by crypto-price-fetchers' checks (`crypto-price-fetchers/lib/repo-checks`): every EVM address in EIP-55's form, every npm target named in `docs/project-commands.md`, every test file and helper named in this doc or `CLAUDE.md`, every link in a doc, and every path in a code span that starts at the doc's own folder, pointing at a file, folder or heading the repo keeps, and a `config-example.json` beside every `config.json`, holding what a committed `config.json` holds; and that git ignores the owner's files in the tools' `output/` folders. |
 | `dependencies.test.js` | crypto-price-fetchers installed from GitHub, following its main branch or its latest release, by the ratio chart and the balance checker too, with the same ref, and `npm run github-project-deps` running its versions tool. |
 | `wallet-history.test.js` | The paced provider, the blocks of a range, the logs that name a wallet, the transactions it sent, their receipts and its tokens' facts, a decimals answer above 255 taken for none, a revert or an error of the EVM taken as a token's refusal, and an endpoint's error answer, its limit on a call's time among them, stopping the read, against a stand-in chain. |
@@ -177,7 +248,7 @@ owner's key file or password.
 | `summ-sweep-positions.test.js` | The split of withdrawals from positions into principal and fees (`splitCollects`): a pool's coins ordered by their addresses as numbers, the collects it refuses to split, one whose coins the wallet received less of than its principal or none of, the principal a Collect event leaves owed carried to the next collect whatever the wallet received, a later collect of a position owed coins when the range began reported while the range's collects have not paid out all it was owed and split once they have, a two-position collect among them, a transaction that collects twice from one position reported, with what its first Collect paid of what the position was owed kept, and LP Ranger's records of another shape refused. |
 | `summ-sweep-splits.test.js` | LP Ranger's tool run through a stand-in and as a real program (`readThroughLpRanger`); the coins paid as PLS handed back apart, with principal or without, a token coin with no principal left to the match, and the fee of a coin with no symbol for the csv left to a question (`sortSplits`); and the coins each position was owed when the range began, read at the block before it, an endpoint's error answer stopping the read (`owedWhenRangeBegan`). |
 | `summ-sweep-run.test.js` | The whole sweep, `sweepWallet`, against a stand-in chain: a split Summ holds whole and one it holds in parts, the gaps booked, a question's amount in whole tokens, no block read for its time that the search for the wallet's transactions already read, a withdrawal paid as PLS, a position's first collect in the range reported when the position was owed coins as the range began, its coins asked about rather than booked, a Transfer log of a shape no ERC-20 or NFT Transfer has reported and read as no leg, and a change of balance no payment explains. |
-| `summ-sweep-command.test.js` | The sweep's command line: the csv written through crypto-price-fetchers' Summ csv utility, with addresses in lower case, and the report in EIP-55's mixed case; neither file written when one path is taken, and the last run's csv removed by a run with `--replace` and no rows; a mistake in an option refused as it is parsed, before anything is read, a missing folder of `--out` or `--report`, a folder of either that takes no new file, shown with `/proc` where there is one, an `--out` or a `--report` that is a folder, a missing page of `--summ-results`, and an empty `--out`, `--report` or page of `--summ-results` among them, as are an `--out` and a `--report` that name one file and an `--end-date` before `--start-date`; a `templatePath` that names no file refused before the chain is asked, writing neither file; the chain's facts of the wrong kind, a `requestSpacingMs` Node's timers cannot keep among them, and an owner's address whose checksum is wrong refused, every problem listed, before the chain is read; the committed top `config.json` and `summ-sweep/config-example.json` held to their schemas; and its help, with its exit codes. |
+| `summ-sweep-command.test.js` | The sweep's command line: the csv written through crypto-price-fetchers' Summ csv utility, with addresses in lower case, and the report in EIP-55's mixed case; neither file written when one path is taken, and the last run's csv removed by a run with `--replace` and no rows; a mistake in an option refused as it is parsed, before anything is read, a missing folder of `--out` or `--report`, a folder of either that takes no new file, shown with `/proc` where there is one, an `--out` or a `--report` that is a folder, a missing page of `--summ-results`, and an empty `--out`, `--report` or page of `--summ-results` among them, as are an `--out` and a `--report` that name one file and an `--end-date` before `--start-date`; a `templatePath` that names no file refused before the chain is asked, writing neither file; a `--summ-synced-to` after now refused, asking the chain nothing, and a range that begins after the chain's newest block refused, writing nothing, while a range whose last day ends after that block is swept up to it, saying so; the chain's facts of the wrong kind, a `requestSpacingMs` Node's timers cannot keep among them, and an owner's address whose checksum is wrong refused, every problem listed, before the chain is read; the committed top `config.json` and `summ-sweep/config-example.json` held to their schemas; and its help, with its exit codes. |
 | `summ-sweep-gap-rules.test.js` | The rules that book the legs Summ lacks outside a swap (a position's deposits, with the position's number and the PLS a deposit paid, NFTs the position manager mints or burns, withdrawals and fees; wraps; spam; the owner's wallets, a position's NFT sent to one of them among them; income tokens), and the question for each leg no rule books, a token whose contract's symbol is blank or PLS among them, unless the owner's settings give it a symbol. |
 | `summ-sweep-gaps.test.js` | The rows of swaps, of tokens and of PLS, with only what Summ lacks; how much of a transaction Summ holds; where its gas goes; a transaction later than the time given as reached by Summ's sync; and the Fee rows and questions of transactions that moved no token. |
 
@@ -202,9 +273,16 @@ owner's key file or password.
   preload, and builds GeckoTerminal's, Moralis's and DexTools' answers,
   among them a pool whose base token is not the chart's token
   (`quoteSideAnswers`) and a deeper pair at Moralis that lists a token
-  second (`moralisAnswers`). `runChartInTerminal` runs the chart in a
-  pseudo-terminal, through util-linux's `script`, a program that runs a
-  command in one, and types each reply once its prompt shows.
+  second (`moralisAnswers`). `runChartInTerminal` runs the chart at a
+  stand-in terminal, with the preload below, and types each reply once
+  its prompt shows.
+- `stand-in-terminal-preload.js`: a preload for `node --import` that makes
+  the stdin and stderr of a program a test starts, two pipes, a stand-in
+  terminal: it sets `isTTY` on both, and gives stdin a `setRawMode` that
+  logs each turn of raw mode on or off to the file
+  `STAND_IN_TERMINAL_LOG` names, so a test can tell that each prompt read
+  in raw mode, in which a terminal shows nothing typed but what the
+  program writes, and left it.
 - `stand-in-settings-preload.js`: a preload for `node --import` that
   hands the ratio chart or the balance checker, run in a child process, a
   settings file of the test's own, from the environment variable
@@ -236,6 +314,20 @@ owner's key file or password.
 `npm run test:coverage` fails below 80% of lines covered. Code written to
 check something goes into the tests, so it is kept and run again rather
 than written again.
+
+`npm test` and `npm run test:coverage` pass `--test-timeout=60000` to
+Node's test runner, so a test or hook still running after a minute fails,
+by name, and the rest of its file runs: on Node 24 and 26, a test whose
+promise never settles would otherwise keep its file running until the
+run is stopped. The limit is per test, a minute, as in LP Ranger; the
+slowest test today takes up to about 4 seconds, on a computer and
+on CI. It cannot end a test that
+waits for a child process synchronously, as `spawnSync` does, which holds
+its file's thread, nor a test file that leaves a timer running, whose
+process never exits: [CI and Branch Protection](#ci-and-branch-protection)
+says how CI ends those, and a run on a computer waits until it is
+stopped. `--test-force-exit`, which would end such a file, is left out,
+since it would hide the timer left running.
 
 ### How the Sheets Script Is Tested
 
@@ -300,7 +392,11 @@ follows the imports from each entry point, a file that a program or a test
 starts from, and reports any file it never reaches. `npm run knip:files`
 fails on one, as in LP Ranger. The tools are started by their paths rather
 than imported, so `knip.json` names them as entry points, with the
-security config and the tests. Unused exports are not gated.
+security config and the tests. knip's plugin for Node's test runner,
+which `npm test` runs, also takes every file under `test/` as an entry
+point, so knip reports no file there: `test/helpers/known-bug.js`, which
+nothing imports while no bug is known, among them. Unused exports are not
+gated.
 
 ---
 
@@ -316,7 +412,9 @@ request to `main`, and by hand:
 | `security-audit.yml` | Dependency Audit, Security Lint, Secret Scan | Each audit as a job of its own; Dependency Audit runs `npm run audit:deps`, so the check of actionlint's archives with it. |
 
 The two checks of `ci.yml` are named for their roles, not their Node
-versions, so moving to newer versions renames no check.
+versions, so moving to newer versions renames no check. Each stops at 20
+minutes (`timeout-minutes`), where it takes under two, which ends a hang
+no test's time limit can ([Tests](#tests)).
 
 `main` is protected: a change reaches it only by a pull request whose five
 checks, those five jobs, have passed. Force pushes and deletion are
@@ -328,11 +426,7 @@ deleted. The steps from a branch to `main` are LP Ranger's eight, in its
 
 ## Known Bugs
 
-Four are known, each with a test in `test/known-bugs.test.js`, declared
-with `knownBug` (`test/helpers/known-bug.js`), so the test passes while the
-bug is present: the ratio chart does not fall back to DexTools' current
-prices when GeckoTerminal cannot list a token's pools, nor when Moralis
-lists no pair that lists a token first; and the Summ sweep takes a range
-that begins after the chain's newest block, and a `--summ-synced-to` after
-now. The bug's fix makes its test fail; the same change
+None is known. A bug found gets a test in `test/known-bugs.test.js`,
+declared with `knownBug` (`test/helpers/known-bug.js`), so the test passes
+while the bug is present. The bug's fix makes its test fail; the same change
 declares the test with `it`, among the tests of the code it is about.

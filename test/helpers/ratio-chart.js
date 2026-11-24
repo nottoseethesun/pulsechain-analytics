@@ -1,6 +1,6 @@
 /**
  * Runs the ratio chart, `chart-price-ratio/pulse-token-ratio.js`, as its
- * owner does, through its start file, `bin/pulse-token-ratio.js`, in a
+ * owner does, through its start file, `bin/end-user/pulse-token-ratio.js`, in a
  * child process, against a stand-in web.
  * @module test/helpers/ratio-chart
  *
@@ -11,9 +11,10 @@
  * daily candles, and `moralisAnswers` Moralis's, each token with the pairs
  * that trade it and their candles. The child gets a key file of the test's
  * own in `API_KEYS_FILE_PATH`, and no `API_KEYS_PASSWORD` the test did not
- * give. `runChartInTerminal` runs the chart in a pseudo-terminal, through
- * `script`, util-linux's program that runs a command in one, so the chart
- * can ask its questions there, as at the owner's terminal.
+ * give. `runChartInTerminal` runs the chart with the preload
+ * `stand-in-terminal-preload.js` too, which makes its stdin and stderr a
+ * stand-in terminal, so the chart asks its questions there, as at the
+ * owner's terminal.
  */
 
 import assert from "node:assert/strict";
@@ -26,12 +27,17 @@ import { saveEncryptedKey } from "crypto-price-fetchers/api-key-store";
 
 /** The chart's start file. */
 const CHART = fileURLToPath(
-  new URL("../../bin/pulse-token-ratio.js", import.meta.url),
+  new URL("../../bin/end-user/pulse-token-ratio.js", import.meta.url),
 );
 
 /** The preload that stands in for the web. */
 const PRELOAD = fileURLToPath(
   new URL("./stand-in-web-preload.js", import.meta.url),
+);
+
+/** The preload that makes stdin and stderr a stand-in terminal. */
+const TERMINAL_PRELOAD = fileURLToPath(
+  new URL("./stand-in-terminal-preload.js", import.meta.url),
 );
 
 /** GeckoTerminal's api for PulseChain. */
@@ -420,16 +426,6 @@ export function runChart(args, { answers, env = {}, keyFile }) {
 }
 
 /**
- * Quotes a word for the shell `script` runs the chart in.
- *
- * @param {string} word - The word
- * @returns {string} The word in single quotes
- */
-function shellWord(word) {
-  return `'${word.replaceAll("'", "'\\''")}'`;
-}
-
-/**
  * Reads the requests a run made from the log the stand-in web wrote.
  *
  * @param {string} log - The log's path
@@ -446,17 +442,19 @@ function requestsLogged(log) {
 }
 
 /**
- * Runs the chart in a pseudo-terminal, through util-linux's `script`, in
- * a temp folder of its own, removed afterwards. Each reply is typed once
- * the output since the last reply shows its prompt, as the owner answers
- * at a terminal. The run is stopped after 30 seconds.
+ * Runs the chart at a stand-in terminal (`stand-in-terminal-preload.js`),
+ * in a temp folder of its own, removed afterwards. What it writes on
+ * stdout and on stderr is read as one output, in the order it comes, as a
+ * terminal shows both, and each reply is typed once the output since the
+ * last reply shows its prompt, as the owner answers at a terminal. The run
+ * is stopped after 30 seconds.
  *
  * @param {string[]} args - The chart's arguments
  * @param {Object} options - The answers, the key file and the replies
  * @param {Array<Object>} options.answers - The stand-in web's answers
  * @param {string} options.keyFile - The key file
  * @param {Array<{after: RegExp, type: string}>} options.replies - What to type, in order, each once its prompt shows
- * @returns {Promise<{status: (number|null), output: string, requests: Array<{url: string, sentKey: boolean}>}>} The exit code, what the terminal showed, and the requests made
+ * @returns {Promise<{status: (number|null), output: string, requests: Array<{url: string, sentKey: boolean}>, rawModes: boolean[]}>} The exit code, what the terminal showed, the requests made, and each turn of raw mode on or off, in order
  */
 export async function runChartInTerminal(args, { answers, keyFile, replies }) {
   const folder = fs.mkdtempSync(
@@ -465,25 +463,25 @@ export async function runChartInTerminal(args, { answers, keyFile, replies }) {
   try {
     const answersFile = path.join(folder, "answers.json");
     const log = path.join(folder, "requests.log");
+    const rawModeLog = path.join(folder, "raw-mode.log");
     fs.writeFileSync(answersFile, JSON.stringify(answers));
     const env = {
       ...process.env,
       API_KEYS_FILE_PATH: keyFile,
       STAND_IN_WEB_ANSWERS: answersFile,
       STAND_IN_WEB_LOG: log,
+      STAND_IN_TERMINAL_LOG: rawModeLog,
     };
     delete env.API_KEYS_PASSWORD;
-    const command = [process.execPath, "--import", PRELOAD, CHART, ...args]
-      .map(shellWord)
-      .join(" ");
-    const child = spawn("script", ["-qec", command, "/dev/null"], {
-      cwd: folder,
-      env,
-    });
+    const child = spawn(
+      process.execPath,
+      ["--import", PRELOAD, "--import", TERMINAL_PRELOAD, CHART, ...args],
+      { cwd: folder, env },
+    );
     let output = "";
     let answeredUpTo = 0;
     let next = 0;
-    child.stdout.on("data", (chunk) => {
+    const show = (chunk) => {
       output += chunk;
       while (
         next < replies.length &&
@@ -493,7 +491,9 @@ export async function runChartInTerminal(args, { answers, keyFile, replies }) {
         child.stdin.write(replies[next].type);
         next += 1;
       }
-    });
+    };
+    child.stdout.on("data", show);
+    child.stderr.on("data", show);
     const timer = setTimeout(() => child.kill(), 30000);
     const status = await new Promise((resolve) => child.on("close", resolve));
     clearTimeout(timer);
@@ -501,6 +501,13 @@ export async function runChartInTerminal(args, { answers, keyFile, replies }) {
       status,
       output: output.replaceAll("\r", ""),
       requests: requestsLogged(log),
+      rawModes: fs.existsSync(rawModeLog)
+        ? fs
+            .readFileSync(rawModeLog, "utf8")
+            .trim()
+            .split("\n")
+            .map((line) => line === "true")
+        : [],
     };
   } finally {
     fs.rmSync(folder, { recursive: true, force: true });

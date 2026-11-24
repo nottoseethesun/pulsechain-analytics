@@ -34,7 +34,7 @@
  */
 
 export const TOKEN = "0x8a7FDcA264e87b6da72D000f22186B4403081A2a";
-export const WALLET = "0xbCB167f16A1aA3ca3F483CC922967e9aCdEC405D";
+export const WALLET = "0x61C8D2DeE20F8e303B999D485cFa577054196B40";
 export const TRANSACTION = "0x" + "ab".repeat(32);
 export const OTHER_TOKEN = "0x" + "22".repeat(20);
 export const OTHER_WALLET = "0x" + "33".repeat(20);

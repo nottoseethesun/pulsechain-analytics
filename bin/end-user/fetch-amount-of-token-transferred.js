@@ -3,7 +3,7 @@
  * src/for-google-apps/check-token-balance/fetch-amount-of-token-transferred.gs:
  * how much of a token one PulseChain transaction sent a wallet, for Node
  * programs and the command line.
- * @module bin/fetch-amount-of-token-transferred
+ * @module bin/end-user/fetch-amount-of-token-transferred
  *
  * What: the same answer as the Sheets function `getTokenTransferred`,
  * worked out by the same code, because this file runs
@@ -29,7 +29,7 @@
  *   kinds of value (`crypto-price-fetchers/lib/settings-schema`); the
  *   runner checks the file against it before the script opens, and a
  *   problem stops the run, every problem listed.
- * - The command line, `node bin/fetch-amount-of-token-transferred.js
+ * - The command line, `node bin/end-user/fetch-amount-of-token-transferred.js
  *   <transaction> <token> <wallet>`, prints the amount (`--help` gives the
  *   rest).
  *
@@ -38,7 +38,7 @@
  * wrapper: `wrapper.gs` exists because a sheet reaches a library's
  * functions through one, and a Node program imports this file directly.
  *
- * Fit: in `bin/`, the folder of the programs a reader runs; the Sheets
+ * Fit: in `bin/end-user/`, the folder of the programs only an end user runs; the Sheets
  * script, `src/for-google-apps/check-token-balance/`'s
  * `fetch-amount-of-token-transferred.gs`, stays the one copy of its logic,
  * so a fix to it is a fix to both. The module of the same name at the
@@ -57,7 +57,7 @@ import { KINDS } from "crypto-price-fetchers/lib/settings-schema";
 
 /** The Sheets script this runs. */
 export const SHEETS_SCRIPT = new URL(
-  "../src/for-google-apps/check-token-balance/fetch-amount-of-token-transferred.gs",
+  "../../src/for-google-apps/check-token-balance/fetch-amount-of-token-transferred.gs",
   import.meta.url,
 );
 
@@ -138,9 +138,9 @@ function address(value) {
 const EXAMPLES_HELP = `
 Examples:
   How much HEX one transaction sent a wallet:
-    $ node bin/fetch-amount-of-token-transferred.js <transaction-hash> 0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39 <wallet>
+    $ node bin/end-user/fetch-amount-of-token-transferred.js <transaction-hash> 0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39 <wallet>
   The same, with the script's log on stderr, to see each step it took:
-    $ node bin/fetch-amount-of-token-transferred.js --verbose <transaction-hash> 0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39 <wallet>`;
+    $ node bin/end-user/fetch-amount-of-token-transferred.js --verbose <transaction-hash> 0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39 <wallet>`;
 
 /**
  * Describes the command line.
