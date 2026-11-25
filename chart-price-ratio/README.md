@@ -136,7 +136,8 @@ npm run api-keys
 ```
 
 The chart opens each key the first time it asks that service, with the
-password, which it asks for. A run that reads
+password, from the environment variable `API_KEYS_PASSWORD` when it holds
+one, or else asked for. A run that reads
 GeckoTerminal's candles and never falls back asks for no password. See the
 repo's [README](../README.md#api-keys).
 

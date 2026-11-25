@@ -58,8 +58,9 @@ function a cell calls.
 #### fetch-amount-of-token-transferred.js
 
 The Sheets script's Node version: it runs
-`fetch-amount-of-token-transferred.gs` itself, unchanged, through
-crypto-price-fetchers' runner, and prints what the script's cell would
+`fetch-amount-of-token-transferred.gs` itself, unchanged, through the
+runner of crypto-price-fetchers, the owner's repo of code his projects
+share, which [Install](#install) brings, and prints what the script's cell would
 show. It is not the module of the same name at the repo's top folder,
 which works out the same amount with ethers and has no command.
 
@@ -83,7 +84,7 @@ moves through `wallet-history/`.
 
 #### manage-api-keys.js
 
-The key manager, crypto-price-fetchers': it lists the api keys the top
+The key manager, crypto-price-fetchers' too: it lists the api keys the top
 `config.json` names, saved or not, never showing a key's characters, and
 saves each key typed, encrypted with your password.
 
@@ -216,12 +217,11 @@ npm ci --prefix chart-price-ratio
 npm ci --prefix check-token-balance
 ```
 
-Each installs crypto-price-fetchers, the owner's repo of code his
-projects share, from GitHub: it runs the Sheets script under Node, keeps
-the api keys, writes the Summ sweep's csv, and asks, for the ratio chart,
-GeckoTerminal, a service that lists the pools of decentralized exchanges
-with their prices and candles, and Moralis and DexTools, two services
-that price tokens from those pools.
+Each installs crypto-price-fetchers from GitHub: it runs the Sheets
+script under Node, keeps the api keys, writes the Summ sweep's csv, and
+asks, for the ratio chart, GeckoTerminal, a service that lists the pools
+of decentralized exchanges with their prices and candles, and Moralis
+and DexTools, two services that price tokens from those pools.
 
 ### Google Sheets
 
@@ -291,8 +291,12 @@ npm run api-keys
 It lists each key the top `config.json` names, saved or not, never showing
 its characters, and asks for each one not saved: the key, then the
 password, showing nothing of what is typed. The password is typed twice
-while no key is saved, and once after that. Each key is saved only once
-its service takes it.
+while no key is saved, and once after that. A program that opens the
+keys, the key manager among them, takes the password from the
+environment variable `API_KEYS_PASSWORD` when it holds one, and asks for
+it only when it does not; [`docs/engineering.md`](docs/engineering.md)
+says how a terminal can keep it there. Each key is saved only once its
+service takes it.
 
 ---
 
@@ -640,7 +644,8 @@ npm run api-keys -- set dextools
 ```
 
 Whether the password in `API_KEYS_PASSWORD` opens every saved key, by
-its exit code, 0 when it does:
+its exit code, 0 when it does; run with no `API_KEYS_PASSWORD` set, it
+says so and ends with exit code 1:
 
 ```bash
 npm run api-keys -- check-password

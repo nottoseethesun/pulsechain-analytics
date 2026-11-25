@@ -13,7 +13,8 @@
  *
  * How: each option is checked as it is parsed: the wallet is an address,
  * put in EIP-55's mixed case; each day is a real day, in UTC; the time
- * Summ's sync reached is a real time, in UTC; each file of Summ's pages
+ * Summ's sync reached is a real time, in UTC, and not after now; each
+ * file of Summ's pages
  * exists; and each file the sweep writes is no folder, in a folder that
  * exists and takes a new file. Then the options are checked against each
  * other: `--out` and `--report` name two files, and `--end-date` names
@@ -28,7 +29,11 @@
  * `summ-sweep/config-example.json` shows its shape. Both files are
  * checked against their JSON Schemas (`summ-sweep/settings.js`) before
  * the sweep takes a setting. The range runs from the first block of its
- * first day to the last block of its last. Before the chain is asked
+ * first day to the last block of its last, both found among the blocks up
+ * to the chain's newest, read once before either is looked up: a range
+ * whose first day begins after that block is refused, and one whose last
+ * day ends after it is swept up to it, as the run says. Before the chain
+ * is asked
  * anything, the sweep checks that no report is in the way of a run
  * without `--replace`, reads the template's header and parses Summ's
  * pages. Before either file is written, the rows are checked by the csv
@@ -294,12 +299,13 @@ async function sweepWith(options, context) {
     spacingMs: chain.requestSpacingMs,
   });
   const newest = await paced.ask("getBlockNumber");
-  const fromBlock = await blockAtOrAfter(paced, options.startDate);
+  const fromBlock = await blockAtOrAfter(paced, options.startDate, newest);
   if (fromBlock > newest)
     throw new Error(
       `--start-date's day, ${dayText(options.startDate)}, begins after the chain's newest block, ${await madeAt(paced, newest)}: the chain holds none of the range yet.`,
     );
-  const toBlock = (await blockAtOrAfter(paced, options.endDate + DAY)) - 1;
+  const toBlock =
+    (await blockAtOrAfter(paced, options.endDate + DAY, newest)) - 1;
   if (toBlock === newest)
     say(
       `--end-date's day, ${dayText(options.endDate)}, ends after the chain's newest block, ${await madeAt(paced, newest)}: the sweep stops at that block, and a run once the day has ended sweeps the rest.`,

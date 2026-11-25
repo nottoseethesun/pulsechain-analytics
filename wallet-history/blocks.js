@@ -15,9 +15,9 @@
  * `blockTimes` reads the time of each block the logs fall in, once each.
  *
  * How: `blockAtOrAfter` halves the range from block 0 to the latest
- * block, reading the time of the block at the middle each time, about 25
- * reads for PulseChain's 26 million blocks, since each read halves the
- * range.
+ * block its caller read, reading the time of the block at the middle each
+ * time, about 25 reads for PulseChain's 26 million blocks, since each read
+ * halves the range.
  *
  * Fit: the entry point of a sweep turns its dates into blocks with
  * `blockAtOrAfter`; `walletTransferLogs` searches each span `spansOf`
@@ -39,12 +39,13 @@ export function hexBlock(number) {
  *
  * @param {{ask: function}} paced - The paced provider
  * @param {number} seconds - The moment, in seconds since 1970
+ * @param {number} latest - The latest block to search, which the caller reads once, so that all of its searches search the same blocks, though the chain makes one meanwhile
  * @returns {Promise<number>} The block's number; the latest block's number
  *   plus one when every block is earlier
  */
-export async function blockAtOrAfter(paced, seconds) {
+export async function blockAtOrAfter(paced, seconds, latest) {
   let low = 0;
-  let high = (await paced.ask("getBlockNumber")) + 1;
+  let high = latest + 1;
   while (low < high) {
     const middle = Math.floor((low + high) / 2);
     const block = await paced.ask("getBlock", middle);

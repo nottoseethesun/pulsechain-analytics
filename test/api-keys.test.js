@@ -5,7 +5,8 @@
  * @module test/api-keys.test
  *
  * The manager runs with a key file of its own in a temp folder, removed
- * afterwards, and no `API_KEYS_PASSWORD`.
+ * afterwards, and no `API_KEYS_PASSWORD` but the tests' own made-up one,
+ * where a test sets it.
  */
 
 import { describe, it } from "node:test";
