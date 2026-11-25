@@ -22,6 +22,11 @@ Tools that answer questions about PulseChain:
   the wallet moved from the chain alone (`wallet-history/`, the sweep's
   module, which has no command of its own).
 
+The ratio chart is the one tool that decides on prices:
+[`docs/price-determination-rules.md`](docs/price-determination-rules.md)
+says which prices it charts, where it reads them, and when it charts
+none.
+
 The tools run on Node, the program that runs JavaScript outside a
 browser. The first also comes as a script for Google Sheets, written in
 Apps Script, Google's platform for scripts that run inside its apps, so
@@ -761,9 +766,11 @@ says how a Node program uses it.
 
 ### Architecture and Engineering References
 
-The `docs/` folder holds three references:
+The `docs/` folder holds four references:
 
 - [`docs/architecture.md`](docs/architecture.md): how the tools work.
+- [`docs/price-determination-rules.md`](docs/price-determination-rules.md):
+  how the ratio chart decides its prices.
 - [`docs/engineering.md`](docs/engineering.md): the files, the gates, the
   tests and CI: the checks GitHub runs, through its GitHub Actions
   service, at each push.
