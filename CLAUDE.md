@@ -408,7 +408,9 @@ beside it shows the shape.
 
 ## Known bugs
 
-None is known. When one is found, it gets a test in
-`test/known-bugs.test.js`, declared with `knownBug`, so the test passes while
-the bug is present. The bug's fix makes its test fail; declare that test with
+One is known, with a test in `test/known-bugs.test.js`, declared with
+`knownBug`, so the test passes while the bug is present: the Summ sweep
+leaves out its notice that the range's last day ends after the chain's
+newest block when the chain makes a block while the sweep looks up its
+first. The bug's fix makes its test fail; declare that test with
 `it` instead, in the same change, among the tests of the code it is about.

@@ -426,7 +426,9 @@ deleted. The steps from a branch to `main` are LP Ranger's eight, in its
 
 ## Known Bugs
 
-None is known. A bug found gets a test in `test/known-bugs.test.js`,
-declared with `knownBug` (`test/helpers/known-bug.js`), so the test passes
-while the bug is present. The bug's fix makes its test fail; the same change
+One is known, with a test in `test/known-bugs.test.js`, declared with
+`knownBug` (`test/helpers/known-bug.js`), so the test passes while the bug
+is present: the Summ sweep leaves out its notice that the range's last day
+ends after the chain's newest block when the chain makes a block while the
+sweep looks up its first. The bug's fix makes its test fail; the same change
 declares the test with `it`, among the tests of the code it is about.

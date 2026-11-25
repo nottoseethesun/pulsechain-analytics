@@ -65,11 +65,12 @@ export function repo(owner = true) {
  *
  * @param {string} top - The repo top
  * @param {string[]} args - The command line's arguments
+ * @param {{makeChain: function(): Object}} [stand] - What makes the chain's provider: the case's chain, unless a test gives another
  * @returns {Promise<{code: number, out: string, err: string,
  *   chainMade: boolean}>} What it returned and printed, and whether it
  *   went as far as making the chain's provider
  */
-export async function runOn(top, args) {
+export async function runOn(top, args, { makeChain = sweepChain } = {}) {
   const output = { out: "", err: "", chainMade: false };
   const code = await runSummSweep(
     ["node", "bin/end-user/summ-sweep.js", ...args],
@@ -79,7 +80,7 @@ export async function runOn(top, args) {
       stderr: { write: (text) => (output.err += text) },
       makeProvider: () => {
         output.chainMade = true;
-        return sweepChain();
+        return makeChain();
       },
       run: async (_file, args) => JSON.stringify(RECORDS.get(args[1])),
     },
