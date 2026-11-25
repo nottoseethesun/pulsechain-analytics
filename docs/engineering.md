@@ -10,8 +10,10 @@ tokens at a block or a day, the ratio chart, which charts the ratio of two
 tokens' prices over time, a wallet's history, and the Summ sweep, which
 compares a wallet's history with its records in Summ, the owner's crypto tax
 calculator. For how the tools work, see
-[`docs/architecture.md`](architecture.md); for every command, those the
-repo's `package.json` files give npm, the package manager of Node, the
+[`docs/architecture.md`](architecture.md); for how the ratio chart
+decides its prices, see
+[`docs/price-determination-rules.md`](price-determination-rules.md); for
+every command, those the repo's `package.json` files give npm, the package manager of Node, the
 program that runs JavaScript outside a browser, to run and those run with
 `node` or `source`, see [`docs/project-commands.md`](project-commands.md).
 

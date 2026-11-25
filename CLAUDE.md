@@ -215,7 +215,9 @@ no example, and an example that differs from its committed `config.json`.
 
 ## Docs
 
-`docs/architecture.md` says how the tools work, `docs/engineering.md`
+`docs/architecture.md` says how the tools work,
+`docs/price-determination-rules.md` how the ratio chart decides its
+prices, `docs/engineering.md`
 covers the files, the gates, the tests and CI (the gates, run by GitHub
 Actions at each push), and
 `docs/project-commands.md` lists every command, those npm runs and those
