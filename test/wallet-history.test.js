@@ -196,10 +196,20 @@ describe("the blocks of a range", () => {
   it("find the first block at or after a moment", async () => {
     const paced = unpaced(standInWalletChain({ latest: 1000, blocks: {} }));
 
-    assert.equal(await blockAtOrAfter(paced, FIRST_BLOCK_TIME + 505), 51);
-    assert.equal(await blockAtOrAfter(paced, FIRST_BLOCK_TIME + 500), 50);
-    assert.equal(await blockAtOrAfter(paced, FIRST_BLOCK_TIME - 60), 0);
-    assert.equal(await blockAtOrAfter(paced, FIRST_BLOCK_TIME + 99999), 1001);
+    const latest = 1000;
+    assert.equal(
+      await blockAtOrAfter(paced, FIRST_BLOCK_TIME + 505, latest),
+      51,
+    );
+    assert.equal(
+      await blockAtOrAfter(paced, FIRST_BLOCK_TIME + 500, latest),
+      50,
+    );
+    assert.equal(await blockAtOrAfter(paced, FIRST_BLOCK_TIME - 60, latest), 0);
+    assert.equal(
+      await blockAtOrAfter(paced, FIRST_BLOCK_TIME + 99999, latest),
+      1001,
+    );
   });
 });
 

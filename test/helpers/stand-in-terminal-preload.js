@@ -20,6 +20,13 @@ import fs from "node:fs";
 /** The file each call of `setRawMode` is added to, when the test names one. */
 const log = process.env.STAND_IN_TERMINAL_LOG;
 
+/*-
+ *  TEST-ONLY global swap: the ratio chart reads whether stdin and stderr
+ *  are a terminal, and turns raw mode on and off, through `process`, and
+ *  offers no seam for it. This file runs only in a child process a test
+ *  starts for one run of the chart, so the swap is never seen outside that
+ *  process, and it ends with the process.
+ */
 process.stdin.isTTY = true;
 process.stderr.isTTY = true;
 process.stdin.isRaw = false;

@@ -21,6 +21,7 @@ import {
   TKN,
   WALLET,
   removeTempFolders,
+  sweepChain,
   tempFolder,
   WPLS,
 } from "./helpers/summ-sweep-case.js";
@@ -36,6 +37,23 @@ const REPO_TOP = path.resolve(import.meta.dirname, "..");
  * from root, whom no folder's modes stop.
  */
 const NO_PROC = !fs.existsSync("/proc") && "this system has no /proc";
+
+/**
+ * The case's chain, which makes a block once its newest has been read, as
+ * PulseChain makes one every 10 seconds while a sweep looks up its blocks.
+ *
+ * @returns {Object} The chain's provider
+ */
+function growingChain() {
+  const chain = sweepChain();
+  const newest = chain.getBlockNumber.bind(chain);
+  let reads = 0;
+  chain.getBlockNumber = async () => {
+    reads += 1;
+    return (await newest()) + (reads > 1 ? 1 : 0);
+  };
+  return chain;
+}
 
 describe("runSummSweep", () => {
   it("writes the csv through the Summ csv utility, and the report as json", async () => {
@@ -413,6 +431,19 @@ describe("the Summ sweep's command line, on a range or a sync time past the chai
   it("says so when the range's last day ends after the chain's newest block, sweeping up to it", async () => {
     const top = repo();
     const run = await runOn(top, argsFor(top, { "--end-date": "2026-11-30" }));
+    assert.equal(run.code, 0, run.err);
+    assert.match(
+      run.out,
+      /--end-date's day, 2026-11-30, ends after the chain's newest block, 1000, made at .* UTC: the sweep stops at that block/,
+    );
+    assert.match(run.out, /Blocks 0 to 1000: /);
+  });
+
+  it("says the range's last day ends after the chain's newest block, sweeping up to the block it read first", async () => {
+    const top = repo();
+    const run = await runOn(top, argsFor(top, { "--end-date": "2026-11-30" }), {
+      makeChain: growingChain,
+    });
     assert.equal(run.code, 0, run.err);
     assert.match(
       run.out,

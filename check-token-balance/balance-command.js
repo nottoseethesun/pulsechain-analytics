@@ -173,7 +173,7 @@ export function buildBalanceCommand(defaultRpc) {
     .addOption(
       new Option(
         "-b, --block <block>",
-        "PulseChain block number; this or --date is required",
+        "PulseChain block number; this or --date is required, never both",
       )
         .argParser(blockNumber)
         .conflicts("date"),
@@ -181,7 +181,7 @@ export function buildBalanceCommand(defaultRpc) {
     .addOption(
       new Option(
         "-d, --date <date>",
-        "UTC date in YYYY-MM-DD format: the balance when it starts, 00:00:00 UTC, after the last block made before then; this or --block is required",
+        "UTC date in YYYY-MM-DD format: the balance when it starts, 00:00:00 UTC, after the last block made before then; this or --block is required, never both",
       ).argParser(utcDayStart),
     )
     .requiredOption(
