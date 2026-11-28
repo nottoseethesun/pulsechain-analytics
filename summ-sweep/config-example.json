@@ -1,6 +1,6 @@
 {
   "templatePath": "/home/you/code/pulsechain-analytics/summ-sweep/input/summ-template.csv",
-  "lpRangerDir": "/home/you/code/lp-ranger/github-repo/lp-ranger",
+  "lpRangerDir": "/home/you/code/lp-ranger",
   "ownWallets": {
     "0x1111111111111111111111111111111111111111": "Your other wallet's name in Summ"
   },

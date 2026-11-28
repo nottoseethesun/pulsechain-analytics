@@ -4,9 +4,9 @@
 
 Follow the coding standards of LP Ranger, the owner's bot that manages his
 9mm V3 liquidity positions: its `CLAUDE.md` and everything under
-`docs/claude/`, in [nottoseethesun/lp-ranger](https://github.com/nottoseethesun/lp-ranger)
-or the local clone at `~/code/lp-ranger/github-repo/lp-ranger/`. Read them, and
-never change anything in LP Ranger.
+`docs/claude/`, in [nottoseethesun/lp-ranger](https://github.com/nottoseethesun/lp-ranger).
+Read them, and never change anything in LP Ranger. To see a local clone of
+its GitHub repository, `lp-ranger`, look under `~/code/`.
 
 The repo's programs run on Node, the program that runs JavaScript outside a
 browser; npm, Node's package manager, installs their packages and runs the
