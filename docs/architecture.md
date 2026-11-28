@@ -720,14 +720,28 @@ by crypto-price-fetchers' key store, a module built on LP Ranger's design
 for keeping keys:
 
 - `npm run api-keys`, this repo's command for the key store's manager,
-  lists the keys, saved or not, never showing a key's characters, and
-  saves each key typed once its service takes it.
+  lists the keys, numbered in the services' order of priority, saved or
+  not, never showing a key's characters, and saves each key typed once
+  its service takes it. While `api-keys.json` holds no order of priority
+  that ranks exactly the services `config.json` lists, it then asks for
+  one; `npm run api-keys -- rank` changes it.
 - `source ./bin/unlock-api-keys.sh`, a script in this repo's `bin/`, asks
   for the password once, checks that it opens the keys saved, and keeps it
   for that terminal in `API_KEYS_PASSWORD`. The script is a copy of
   crypto-price-fetchers', which a test holds it to.
 - A program opens the key it needs with that password, or asks for one,
   has the service check the key, and keeps it in memory for the run.
+
+The order of priority is saved in `api-keys.json` in plain text, as
+`"priority": ["dextools", "moralis"]`; until one is saved, it is the order
+`config.json` lists the services in, DexTools then Moralis. By the owner's
+rule, where more than one service with a key can do one job, a program
+asks them in that order. DexTools and Moralis do different jobs, a
+token's price now and its past candles, so the order changes no run of a
+tool here: the ratio chart asks DexTools only when the candles cannot be
+had
+([section 6](price-determination-rules.md#6-when-the-candles-cannot-be-had-dextools)
+of `docs/price-determination-rules.md` says why).
 
 An api key is never a setting in a file git keeps, nor a command-line
 argument, which the shell's history would keep.

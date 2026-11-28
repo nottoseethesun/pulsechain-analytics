@@ -218,6 +218,12 @@ function sameTimes(dataA, dataB) {
 /**
  * Falls back to DexTools' current prices, when a key is saved.
  *
+ * The order of priority the key manager saves for Moralis and DexTools
+ * (`npm run api-keys -- rank`) does not reach this fallback: that order
+ * ranks services that can do one job, and DexTools gives one price now,
+ * a point that draws no chart, where the candles give a series of past
+ * prices. So DexTools is asked only once the candles cannot be had.
+ *
  * @param {Object} run - The run
  * @returns {Promise<?{dataA: Array, dataB: Array, source: string}>} The two series, or null when no key is saved, having said how to save one
  * @throws {Error} When DexTools does not answer in time, answers with an error, or gives no price

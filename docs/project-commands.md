@@ -13,7 +13,8 @@ the repo's top folder
 ([Commands Run Without npm](#commands-run-without-npm)). Four of the top folder's commands run tools of
 crypto-price-fetchers, the owner's repo of code his projects share, which
 this repo installs from GitHub, the website that hosts his code: `api-keys`,
-its key manager, which saves and lists the api keys;
+its key manager, which saves and lists the api keys and saves their order
+of priority;
 `github-project-deps`, its versions tool, which moves crypto-price-fetchers
 to its newest main or its latest release; and `lint` and
 `audit:actionlint`, which run its `run-actionlint`, the runner of
@@ -75,7 +76,7 @@ exchanges. One command runs the store's key manager.
 
 | Command | Flags | Description | Example |
 | ------- | ----- | ----------- | ------- |
-| `api-keys` | `set <service>`, `check-password`, `--help` | The key manager, crypto-price-fetchers'. Lists each key the top `config.json` names, saved or not, never showing a key's characters, and asks for each one not saved: the key, then the password. Each key is saved, encrypted, once its service takes it. `set <service>` replaces one key. `check-password` says, by its exit code, whether the password in `API_KEYS_PASSWORD` opens every key saved; `bin/unlock-api-keys.sh`, the script that keeps the password for a terminal, runs it. | `npm run api-keys` · `npm run api-keys -- set moralis` |
+| `api-keys` | `set <service>`, `rank`, `check-password`, `--help` | The key manager, crypto-price-fetchers'. Lists each key the top `config.json` names, numbered in the services' order of priority, saved or not, never showing a key's characters, and asks for each one not saved: the key, then the password. Each key is saved, encrypted, once its service takes it. Then, while no order of priority is saved for the services, it asks for one, typed as their numbers, highest priority first, at a question that shows what is typed: Enter alone keeps the order shown, which is `config.json`'s, DexTools then Moralis, and an input that ends first saves none, and ends with exit code 1. `set <service>` replaces one key, then asks for an order the same way. `rank` shows the order and saves a new one. `check-password` says, by its exit code, whether the password in `API_KEYS_PASSWORD` opens every key saved; `bin/unlock-api-keys.sh`, the script that keeps the password for a terminal, runs it. | `npm run api-keys` · `npm run api-keys -- set moralis` · `npm run api-keys -- rank` |
 
 `source ./bin/unlock-api-keys.sh`, a script in the repo's `bin/`, keeps the
 password for a terminal ([Commands Run Without npm](#commands-run-without-npm)).

@@ -141,6 +141,12 @@ one, or else asked for. A run that reads
 GeckoTerminal's candles and never falls back asks for no password. See the
 repo's [README](../README.md#api-keys).
 
+The key manager also saves an order of priority for Moralis and DexTools.
+The chart follows none: it asks DexTools only when the candles cannot be
+had, whatever the order
+([section 6 of How the Ratio Chart Decides Its Prices](../docs/price-determination-rules.md#6-when-the-candles-cannot-be-had-dextools)
+says why).
+
 ## Run
 
 ```bash

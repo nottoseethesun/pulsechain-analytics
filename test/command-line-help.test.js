@@ -71,6 +71,7 @@ const COMMAND_LINES = Object.freeze([
   { file: "bin/end-user/fetch-amount-of-token-transferred.js", command: [] },
   { file: "bin/end-user/manage-api-keys.js", command: [] },
   { file: "bin/end-user/manage-api-keys.js", command: ["set"] },
+  { file: "bin/end-user/manage-api-keys.js", command: ["rank"] },
   { file: "bin/end-user/manage-api-keys.js", command: ["check-password"] },
   { program: "bash", file: "bin/unlock-api-keys.sh", command: [] },
   { file: DEPENDENCY_BINS["github-project-deps"], command: [] },
