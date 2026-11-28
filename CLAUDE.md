@@ -98,6 +98,16 @@ there. The ratio chart opens each key the first time it asks that service
 keeps, nor a command-line argument. A test names a key file of its own,
 never the owner's, and passes no `API_KEYS_PASSWORD` it did not set.
 
+The manager also saves the services' order of priority in
+`api-keys.json`, under `priority`, which `npm run api-keys -- rank`
+changes; until one is saved, it is `config.json`'s order. The owner's
+rule: wherever more than one service with a key can do one job, the code
+asks them in that order. DexTools and Moralis do different jobs, a price
+now and past candles, so the ratio chart's fallback to DexTools follows no
+order, by the owner's decision of 2026-11-27: ranking DexTools first would
+change what the chart shows, not only which service answers
+(`docs/price-determination-rules.md`, section 6).
+
 ## crypto-price-fetchers
 
 The top `package.json`, `chart-price-ratio/package.json` and

@@ -90,8 +90,9 @@ moves through `wallet-history/`.
 #### manage-api-keys.js
 
 The key manager, crypto-price-fetchers' too: it lists the api keys the top
-`config.json` names, saved or not, never showing a key's characters, and
-saves each key typed, encrypted with your password.
+`config.json` names, numbered in the services' order of priority, saved or
+not, never showing a key's characters, saves each key typed, encrypted
+with your password, and asks for that order while none is saved.
 
 ## Table of Contents
 
@@ -293,15 +294,27 @@ the store's key manager. To save the keys, from the repo's top folder:
 npm run api-keys
 ```
 
-It lists each key the top `config.json` names, saved or not, never showing
-its characters, and asks for each one not saved: the key, then the
-password, showing nothing of what is typed. The password is typed twice
-while no key is saved, and once after that. A program that opens the
-keys, the key manager among them, takes the password from the
-environment variable `API_KEYS_PASSWORD` when it holds one, and asks for
-it only when it does not; [`docs/engineering.md`](docs/engineering.md)
-says how a terminal can keep it there. Each key is saved only once its
-service takes it.
+It lists each key the top `config.json` names, numbered in the services'
+order of priority, saved or not, never showing its characters, and asks
+for each one not saved: the key, then the password, showing nothing of
+what is typed. The password is typed twice while no key is saved, and
+once after that. A program that opens the keys, the key manager among
+them, takes the password from the environment variable
+`API_KEYS_PASSWORD` when it holds one, and asks for it only when it does
+not; [`docs/engineering.md`](docs/engineering.md) says how a terminal can
+keep it there. Each key is saved only once its service takes it.
+
+Then, while no order of priority is saved for the two services, it asks
+for one, showing what is typed, since the order is no secret: their
+numbers, highest priority first, such as `2 1` to put Moralis first.
+Enter alone keeps the order shown, which until an order is saved is the
+one `config.json` lists them in, DexTools then Moralis. The order is saved
+in `api-keys.json`, and `npm run api-keys -- rank` changes it. Where two
+services with keys can do one job, the programs ask them in that order;
+DexTools and Moralis do different jobs, so the order changes nothing the
+ratio chart does
+([section 6 of How the Ratio Chart Decides Its Prices](docs/price-determination-rules.md#6-when-the-candles-cannot-be-had-dextools)
+says why).
 
 ---
 
@@ -635,8 +648,10 @@ npm run summ-sweep -- --wallet <wallet> --start-date 2026-11-01 --end-date 2026-
 npm run api-keys
 ```
 
-This lists each key the top `config.json` names, saved or not, never
-showing its characters, with a question for each one not saved:
+This lists each key the top `config.json` names, numbered in the
+services' order of priority, saved or not, never showing its characters,
+with a question for each one not saved, and then, while no order of
+priority is saved, a question for one ([Api Keys](#api-keys)):
 `bin/end-user/manage-api-keys.js`, which `npm run api-keys` runs, is
 crypto-price-fetchers' key manager.
 
@@ -646,6 +661,13 @@ DexTools' saved key replaced, as after DexTools issues a new one:
 
 ```bash
 npm run api-keys -- set dextools
+```
+
+The services' order of priority shown, numbered, and a new one saved,
+typed as their numbers, highest priority first, such as `2 1`:
+
+```bash
+npm run api-keys -- rank
 ```
 
 Whether the password in `API_KEYS_PASSWORD` opens every saved key, by

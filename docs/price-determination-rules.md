@@ -57,7 +57,8 @@ An api key is saved with `npm run api-keys`, the key manager of
 crypto-price-fetchers, which keeps it encrypted with a password you
 choose; a run opens a key, and has the service check it, the first time
 it asks that service. A key is never a setting or a command-line
-argument.
+argument. The key manager also saves an order of priority for Moralis and
+DexTools, which the chart does not follow (section 6).
 
 ### Which Source a Run Reads
 
@@ -174,6 +175,15 @@ back:
   now, which draws no chart (section 5).
 - With no DexTools key saved, the run says how to save one, and stops
   (section 7).
+
+The run asks DexTools only in these cases and in DexTools-only mode
+(section 1), whatever order of priority the key manager saves for Moralis
+and DexTools. That order says which of two services with keys a program
+asks first where both can do one job, and these two do different jobs:
+Moralis's candles give a series of past prices, which the chart draws,
+and DexTools gives one price now, one point, which draws no chart.
+Ranking DexTools first would change what the chart shows, not only which
+service answers.
 
 ## 7. When the Run Stops With No Ratio
 

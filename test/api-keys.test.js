@@ -1,7 +1,8 @@
 /**
  * Tests of how pulsechain-analytics keeps its api keys: crypto-price-fetchers'
  * key store, with the keys this repo's programs send listed in its top
- * `config.json`, its key manager, and its copy of `bin/unlock-api-keys.sh`.
+ * `config.json`, its key manager, which also saves the services' order of
+ * priority, and its copy of `bin/unlock-api-keys.sh`.
  * @module test/api-keys.test
  *
  * The manager runs with a key file of its own in a temp folder, removed
@@ -16,7 +17,10 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { readNeededKeys } from "crypto-price-fetchers/api-key-store";
+import {
+  projectPriority,
+  readNeededKeys,
+} from "crypto-price-fetchers/api-key-store";
 import {
   assertKeysNotShown,
   MORALIS_CHECK_URL,
@@ -56,7 +60,7 @@ describe("the api keys", () => {
     );
   });
 
-  it("are saved by the key manager, npm run api-keys, which lists them without their characters", () => {
+  it("are saved by the key manager, npm run api-keys, which lists them numbered in their order of priority, without their characters, and saves that order", () => {
     const folder = fs.mkdtempSync(
       path.join(os.tmpdir(), "pulsechain-analytics-test-api-keys-"),
     );
@@ -85,21 +89,28 @@ describe("the api keys", () => {
           ],
           { env, input, encoding: "utf8", timeout: 15000 },
         );
-      const first = manage(`\n${MORALIS_KEY}\n`);
+      /*- Enter skips the DexTools key, the Moralis key is saved, and Enter
+       * at the question of the order of priority keeps config.json's order. */
+      const first = manage(`\n${MORALIS_KEY}\n\n`);
       assert.equal(first.status, 0, first.stderr);
       assert.match(
         first.stdout,
-        / {2}DexTools {2}not saved\n {2}Moralis {3}not saved\n$/,
+        / {2}1\. DexTools {2}not saved\n {2}2\. Moralis {3}not saved\n$/,
       );
       assert.match(
         first.stderr,
         /No DexTools api key was entered, so none was saved\./,
       );
+      assert.deepEqual(projectPriority(REPO_TOP, { env }), {
+        services: ["dextools", "moralis"],
+        saved: true,
+      });
+      // The order is saved, so the second run asks only for the DexTools key.
       const second = manage("\n");
       assert.equal(second.status, 0, second.stderr);
       assert.match(
         second.stdout,
-        / {2}DexTools {2}not saved\n {2}Moralis {3}saved\n$/,
+        / {2}1\. DexTools {2}not saved\n {2}2\. Moralis {3}saved\n$/,
       );
       assert.deepEqual(
         fs
